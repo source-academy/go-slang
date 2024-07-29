@@ -1,0 +1,103 @@
+{
+  "name": "go-virtual-machine",
+  "description": "",
+  "homepage": "https://huajun07.github.io/go-virtual-machine",
+  "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
+    "local": "npm run generate-parser && react-scripts start",
+    "dev": "NODE_ENV=dev && concurrently \"npm run generate-parser-watch\" \"react-scripts start\"",
+    "build": "npm run generate-parser && react-scripts build",
+    "test": "npm run generate-parser && vitest",
+    "eject": "react-scripts eject",
+    "lint-no-fix": "eslint ./ --ignore-path .gitignore && prettier . -c",
+    "lint": "eslint ./ --ignore-path .gitignore --fix && prettier . -c --write",
+    "generate-parser": "npx peggy --format es -o src/virtual-machine/parser/golang_parser.js src/virtual-machine/parser/parser.peggy",
+    "generate-parser-watch": "npx peggy -m -w --format es -o src/virtual-machine/parser/golang_parser.js src/virtual-machine/parser/parser.peggy"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@chakra-ui/icons": "^2.0.19",
+    "@chakra-ui/react": "^2.6.1",
+    "@chakra-ui/theme": "^3.1.1",
+    "@chakra-ui/theme-tools": "^2.0.17",
+    "@choc-ui/chakra-autocomplete": "^5.1.7",
+    "@codemirror/lang-go": "^6.0.0",
+    "@emotion/react": "^11.11.0",
+    "@emotion/styled": "^11.11.0",
+    "@uiw/codemirror-extensions-zebra-stripes": "^4.20.2",
+    "@uiw/codemirror-theme-github": "^4.20.2",
+    "@uiw/react-codemirror": "^4.21.25",
+    "axios": "^1.4.0",
+    "cytoscape-cola": "^2.5.1",
+    "d3-selection": "^3.0.0",
+    "d3-zoom": "^3.0.0",
+    "framer-motion": "^10.12.14",
+    "js-cookie": "^3.0.5",
+    "peggy": "^4.0.2",
+    "react": "^18.2.0",
+    "react-cytoscapejs": "^2.0.0",
+    "react-data-grid": "^7.0.0-beta.34",
+    "react-dom": "^18.2.0",
+    "react-icons": "^4.10.1",
+    "react-moveable": "^0.54.1",
+    "react-router-dom": "^6.11.2",
+    "react-scripts": "^5.0.1",
+    "react-selecto": "^1.26.0",
+    "react-use-error-boundary": "^3.0.0",
+    "reactflow": "^11.11.0",
+    "seedrandom": "^3.0.5",
+    "util": "^0.12.5",
+    "uuid": "^9.0.0",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@types/js-cookie": "^3.0.6",
+    "@types/react-cytoscapejs": "^1.2.2",
+    "@types/react-dom": "^18.2.4",
+    "@types/seedrandom": "^3.0.8",
+    "@types/uuid": "^9.0.2",
+    "babel-plugin-named-exports-order": "^0.0.2",
+    "chromatic": "^6.19.9",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.41.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-import-resolver-alias": "^1.1.2",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-simple-import-sort": "^10.0.0",
+    "eslint-plugin-storybook": "^0.6.12",
+    "gh-pages": "^6.1.1",
+    "prettier": "^2.8.8",
+    "prop-types": "^15.8.1",
+    "start-server-and-test": "^2.0.0",
+    "tsconfig-paths-webpack-plugin": "^4.1.0",
+    "typescript": "^5.0.4",
+    "vitest": "^1.3.1",
+    "webpack": "^5.88.2"
+  },
+  "overrides": {
+    "react-scripts": {
+      "typescript": "^5"
+    }
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "version": "",
+  "readme": "ERROR: No README data found!"
+}
