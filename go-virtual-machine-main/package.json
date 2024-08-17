@@ -29,7 +29,7 @@
     "@uiw/codemirror-extensions-zebra-stripes": "^4.20.2",
     "@uiw/codemirror-theme-github": "^4.20.2",
     "@uiw/react-codemirror": "^4.21.25",
-    "axios": "^1.4.0",
+    "axios": "^1.7.4",
     "cytoscape-cola": "^2.5.1",
     "d3-selection": "^3.0.0",
     "d3-zoom": "^3.0.0",
