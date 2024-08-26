@@ -1,7 +1,7 @@
 {
   "name": "go-virtual-machine",
   "description": "",
-  "homepage": "https://huajun07.github.io/go-virtual-machine",
+  "homepage": "https://chengda300.github.io/go-virtual-machine",
   "scripts": {
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build",
@@ -35,6 +35,7 @@
     "d3-zoom": "^3.0.0",
     "framer-motion": "^10.12.14",
     "js-cookie": "^3.0.5",
+    "node": "^22.7.0",
     "peggy": "^4.0.2",
     "react": "^18.2.0",
     "react-cytoscapejs": "^2.0.0",
