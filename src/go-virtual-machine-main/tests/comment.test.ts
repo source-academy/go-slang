@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { runCode } from '../src/virtual-machine'
+import { runCode } from '../virtual-machine'
 
 describe('Comments Tests', () => {
   test('Comments are correctly ignored', () => {

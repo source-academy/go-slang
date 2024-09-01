@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { runCode } from '../src/virtual-machine'
+import { runCode } from '../virtual-machine'
 
 describe('Wait Group Type Checking', () => {
   test('Wait groups should not work without importing sync.', () => {
