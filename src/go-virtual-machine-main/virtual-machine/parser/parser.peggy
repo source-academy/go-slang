@@ -68,7 +68,7 @@ start = _ @SourceFile _
 
 //* =============== Whitespace ===============
 // By convention, _ is used to eat up whitespace.
-_ = ([ \t\r\n] / comment) *
+_ = ([ \t\r\n] / comment)*
 
 
 
@@ -286,7 +286,7 @@ QualifiedIdent = pkg:PackageName "." iden:identifier { return new QualifiedIdent
 //* Composite Literals
 CompositeLit = type:ArrayType _ value:LiteralValue { return new ArrayLiteralToken(location(), type, value) }
              / type:SliceType _ value:LiteralValue { return new SliceLiteralToken(location(), type, value) }
-LiteralValue = "{" elements:(@ElementList _ ","? _)? "}" { return new LiteralValueToken(location(), elements ?? []) }
+LiteralValue = "{" _ elements:(@ElementList _ ","? _)? "}" { return new LiteralValueToken(location(), elements ?? []) }
 ElementList  = head:KeyedElement rest:(_ "," _ @KeyedElement)* { return [head, ...rest] }
 // Ironically, KeyedElement will not support having a key for our implementation.
 KeyedElement = Element
