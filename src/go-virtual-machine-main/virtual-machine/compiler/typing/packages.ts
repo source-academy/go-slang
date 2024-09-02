@@ -61,6 +61,7 @@ export const builtinPackages = {
     const pkg = new PackageType('fmt', {
       Println: new FunctionType([], new ReturnType([]), true),
       Print: new FunctionType([], new ReturnType([]), true),
+      Printf: new FunctionType([], new ReturnType([]), true),
     })
     compiler.type_environment.addType('fmt', pkg)
     const [frame_idx, var_idx] = compiler.context.env.declare_var('fmt')
