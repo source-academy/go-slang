@@ -1,12 +1,13 @@
+import { env } from 'process'
 import { Compiler } from '../../compiler'
 import {
   LoadVariableInstruction,
   StoreInstruction,
 } from '../../compiler/instructions'
-import { NoType, Type } from '../../compiler/typing'
+import { NoType, ReturnType, Type } from '../../compiler/typing'
 
 import { Token, TokenLocation } from './base'
-import { ExpressionToken } from './expressions'
+import { ExpressionToken, PrimaryExpressionModifierToken, PrimaryExpressionToken } from './expressions'
 import { IdentifierToken } from './identifier'
 import { FunctionLiteralToken } from './literals'
 import { TypeToken } from './type'
@@ -104,27 +105,53 @@ export class VariableDeclarationToken extends DeclarationToken {
 
     // Compile and add identifiers to type environment.
     if (expressions) {
+      /*
       if (identifiers.length !== expressions.length) {
         throw Error(
           `Assignment mismatch: ${identifiers.length} variable(s) but ${expressions.length} value(s).`,
         )
       }
+        */
       for (let i = 0; i < identifiers.length; i++) {
-        const identifier = identifiers[i].identifier
-        const expression = expressions[i]
-        const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)
-        const expressionType = expression.compile(compiler)
-        if (expectedType && !expectedType.assignableBy(expressionType)) {
-          throw Error(
-            `Cannot use ${expressionType} as ${expectedType} in variable declaration`,
-          )
+        
+        const expressionTypes = expressions[i].compile(compiler)
+        if (expressionTypes instanceof ReturnType) {
+          if (expressionTypes.types.length > 1) {
+            i += expressionTypes.types.length - 1
+            for (let j = 0; j < expressionTypes.types.length; j++) {
+              const identifier = identifiers[i].identifier
+              const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)
+              if (expectedType && !expectedType.assignableBy(expressionTypes.types[j])) {
+                throw Error(
+                  `Cannot use ${expressionTypes.types[j]} as ${expectedType} in variable declaration`,
+                )
+              }
+              compiler.type_environment.addType(identifier, expressionTypes.types[j])
+              this.pushInstruction(
+                compiler,
+                new LoadVariableInstruction(frame_idx, var_idx, identifier),
+              )
+              this.pushInstruction(compiler, new StoreInstruction())
+              i--
+            }
+            i += expressionTypes.types.length
+          }
         }
-        compiler.type_environment.addType(identifier, expressionType)
-        this.pushInstruction(
-          compiler,
-          new LoadVariableInstruction(frame_idx, var_idx, identifier),
-        )
-        this.pushInstruction(compiler, new StoreInstruction())
+        else {
+          const identifier = identifiers[i].identifier
+          const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)
+          if (expectedType && !expectedType.assignableBy(expressionTypes)) {
+            throw Error(
+              `Cannot use ${expressionTypes} as ${expectedType} in variable declaration`,
+            )
+          }
+          compiler.type_environment.addType(identifier, expressionTypes)
+          this.pushInstruction(
+            compiler,
+            new LoadVariableInstruction(frame_idx, var_idx, identifier),
+          )
+          this.pushInstruction(compiler, new StoreInstruction())
+        }
       }
     } else {
       // Variables are uninitialized, but their type is given.

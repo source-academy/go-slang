@@ -18,6 +18,7 @@ import {
   FunctionType,
   Int64Type,
   NoType,
+  ReturnType,
   SliceType,
   StringType,
   Type,
@@ -184,7 +185,9 @@ export class CallToken extends PrimaryExpressionModifierToken {
     }
 
     const argumentTypes = this.expressions.map((e) => e.compile(compiler))
-    this.pushInstruction(compiler, new CallInstruction(this.expressions.length))
+    this.pushInstruction(compiler, new CallInstruction(
+      argumentTypes[0] instanceof ReturnType ? argumentTypes[0].types.length : argumentTypes.length
+    ))
 
     // We only implement variadic functions that accept any number of any type of arguments,
     // so variadic functions do not require type checking.

@@ -34,7 +34,7 @@ const runCode = (
     const message = (err as Error).message
     return {
       instructions: [],
-      output: 'Syntax Error!',
+      output: message,
       error: {
         message,
         type: 'parse',
@@ -56,7 +56,7 @@ const runCode = (
     const message = (err as CompileError).message
     return {
       instructions: [],
-      output: 'Compilation Error!',
+      output: message,
       error: {
         message,
         type: 'compile',
@@ -77,10 +77,10 @@ const runCode = (
     console.warn(result.errorMessage)
     return {
       instructions: [],
-      output: 'Runtime Error!',
+      output: result.errorMessage,
       error: {
         message: result.errorMessage,
-        type: 'runtime',
+        type: 'runtime', 
         details: result.errorMessage,
       },
       visualData: [],

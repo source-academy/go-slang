@@ -37,7 +37,7 @@ export class SourceFileToken extends Token {
     this.predeclareConstants(compiler)
 
     // Compile top level declarations.
-    for (const declaration of this.declarations || []) {
+    for (const declaration of this.declarations ?? []) {
       declaration.compile(compiler)
     }
 

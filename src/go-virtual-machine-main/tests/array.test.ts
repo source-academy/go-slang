@@ -11,6 +11,25 @@ describe('Array Type Checking', () => {
     )
   })
 
+  test('Array literal with less elements than in the type should still pass.', () => {
+    const code =
+    `var a [3]int = [3]int{1}
+    fmt.Println(a)`
+    expect(mainRunner(code).output).toEqual('[1 0 0]\n')
+  })
+
+  test('Array literal should ignore newline between elements being declared.', () => {
+    // note: does not ignore newline between elements and comma/close semi-colon,
+    // it would result in compilation error even in the actual language
+    const code =
+    `	var a [3]int = [3]int{
+    1,
+		2,
+		3}
+		fmt.Println(a)`
+    expect(mainRunner(code).output).toEqual('[1 2 3]\n')
+  })
+
   test('Array literal must have the same type as the declared type.', () => {
     expect(
       mainRunner('var a [3]int = [3]int{1, "wrong type", 3}').error?.message,

@@ -3,6 +3,7 @@ import { Heap, TAG } from '..'
 
 import { BaseNode } from './base'
 import { MethodNode } from './func'
+import { StringNode } from './primitives'
 
 /**
  * This node represents an uninitialized package. It only occupies one word, its tag.
@@ -51,6 +52,10 @@ export class FmtPkgNode extends BaseNode {
   ) {
     if (identifier === 'Println') {
       this.handlePrintln(process, argCount)
+    } else if (identifier === 'Print') {
+      this.handlePrint(process, argCount)
+    } else if (identifier === 'Printf') {
+      this.handlePrintf(process, argCount)
     }
   }
 
@@ -62,8 +67,60 @@ export class FmtPkgNode extends BaseNode {
     for (let i = argCount - 1; i >= 0; i--) {
       const string = process.heap.get_value(argAddresses[i]).toString()
       process.print(string)
+
       process.print(i > 0 ? ' ' : '\n')
     }
+    process.context.popOS()
+  }
+
+  handlePrint(process: Process, argCount: number): void {
+    const argAddresses = []
+    for (let i = 0; i < argCount; i++) {
+      argAddresses.push(process.context.popOS())
+    }
+    for (let i = argCount - 1; i >= 0; i--) {
+      const string = process.heap.get_value(argAddresses[i]).toString()
+      process.print(string)
+      if (i > 0) {
+        // the argument before and after the string argument will coalesce with the string argument
+        if (process.heap.get_value(argAddresses[i]) instanceof StringNode
+          || (i < argCount - 1 
+            && process.heap.get_value(argAddresses[i + 1]) instanceof StringNode)
+          || (i > 0 
+            && process.heap.get_value(argAddresses[i - 1]) instanceof StringNode)) {
+            process.print('')
+        } else {
+          process.print(' ')
+        }
+      }
+    }
+    process.context.popOS()
+  }
+
+  handlePrintf(process: Process, argCount: number): void {
+    const argAddresses = []
+    for (let i = 0; i < argCount; i++) {
+      argAddresses.push(process.context.popOS())
+    }
+    // "format string" argument / the text to print out
+    const text = process.heap.get_value(argAddresses[0]).toString()
+    for (let i = argCount - 1; i >= 1; i--) {
+      const string = process.heap.get_value(argAddresses[i]).toString()
+      process.print(string)
+      if (i > 0) {
+        // the argument before and after the string argument will coalesce with the string argument
+        if (process.heap.get_value(argAddresses[i]) instanceof StringNode
+          || (i < argCount - 1 
+            && process.heap.get_value(argAddresses[i + 1]) instanceof StringNode)
+          || (i > 0 
+            && process.heap.get_value(argAddresses[i - 1]) instanceof StringNode)) {
+            process.print('')
+        } else {
+          process.print(' ')
+        }
+      }
+    }
+    process.print(text)
     process.context.popOS()
   }
 

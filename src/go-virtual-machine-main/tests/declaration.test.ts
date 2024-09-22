@@ -14,6 +14,33 @@ describe('Variable Declaration Tests', () => {
     ).toEqual('13\n')
   })
 
+  test('Multiple constants in a line', () => {
+    expect(
+      mainRunner(
+        `const b, c int = 5, 12;
+        fmt.Println(b+c)`,
+      ).output,
+    ).toEqual('17\n')
+  })
+
+  test('Multiple variables in a line', () => {
+    expect(
+      mainRunner(
+        `var b, c int = 5, 12;
+        fmt.Println(b+c)`,
+      ).output,
+    ).toEqual('17\n')
+  })
+
+  test('Multiple variables in a line, shorthand version', () => {
+    expect(
+      mainRunner(
+        `b, c := 5, 12;
+        fmt.Println(b+c)`,
+      ).output,
+    ).toEqual('17\n')
+  })
+
   test('String Variables', () => {
     expect(
       mainRunner(
