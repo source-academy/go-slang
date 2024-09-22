@@ -14,7 +14,7 @@ describe('Variable Declaration Tests', () => {
     ).toEqual('13\n')
   })
 
-  test('Const Variables', () => {
+  test('Multiple constants in a line', () => {
     expect(
       mainRunner(
         `const b, c int = 5, 12;
@@ -23,7 +23,7 @@ describe('Variable Declaration Tests', () => {
     ).toEqual('17\n')
   })
 
-  test('Const Variables', () => {
+  test('Multiple variables in a line', () => {
     expect(
       mainRunner(
         `var b, c int = 5, 12;
@@ -32,7 +32,7 @@ describe('Variable Declaration Tests', () => {
     ).toEqual('17\n')
   })
 
-  test('Const Variables', () => {
+  test('Multiple variables in a line, shorthand version', () => {
     expect(
       mainRunner(
         `b, c := 5, 12;
