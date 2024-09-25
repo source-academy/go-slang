@@ -1,7 +1,5 @@
 import { describe, expect, test } from 'vitest'
 
-import { runCode } from '../virtual-machine'
-
 import { codeRunner, mainRunner } from './utility'
 
 describe('Function Type Checking', () => {
