@@ -1,8 +1,26 @@
 import { describe, expect, test } from 'vitest'
 
-import { mainRunner } from './utility'
+import { codeRunner, codeRunnerRandom, mainRunner } from './utility'
 
 describe('Concurrency Check', () => {
+  test('Basic Check', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+        func add(a int){
+          fmt.Println(a);
+        }
+
+        func main() {
+          for i := 0; i < 10; i++ {
+            go add(i);
+          }
+          fmt.Println("Done");
+        }
+      `).output,
+    ).toEqual('0\n1\n2\n3\n4\n5\n6\n7\n8\n9\nDone\n')
+  })
   test('Basic Check', () => {
     expect(
       mainRunner(`
@@ -35,5 +53,26 @@ describe('Concurrency Check', () => {
       fmt.Println(a)`).output || '100',
       ),
     ).toBeLessThan(500)
+  })
+})
+
+describe('Concurrency randomised check', () => {
+  test('Basic Check', () => {
+    expect(
+      codeRunnerRandom(`
+        package main
+        import "fmt"
+        func add(a int){
+          fmt.Println(a);
+        }
+
+        func main() {
+          for i := 0; i < 20; i++ {
+            go add(i);
+          }
+          fmt.Println("Done");
+        }
+      `).output,
+    ).toEqual('6\n')
   })
 })

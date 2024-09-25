@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 
 import { runCode } from '../virtual-machine'
 
-import { mainRunner } from './utility'
+import { codeRunner, mainRunner } from './utility'
 
 describe('Function Type Checking', () => {
   test('Function assignment', () => {
@@ -83,7 +83,7 @@ describe('Function Execution tests', () => {
 
   test('Function Declaration', () => {
     expect(
-      runCode(
+      codeRunner(
         `package main
         import "fmt"
 
@@ -98,15 +98,13 @@ describe('Function Execution tests', () => {
             return x + y + 100
           }
           fmt.Println(f(1, 2))
-        }`,
-        2048,
-      ).output,
+        }`,).output,
     ).toEqual('103\n')
   })
 
   test('Function assignment in loop', () => {
     expect(
-      runCode(
+      codeRunner(
         `package main
         import "fmt"
         func main() {
@@ -119,15 +117,13 @@ describe('Function Execution tests', () => {
             }
           }
           fmt.Println(f(1, 2))
-        }`,
-        2048,
-      ).output,
+        }`,).output,
     ).toEqual('8\n')
   })
 
   test('Function assignment in loop and if', () => {
     expect(
-      runCode(
+      codeRunner(
         `package main
         import "fmt"
         func main() {
@@ -142,15 +138,13 @@ describe('Function Execution tests', () => {
             }
           }
           fmt.Println(f(1, 2))
-        }`,
-        2048,
-      ).output,
+        }`,).output,
     ).toEqual('103\n')
   })
 
   test('Recursive function', () => {
     expect(
-      runCode(
+      codeRunner(
         `package main
 
       import "fmt"
@@ -164,9 +158,7 @@ describe('Function Execution tests', () => {
       
       func main() {
         fmt.Println(f(10))
-      }`,
-        2048,
-      ).output,
+      }`,).output,
     ).toEqual('10\n')
   })
 
@@ -178,7 +170,7 @@ describe('Function Execution tests', () => {
 
   test('Closures', () => {
     expect(
-      runCode(
+      codeRunner(
         `package main
         import "fmt"
 
@@ -202,9 +194,7 @@ describe('Function Execution tests', () => {
           fmt.Println(f2(2, 3))
           fmt.Println(f2(1, 1))
         }
-    `,
-        2048,
-      ).output,
+    `,).output,
     ).toEqual('8\n4\n5\n3\n9\n5\n')
   })
 })

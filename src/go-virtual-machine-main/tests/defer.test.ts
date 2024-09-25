@@ -1,8 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { runCode } from '../virtual-machine'
-
-import { mainRunner } from './utility'
+import { codeRunner, mainRunner } from './utility'
 
 describe('Defer Type Checking', () => {
   test('Defer on non call should fail.', () => {
@@ -44,6 +42,6 @@ describe('Defer Execution', () => {
       fmt.Println(count)
     }
     `
-    expect(runCode(code, 2048).output).toEqual('1000\n')
+    expect(codeRunner(code).output).toEqual('1000\n')
   })
 })

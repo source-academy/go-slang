@@ -25,10 +25,12 @@ export class Process {
   debug_mode: boolean
   debugger: Debugger
   runtime_count = 0
+  deterministic: boolean
   constructor(
     instructions: Instruction[],
     heapsize: number,
     symbols: (TokenLocation | null)[],
+    deterministic: boolean,
     visualmode = false,
   ) {
     this.instructions = instructions
@@ -47,6 +49,7 @@ export class Process {
     this.context.set_E(base_env.addr)
     const randomSeed = Math.random().toString(36).substring(2)
     this.generator = seedrandom.default(randomSeed)
+    this.deterministic = deterministic
 
     this.debug_mode = visualmode
     this.debugger = new Debugger(this.heap, this.instructions, symbols)
@@ -60,7 +63,7 @@ export class Process {
 
   start(): ProcessOutput {
     try {
-      const time_quantum = 30
+      const time_quantum = 3
       this.runtime_count = 0
       let completed = false
       const main_context = this.contexts.peek()
@@ -93,7 +96,11 @@ export class Process {
           completed = true
           break
         }
-        this.contexts.pop()
+        if (this.deterministic) {
+          this.contexts.pop()
+        } else {
+          this.contexts.randompop()
+        }
         // console.log('%c SWITCH!', 'background: #F7FF00; color: #FF0000')
         if (this.runtime_count > 10 ** 5) throw Error('Time Limit Exceeded!')
         // console.log('PC', this.contexts.get_vals())
