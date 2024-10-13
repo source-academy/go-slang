@@ -65,6 +65,57 @@ describe('Function Type Checking', () => {
       ).error?.message,
     ).toEqual('Too many return values\nhave (int64)\nwant ()')
   })
+
+  test('Function with more than 1 return value as argument for another function', () => {
+    const code = `
+    package main
+    import "fmt"
+    func u(x int) (y int, z int) {
+      return x, x;
+    }
+
+    func main() {
+      fmt.Print(u(6));
+    }
+    `
+    expect(runCode(code, 2048).output).toEqual('6 6')
+  })
+
+  test('Function with more than 1 return value to be assigned to variables', () => {
+    const code = `
+    package main
+    import "fmt"
+    func u(x int) (int, int) {
+      return x, x + 3;
+    }
+
+    func main() {
+      var a, b = u(8)
+      fmt.Println(a);
+      fmt.Println(b);
+    }
+    `
+    expect(runCode(code, 2048).output).toEqual('8\n11\n')
+  })
+
+  test('Nested function', () => {
+    const code = `
+    package main
+    import "fmt"
+    func f(x int) (y int) {
+      return x + 2;
+    }
+
+    func g(x int) (y int) {
+      return x + 5;
+    }
+
+    func main() {
+      fmt.Println(g(f(1)));
+    }
+    `
+    expect(runCode(code, 2048).output).toEqual('8\n')
+  })
 })
 
 describe('Function Execution tests', () => {
