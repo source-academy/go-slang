@@ -7,6 +7,7 @@ import {
   DoneInstruction,
   ExitBlockInstruction,
   ForkInstruction,
+  GoInstruction,
   LoadChannelReqInstruction,
   LoadConstantInstruction,
   PopInstruction,
@@ -23,10 +24,12 @@ import {
 import {
   BoolType,
   ChannelType,
+  FunctionType,
   Int64Type,
   NoType,
   ReturnType,
   Type,
+  TypeUtility,
 } from '../../compiler/typing'
 
 import { Token, TokenLocation } from './base'
@@ -36,6 +39,7 @@ import {
   CallToken,
   EmptyExpressionToken,
   ExpressionToken,
+  PrimaryExpressionModifierToken,
   PrimaryExpressionToken,
 } from './expressions'
 import { IdentifierToken } from './identifier'
@@ -405,7 +409,6 @@ export class GoStatementToken extends Token {
     super('go', sourceLocation)
   }
 
-  /** Used in the parser to only parse function calls */
   static isValidGoroutine(expression: PrimaryExpressionToken) {
     return (
       expression.rest &&
@@ -415,11 +418,14 @@ export class GoStatementToken extends Token {
   }
 
   override compileUnchecked(compiler: Compiler): Type {
-    const fork_instr = new ForkInstruction()
-    this.pushInstruction(compiler, fork_instr)
     this.call.compile(compiler)
+    const call = compiler.instructions[compiler.instructions.length - 1] as CallInstruction
+    const fork = new ForkInstruction()
+    const go_instr = new GoInstruction(call.args)
+    compiler.instructions[compiler.instructions.length - 1] = fork
+    this.pushInstruction(compiler, go_instr)
     this.pushInstruction(compiler, new DoneInstruction())
-    fork_instr.set_addr(compiler.instructions.length)
+    go_instr.set_addr(compiler.instructions.length - 1)
     return new NoType()
   }
 }

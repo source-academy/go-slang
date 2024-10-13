@@ -14,6 +14,17 @@ export class StackNode extends BaseNode {
     return new StackNode(heap, addr)
   }
 
+  static clone(heap: Heap) {
+    const addr = heap.allocate(2)
+    heap.set_tag(addr, TAG.STACK)
+    if (heap.temp_roots) heap.temp_push(addr)
+    heap.memory.set_number(-1, addr + 1)
+    const list = StackListNode.clone(heap)
+    if (heap.temp_roots) heap.temp_pop()
+    heap.memory.set_word(heap.clone(list.addr), addr + 1)
+    return new StackNode(heap, addr)
+  }
+
   list() {
     return new StackListNode(
       this.heap,
@@ -50,6 +61,13 @@ export class StackListNode extends BaseNode {
   static init_sz = 4
   static create(heap: Heap) {
     const addr = heap.allocate(this.init_sz)
+    heap.set_tag(addr, TAG.STACK_LIST)
+    heap.memory.set_number(0, addr + 1)
+    return new StackListNode(heap, addr)
+  }
+
+  static clone(heap: Heap) {
+    const addr = heap.clone(this.init_sz)
     heap.set_tag(addr, TAG.STACK_LIST)
     heap.memory.set_number(0, addr + 1)
     return new StackListNode(heap, addr)

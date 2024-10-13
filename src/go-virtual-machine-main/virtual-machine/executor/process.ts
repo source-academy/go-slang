@@ -1,6 +1,6 @@
 import * as seedrandom from 'seedrandom'
 
-import { DoneInstruction, Instruction } from '../compiler/instructions'
+import { DoneInstruction, GoInstruction, Instruction } from '../compiler/instructions'
 import { Heap } from '../heap'
 import { ContextNode } from '../heap/types/context'
 import { EnvironmentNode, FrameNode } from '../heap/types/environment'
@@ -63,7 +63,7 @@ export class Process {
 
   start(): ProcessOutput {
     try {
-      const time_quantum = 3
+      const time_quantum = 30
       this.runtime_count = 0
       let completed = false
       const main_context = this.contexts.peek()
@@ -77,10 +77,13 @@ export class Process {
             break
           }
           const pc = this.context.PC()
+          //const prev = this.instructions[this.context.PC()]
           const instr = this.instructions[this.context.incr_PC()]
           // console.log('ctx:', this.context.addr)
           // console.log('Instr:', instr, this.context.PC() - 1)
-          instr.execute(this)
+          //if (this.context.PC() > 1 && !GoInstruction.is(prev)) {
+            instr.execute(this)
+          //}
           // this.context.printOS()
           // this.context.printRTS()
           // this.context.heap.print_freelist()

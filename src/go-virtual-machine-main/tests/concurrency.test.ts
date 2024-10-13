@@ -64,7 +64,7 @@ describe('Concurrency randomised check', () => {
         import "fmt"
         func add(a int){
           fmt.Println(a);
-        }
+        } 
 
         func main() {
           for i := 0; i < 20; i++ {

@@ -5,9 +5,11 @@ import {
   ChannelReqNode,
   ReqInfoNode,
 } from '../../heap/types/channel'
+import { CallRefNode, FuncNode, MethodNode } from '../../heap/types/func'
 import { IntegerNode } from '../../heap/types/primitives'
 
 import { Instruction } from './base'
+import { CallInstruction } from './funcs'
 
 export class ForkInstruction extends Instruction {
   addr: number
@@ -31,6 +33,49 @@ export class ForkInstruction extends Instruction {
         process.debugger.context_id++,
       )
     }
+  }
+}
+
+export class GoInstruction extends Instruction {
+  addr: number
+
+  constructor(public args: number, addr = 0) {
+    super('GO')
+    this.addr = addr
+  }
+
+  override toString(): string {
+    return 'GO ' + this.args.toString() + ' ARGS'
+  }
+
+  set_addr(addr: number) {
+    this.addr = addr
+  }
+
+  static is(instr: Instruction): instr is GoInstruction {
+    return instr.tag === 'GO'
+  }
+
+  override execute(process: Process): void {
+    const func = process.heap.get_value(process.context.peekOSIdx(this.args))
+    if (!(func instanceof FuncNode) && !(func instanceof MethodNode))
+      throw Error('Stack does not contain closure')
+
+    if (func instanceof FuncNode) {
+      process.context.pushDeferStack()
+      process.context.pushRTS(
+        CallRefNode.create(process.context.PC(), process.heap).addr,
+      )
+      process.context.pushRTS(func.E())
+      process.context.set_PC(func.PC())
+    } else {
+      const receiver = func.receiver()
+      receiver.handleMethodCall(process, func.identifier(), this.args)
+    }
+  }
+
+  static fromCallInstruction(call: CallInstruction): GoInstruction {
+    return new GoInstruction(call.args)
   }
 }
 

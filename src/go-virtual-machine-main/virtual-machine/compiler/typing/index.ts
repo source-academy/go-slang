@@ -11,6 +11,9 @@ import {
 } from '../../heap/types/primitives'
 
 export abstract class Type {
+  variadic: any
+  parameters: any
+  results: any
   abstract isPrimitive(): boolean
   abstract toString(): string
   abstract equals(t: Type): boolean

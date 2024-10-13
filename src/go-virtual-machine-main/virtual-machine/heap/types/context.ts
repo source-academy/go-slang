@@ -12,12 +12,25 @@ export class ContextNode extends BaseNode {
   static create(heap: Heap) {
     const addr = heap.allocate(6)
     heap.set_tag(addr, TAG.CONTEXT)
-    heap.memory.set_number(0, addr + 1)
+    heap.memory.set_number(0, addr + 1) // PC
     heap.temp_push(addr)
     for (let i = 2; i <= 5; i++) heap.memory.set_number(-1, addr + i)
-    heap.memory.set_word(StackNode.create(heap).addr, addr + 2)
-    heap.memory.set_word(StackNode.create(heap).addr, addr + 3)
-    heap.memory.set_word(StackNode.create(heap).addr, addr + 5)
+    heap.memory.set_word(StackNode.create(heap).addr, addr + 2) // OS
+    heap.memory.set_word(StackNode.create(heap).addr, addr + 3) // RTS
+    heap.memory.set_word(StackNode.create(heap).addr, addr + 5) // DeferStack
+    heap.temp_pop()
+    return new ContextNode(heap, addr)
+  }
+
+  static clone(heap: Heap) {
+    const addr = heap.allocate(6)
+    heap.set_tag(addr, TAG.CONTEXT)
+    heap.memory.set_number(0, addr + 1) // PC
+    heap.temp_push(addr)
+    for (let i = 2; i <= 5; i++) heap.memory.set_number(-1, addr + i)
+    heap.memory.set_word(StackNode.clone(heap).addr, addr + 2) // OS
+    heap.memory.set_word(StackNode.clone(heap).addr, addr + 3) // RTS
+    heap.memory.set_word(StackNode.clone(heap).addr, addr + 5) // DeferStack
     heap.temp_pop()
     return new ContextNode(heap, addr)
   }
@@ -131,7 +144,7 @@ export class ContextNode extends BaseNode {
   }
 
   fork() {
-    const newContext = ContextNode.create(this.heap)
+    const newContext = ContextNode.clone(this.heap)
     newContext.set_PC(this.PC())
     newContext.set_E(this.E().addr)
     return newContext
