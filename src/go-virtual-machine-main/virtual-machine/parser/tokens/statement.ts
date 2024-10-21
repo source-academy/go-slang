@@ -420,12 +420,9 @@ export class GoStatementToken extends Token {
   override compileUnchecked(compiler: Compiler): Type {
     this.call.compile(compiler)
     const call = compiler.instructions[compiler.instructions.length - 1] as CallInstruction
-    const fork = new ForkInstruction()
     const go_instr = new GoInstruction(call.args)
-    compiler.instructions[compiler.instructions.length - 1] = fork
-    this.pushInstruction(compiler, go_instr)
-    this.pushInstruction(compiler, new DoneInstruction())
-    go_instr.set_addr(compiler.instructions.length - 1)
+    compiler.instructions[compiler.instructions.length - 1] = go_instr
+    go_instr.set_addr(compiler.instructions.length)
     return new NoType()
   }
 }

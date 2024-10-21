@@ -103,7 +103,9 @@ export class StackListNode extends BaseNode {
 
   pop() {
     const sz = this.get_sz()
-    if (sz === 0) throw Error('List Empty!')
+    if (sz === 0) {
+      throw Error('List Empty!')
+    }
     const capacity = this.heap.get_size(this.addr)
     const val = this.get_idx(sz - 1)
     this.set_sz(sz - 1)
@@ -113,7 +115,9 @@ export class StackListNode extends BaseNode {
 
   peek() {
     const sz = this.get_sz()
-    if (sz === 0) throw Error('List Empty!')
+    if (sz === 0) {
+      throw Error('List Empty!')
+    }
     return this.get_idx(sz - 1)
   }
 

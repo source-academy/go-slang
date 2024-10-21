@@ -26,18 +26,24 @@ export class QueueNode extends BaseNode {
     list.push(addr)
     this.heap.memory.set_word(list.addr, this.addr + 1)
   }
+
+  go(addr: number) {
+    const list = this.list()
+    list.push(addr)
+    this.heap.memory.set_word(list.addr, this.addr)
+  }
+
   pop() {
     const list = this.list()
     const res = list.pop()
     this.heap.memory.set_word(list.addr, this.addr + 1)
     return res
   }
-  randompop() {
-    const list = this.list()
-    const res = list.randompop()
-    this.heap.memory.set_word(list.addr, this.addr + 1)
-    return res
+
+  randompeek() {
+    return this.list().randompeek()
   }
+
   peek() {
     return this.list().peek()
   }
@@ -129,19 +135,20 @@ export class QueueListNode extends BaseNode {
     return val
   }
 
-  randompop() {
+  randompeek() {
     const sz = this.get_sz()
     if (sz === 0) throw Error('List Empty!')
-    const node_sz = this.heap.get_size(this.addr)
+    const rand = Math.random()
     const next = Math.floor(this.get_start()
-        + Math.random() * (this.get_end() - this.get_start() + 1))
+        + rand * (this.get_end() - this.get_start() + 1))
     const val = this.get_idx(next)
-    for (var i = next + 1; i < this.get_end(); i++) {
-      this.set_idx(this.get_idx(i), i - 1)
+    if (sz > 1) {
+      for (var i = next; i > this.get_start(); i--) {
+        this.set_idx(this.get_idx(i - 1), i)
+      }
+      this.set_idx(val, this.get_start())
     }
-    this.set_sz(sz - 1)
-    if (4 * (sz + 3) < node_sz) this.resize(node_sz / 2)
-    return val
+    return this.get_idx(this.get_start())
   }
 
   peek() {

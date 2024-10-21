@@ -5,6 +5,7 @@ import {
   ChannelReqNode,
   ReqInfoNode,
 } from '../../heap/types/channel'
+import { ContextNode } from '../../heap/types/context'
 import { CallRefNode, FuncNode, MethodNode } from '../../heap/types/func'
 import { IntegerNode } from '../../heap/types/primitives'
 
@@ -62,13 +63,32 @@ export class GoInstruction extends Instruction {
       throw Error('Stack does not contain closure')
 
     if (func instanceof FuncNode) {
-      process.context.pushDeferStack()
-      process.context.pushRTS(
-        CallRefNode.create(process.context.PC(), process.heap).addr,
-      )
-      process.context.pushRTS(func.E())
-      process.context.set_PC(func.PC())
+      const new_context = process.context.fork()
+      new_context.pushRTS(func.E())
+      new_context.set_PC(func.PC())
+      new_context.pushOS(func.addr)
+      var results = []
+      for (let i = this.args - 1; i >= 0; i--) {
+        const src = process.context.popOS()
+        results[i] = src
+      }
+      for (let i = 0; i < this.args; i++) {
+        // making it "pass by value" instead of by reference
+        const allocate = process.heap.allocate(process.heap.get_size(results[i]))
+        process.heap.copy(allocate, results[i])
+        new_context.pushOS(allocate)
+      }
+      new_context.pushDeferStack()
+      process.contexts.push(new_context.addr)
+
+      if (process.debug_mode) {
+        process.debugger.context_id_map.set(
+          new_context.addr,
+          process.debugger.context_id++,
+        )
+      }
     } else {
+      // Unimplemented yet
       const receiver = func.receiver()
       receiver.handleMethodCall(process, func.identifier(), this.args)
     }

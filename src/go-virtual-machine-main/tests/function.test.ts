@@ -78,7 +78,7 @@ describe('Function Type Checking', () => {
       fmt.Print(u(6));
     }
     `
-    expect(runCode(code, 2048).output).toEqual('6 6')
+    expect(codeRunner(code).output).toEqual('6 6')
   })
 
   test('Function with more than 1 return value to be assigned to variables', () => {
@@ -95,7 +95,7 @@ describe('Function Type Checking', () => {
       fmt.Println(b);
     }
     `
-    expect(runCode(code, 2048).output).toEqual('8\n11\n')
+    expect(codeRunner(code).output).toEqual('8\n11\n')
   })
 
   test('Nested function', () => {
@@ -114,7 +114,7 @@ describe('Function Type Checking', () => {
       fmt.Println(g(f(1)));
     }
     `
-    expect(runCode(code, 2048).output).toEqual('8\n')
+    expect(codeRunner(code).output).toEqual('8\n')
   })
 })
 

@@ -106,8 +106,10 @@ export class ReturnInstruction extends Instruction {
 
   override execute(process: Process): void {
     // Clear remnant environment nodes on the RTS (e.g. from blocks).
+    if (process.context.RTS().sz() === 0) return
     while (!(process.context.peekRTS() instanceof CallRefNode)) {
       process.context.popRTS()
+      if (process.context.RTS().sz() === 0) return
     }
 
     const defers = process.context.peekDeferStack()

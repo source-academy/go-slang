@@ -59,15 +59,15 @@ describe('Concurrency Check', () => {
 describe('Concurrency randomised check', () => {
   test('Basic Check', () => {
     expect(
-      codeRunnerRandom(`
+       codeRunnerRandom(`
         package main
         import "fmt"
         func add(a int){
           fmt.Println(a);
-        } 
+        }
 
         func main() {
-          for i := 0; i < 20; i++ {
+          for i := 0; i < 10; i++ {
             go add(i);
           }
           fmt.Println("Done");

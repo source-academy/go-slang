@@ -144,8 +144,15 @@ export class ContextNode extends BaseNode {
   }
 
   fork() {
-    const newContext = ContextNode.clone(this.heap)
+    const newContext = ContextNode.create(this.heap)
     newContext.set_PC(this.PC())
+    newContext.set_E(this.E().addr)
+    return newContext
+  }
+
+  go(PC: number) {
+    const newContext = ContextNode.clone(this.heap)
+    newContext.set_PC(PC)
     newContext.set_E(this.E().addr)
     return newContext
   }

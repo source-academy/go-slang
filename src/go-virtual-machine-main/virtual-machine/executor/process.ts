@@ -68,7 +68,12 @@ export class Process {
       let completed = false
       const main_context = this.contexts.peek()
       while (this.contexts.sz()) {
+        this.context
+        if (this.deterministic) {
         this.context = new ContextNode(this.heap, this.contexts.peek())
+        } else {
+          this.context = new ContextNode(this.heap, this.contexts.randompeek())
+        }
         let cur_time = 0
         while (!DoneInstruction.is(this.instructions[this.context.PC()])) {
           if (cur_time >= time_quantum) {
@@ -77,18 +82,19 @@ export class Process {
             break
           }
           const pc = this.context.PC()
-          //const prev = this.instructions[this.context.PC()]
           const instr = this.instructions[this.context.incr_PC()]
           // console.log('ctx:', this.context.addr)
           // console.log('Instr:', instr, this.context.PC() - 1)
-          //if (this.context.PC() > 1 && !GoInstruction.is(prev)) {
-            instr.execute(this)
-          //}
+          instr.execute(this)
           // this.context.printOS()
           // this.context.printRTS()
           // this.context.heap.print_freelist()
           this.runtime_count += 1
           cur_time += 1
+          if (this.context.addr !== main_context && this.context.RTS().sz() === 0) {
+            // thread has completed
+            break
+          }
           if (this.debug_mode) this.debugger.generate_state(pc, this.stdout)
           if (this.context.is_blocked()) break
         }
@@ -99,11 +105,7 @@ export class Process {
           completed = true
           break
         }
-        if (this.deterministic) {
-          this.contexts.pop()
-        } else {
-          this.contexts.randompop()
-        }
+        this.contexts.pop()
         // console.log('%c SWITCH!', 'background: #F7FF00; color: #FF0000')
         if (this.runtime_count > 10 ** 5) throw Error('Time Limit Exceeded!')
         // console.log('PC', this.contexts.get_vals())
