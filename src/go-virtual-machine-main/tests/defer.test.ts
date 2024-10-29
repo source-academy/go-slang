@@ -66,4 +66,25 @@ describe('Defer Execution', () => {
     `
     expect(codeRunner(code).output).toEqual('1000\n')
   })
+
+  test('Defer with mutex work with a small number of goroutines', () => {
+    const code = `
+    package main
+    import "fmt"
+    import "sync"
+    func main() {
+      count := 0
+      var mu sync.Mutex
+      for i := 0; i < 10; i++ {
+        go func() {
+          mu.Lock()
+          defer mu.Unlock()
+          count++
+          fmt.Println(count)
+        }()
+      }
+    }
+    `
+    expect(codeRunner(code).output).toEqual('1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n')
+  })
 })

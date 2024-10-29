@@ -102,4 +102,25 @@ describe('Wait Group Execution', () => {
     `
     expect(codeRunner(code).output).toEqual('Done\n')
   })
+
+  test('Mutex works with multiple goroutines', () => {
+    const code = `
+    package main
+    import "fmt"
+    import "sync"
+    func main() {
+      count := 0
+      var mu sync.Mutex
+      for i := 0; i < 10; i++ {
+        go func() {
+          mu.Lock()
+          count++
+          fmt.Println(count)
+          mu.Unlock()
+        }()
+      }
+    }
+    `
+    expect(codeRunner(code).output).toEqual('1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n')
+  })
 })
