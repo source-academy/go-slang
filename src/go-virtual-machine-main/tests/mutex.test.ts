@@ -42,6 +42,20 @@ describe('Mutex Type Checking', () => {
       'Too many arguments in function call\nhave (int64, int64)\nwant ()',
     )
   })
+
+  test('Calling invalid functions should fail.', () => {
+    const code = `
+    package main
+    import "sync"
+    func main() {
+      var a sync.Mutex
+      a.Add(1)
+    }
+    `
+    expect(codeRunner(code).error?.message).toEqual(
+      '.Add undefined (type sync.Mutex has no field or method Add)',
+    )
+  })
 })
 
 describe('Wait Group Execution', () => {
