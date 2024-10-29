@@ -23,7 +23,7 @@ interface ProgramData {
 const runCode = (
   source_code: string,
   heapsize: number,
-  deterministic = false,
+  deterministic = true,
   visualisation = true,
 ): ProgramData => {
   // Parsing.

@@ -75,7 +75,29 @@ describe('Wait Group Execution', () => {
     )
   })
 
-  test('Waiting works.', () => {
+  test('Waiting works with a small number of goroutines.', () => {
+    const code = `
+    package main
+    import "fmt"
+    import "sync"
+    func main() {
+      count := 0
+      var wg sync.WaitGroup
+      for i := 0; i < 30; i++ {
+        wg.Add(1)
+        go func() {
+          count++
+          wg.Done()
+        }()
+      }
+      wg.Wait()
+      fmt.Println(count)
+    }
+    `
+    expect(codeRunner(code).output).toEqual('30\n')
+  })
+
+  test('Waiting works with a large number of goroutines.', () => {
     const code = `
     package main
     import "fmt"

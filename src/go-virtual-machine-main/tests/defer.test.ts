@@ -23,7 +23,29 @@ describe('Defer Execution', () => {
     expect(mainRunner(code).output).toEqual('hello\nworld\n!!!\n')
   })
 
-  test('Defer with wait groups work', () => {
+  test('Defer with wait groups work with a small number of goroutines', () => {
+    const code = `
+    package main
+    import "fmt"
+    import "sync"
+    func main() {
+      count := 0
+      var wg sync.WaitGroup
+      for i := 0; i < 30; i++ {
+        wg.Add(1)
+        go func() {
+          defer wg.Done()
+          count++
+        }()
+      }
+      wg.Wait()
+      fmt.Println(count)
+    }
+    `
+    expect(codeRunner(code).output).toEqual('30\n')
+  })
+
+  test('Defer with wait groups work with a large number of goroutines', () => {
     const code = `
     package main
     import "fmt"

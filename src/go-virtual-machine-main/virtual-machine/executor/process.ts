@@ -68,7 +68,6 @@ export class Process {
       let completed = false
       const main_context = this.contexts.peek()
       while (this.contexts.sz()) {
-        this.context
         if (this.deterministic) {
         this.context = new ContextNode(this.heap, this.contexts.peek())
         } else {
@@ -115,16 +114,10 @@ export class Process {
       if (!completed && !this.heap.blocked_contexts.is_empty())
         throw Error('all goroutines are asleep - deadlock!')
 
-      if (!completed) {
-        console.log("D")
-      }
-      if (!this.heap.blocked_contexts.is_empty()) {
-        console.log("F")
-      }
-
       return {
         stdout: this.stdout,
-        visual_data: this.debug_mode ? this.debugger.data : [],
+        visual_data: [],
+        // visual_data: this.debug_mode ? this.debugger.data : [],
       }
     } catch (err) {
       console.warn(err)
