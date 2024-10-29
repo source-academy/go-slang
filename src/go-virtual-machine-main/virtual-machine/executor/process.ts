@@ -96,7 +96,9 @@ export class Process {
             break
           }
           if (this.debug_mode) this.debugger.generate_state(pc, this.stdout)
-          if (this.context.is_blocked()) break
+          if (this.context.is_blocked()) {
+            break
+          }
         }
         if (
           DoneInstruction.is(this.instructions[this.context.PC()]) &&
@@ -111,7 +113,14 @@ export class Process {
         // console.log('PC', this.contexts.get_vals())
       }
       if (!completed && !this.heap.blocked_contexts.is_empty())
-        throw Error('All threads are blocked!')
+        throw Error('all goroutines are asleep - deadlock!')
+
+      if (!completed) {
+        console.log("D")
+      }
+      if (!this.heap.blocked_contexts.is_empty()) {
+        console.log("F")
+      }
 
       return {
         stdout: this.stdout,
