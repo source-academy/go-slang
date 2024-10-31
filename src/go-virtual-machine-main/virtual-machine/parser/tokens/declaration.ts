@@ -1,5 +1,4 @@
 import { env } from 'process'
-
 import { Compiler } from '../../compiler'
 import {
   LoadVariableInstruction,
@@ -8,7 +7,7 @@ import {
 import { NoType, ReturnType, Type } from '../../compiler/typing'
 
 import { Token, TokenLocation } from './base'
-import { ExpressionToken } from './expressions'
+import { ExpressionToken, PrimaryExpressionModifierToken, PrimaryExpressionToken } from './expressions'
 import { IdentifierToken } from './identifier'
 import { FunctionLiteralToken } from './literals'
 import { TypeToken } from './type'
