@@ -118,12 +118,7 @@ export class DeferFuncNode extends BaseNode {
       stack.push(allocate)
     }
     process.heap.memory.set_word(stack.addr, addr + 2)
-    
-    const sz = stack.sz()
-    const sz2 = argCount
-
     process.heap.memory.set_word(process.context.popOS(), addr + 1)
-
     process.heap.temp_pop()
     return new DeferFuncNode(process.heap, addr)
   }

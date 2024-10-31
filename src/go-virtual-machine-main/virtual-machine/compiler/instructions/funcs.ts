@@ -92,7 +92,6 @@ export class DeferredCallInstruction extends Instruction {
       deferNode = DeferMethodNode.create(this.args, process)
     }
     process.context.peekDeferStack().push(deferNode.addr)
-    const sz = process.context.peekDeferStack().sz()
   }
 }
 
@@ -113,7 +112,6 @@ export class ReturnInstruction extends Instruction {
     }
 
     const defers = process.context.peekDeferStack()
-    const sz2 = defers.sz()
     if (defers.sz()) {
       // There are still deferred calls to be carried out.
       const deferNode = process.heap.get_value(defers.pop())
@@ -127,8 +125,6 @@ export class ReturnInstruction extends Instruction {
       // Push everything back onto OS before resuming the call.
       if (deferNode instanceof DeferFuncNode) {
         process.context.pushOS(deferNode.funcAddr())
-        const sz = deferNode.stack().sz()
-        const arg = deferNode.argCount()
         while (deferNode.stack().sz()) {
           process.context.pushOS(deferNode.stack().pop())
         }

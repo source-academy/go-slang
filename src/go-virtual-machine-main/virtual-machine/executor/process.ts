@@ -85,7 +85,6 @@ export class Process {
           // console.log('ctx:', this.context.addr)
           // console.log('Instr:', instr, this.context.PC() - 1)
           instr.execute(this)
-          const sz = this.context.OS().sz()
           // this.context.printOS()
           // this.context.printRTS()
           // this.context.heap.print_freelist()
