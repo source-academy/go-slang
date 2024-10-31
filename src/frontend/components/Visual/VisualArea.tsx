@@ -15,7 +15,7 @@ import {
   useColorModeValue,
 } from '@chakra-ui/react'
 
-import { ContextInfo } from '../../../virtual-machine/executor/debugger'
+import { ContextInfo } from '../../../go-virtual-machine-main/virtual-machine/executor/debugger'
 import { useExecutionStore } from '../../stores'
 
 import { addEnvs, EnvNode, Nodes } from './EnvNode'

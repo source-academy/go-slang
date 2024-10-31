@@ -5,8 +5,7 @@ import {
   ChannelReqNode,
   ReqInfoNode,
 } from '../../heap/types/channel'
-import { ContextNode } from '../../heap/types/context'
-import { CallRefNode, FuncNode, MethodNode } from '../../heap/types/func'
+import { FuncNode, MethodNode } from '../../heap/types/func'
 import { IntegerNode } from '../../heap/types/primitives'
 
 import { Instruction } from './base'
@@ -67,7 +66,7 @@ export class GoInstruction extends Instruction {
       new_context.pushRTS(func.E())
       new_context.set_PC(func.PC())
       new_context.pushOS(func.addr)
-      var results = []
+      const results = []
       for (let i = this.args - 1; i >= 0; i--) {
         const src = process.context.popOS()
         results[i] = src
@@ -80,6 +79,7 @@ export class GoInstruction extends Instruction {
       }
       new_context.pushDeferStack()
       process.contexts.push(new_context.addr)
+      //process.context.popOS()
 
       if (process.debug_mode) {
         process.debugger.context_id_map.set(
@@ -88,7 +88,6 @@ export class GoInstruction extends Instruction {
         )
       }
     } else {
-      // Unimplemented yet
       const receiver = func.receiver()
       receiver.handleMethodCall(process, func.identifier(), this.args)
     }

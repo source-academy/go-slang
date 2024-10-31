@@ -88,7 +88,7 @@ describe('Wait Group Execution', () => {
     )
   })
 
-  test('Mutex works.', () => {
+  test('Mutex works without unlocking.', () => {
     const code = `
     package main
     import "fmt"
@@ -102,7 +102,7 @@ describe('Wait Group Execution', () => {
     expect(codeRunner(code).output).toEqual('Done\n')
   })
 
-  test('Mutex works.', () => {
+  test('Mutex works with unlocking.', () => {
     const code = `
     package main
     import "fmt"

@@ -201,9 +201,9 @@ export class ParameterType extends Type {
 
 export class FunctionType extends Type {
   constructor(
-    public parameters: ParameterType[],
-    public results: ReturnType,
-    public variadic: boolean = false,
+    public override parameters: ParameterType[],
+    public override results: ReturnType,
+    public override variadic: boolean = false,
   ) {
     super()
   }

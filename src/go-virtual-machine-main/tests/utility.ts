@@ -33,3 +33,5 @@ export const codeRunner = (code: string) => {
 export const codeRunnerRandom = (code: string) => {
   return runCode(code, 2048, false)
 }
+
+export { runCode }

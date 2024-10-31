@@ -13,6 +13,7 @@ import {
   MethodNode,
 } from './types/func'
 import { LinkedListEntryNode, LinkedListNode } from './types/linkedlist'
+import { MutexNode } from './types/mutex'
 import {
   BoolNode,
   FloatNode,
@@ -25,7 +26,6 @@ import { QueueListNode, QueueNode } from './types/queue'
 import { StackListNode, StackNode } from './types/stack'
 import { WaitGroupNode } from './types/waitGroup'
 import { Memory } from './memory'
-import { MutexNode } from './types/mutex'
 
 export enum TAG {
   UNKNOWN = 0,

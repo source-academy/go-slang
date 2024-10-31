@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'vitest'
 
-import { codeRunner, codeRunnerRandom, mainRunner } from './utility'
+import { codeRunner, mainRunner } from './utility'
 
 describe('Concurrency Check', () => {
-  test('Basic Check', () => {
+  test('Basic Check for small loops', () => {
     expect(
       codeRunner(`
         package main
@@ -21,7 +21,7 @@ describe('Concurrency Check', () => {
       `).output,
     ).toEqual('0\n1\n2\n3\n4\n5\n6\n7\n8\n9\nDone\n')
   })
-  test('Basic Check', () => {
+  test('Basic Check for large loops', () => {
     expect(
       mainRunner(`
           a := 0

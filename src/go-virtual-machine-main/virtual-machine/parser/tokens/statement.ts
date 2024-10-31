@@ -4,9 +4,7 @@ import {
   BlockInstruction,
   CallInstruction,
   DeferredCallInstruction,
-  DoneInstruction,
   ExitBlockInstruction,
-  ForkInstruction,
   GoInstruction,
   LoadChannelReqInstruction,
   LoadConstantInstruction,
@@ -24,12 +22,10 @@ import {
 import {
   BoolType,
   ChannelType,
-  FunctionType,
   Int64Type,
   NoType,
   ReturnType,
   Type,
-  TypeUtility,
 } from '../../compiler/typing'
 
 import { Token, TokenLocation } from './base'
@@ -39,7 +35,6 @@ import {
   CallToken,
   EmptyExpressionToken,
   ExpressionToken,
-  PrimaryExpressionModifierToken,
   PrimaryExpressionToken,
 } from './expressions'
 import { IdentifierToken } from './identifier'

@@ -1,4 +1,5 @@
 import { Heap } from '../../heap'
+import { MutexNode } from '../../heap/types/mutex'
 import { WaitGroupNode } from '../../heap/types/waitGroup'
 import {
   LoadConstantInstruction,
@@ -17,7 +18,6 @@ import {
   StringType,
   Type,
 } from '.'
-import { MutexNode } from '../../heap/types/mutex'
 
 export class WaitGroupType extends Type {
   override isPrimitive(): boolean {

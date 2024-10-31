@@ -10,8 +10,8 @@ import {
 } from '@chakra-ui/react'
 import Cookies from 'js-cookie'
 
-import { runCode } from '../../virtual-machine'
-import { CompileError } from '../../virtual-machine/compiler'
+import { runCode } from '../../go-virtual-machine-main/tests/utility'
+import { CompileError } from '../../go-virtual-machine-main/virtual-machine/compiler/index'
 import {
   CodeIDE,
   CodeIDEButtons,

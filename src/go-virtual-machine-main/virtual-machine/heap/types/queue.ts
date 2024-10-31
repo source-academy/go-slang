@@ -143,7 +143,7 @@ export class QueueListNode extends BaseNode {
         + rand * (this.get_end() - this.get_start() + 1))
     const val = this.get_idx(next)
     if (sz > 1) {
-      for (var i = next; i > this.get_start(); i--) {
+      for (let i = next; i > this.get_start(); i--) {
         this.set_idx(this.get_idx(i - 1), i)
       }
       this.set_idx(val, this.get_start())

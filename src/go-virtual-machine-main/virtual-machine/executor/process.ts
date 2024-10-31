@@ -1,6 +1,6 @@
 import * as seedrandom from 'seedrandom'
 
-import { DoneInstruction, GoInstruction, Instruction } from '../compiler/instructions'
+import { DoneInstruction, Instruction } from '../compiler/instructions'
 import { Heap } from '../heap'
 import { ContextNode } from '../heap/types/context'
 import { EnvironmentNode, FrameNode } from '../heap/types/environment'
@@ -85,6 +85,7 @@ export class Process {
           // console.log('ctx:', this.context.addr)
           // console.log('Instr:', instr, this.context.PC() - 1)
           instr.execute(this)
+          const sz = this.context.OS().sz()
           // this.context.printOS()
           // this.context.printRTS()
           // this.context.heap.print_freelist()
@@ -116,8 +117,7 @@ export class Process {
 
       return {
         stdout: this.stdout,
-        visual_data: [],
-        // visual_data: this.debug_mode ? this.debugger.data : [],
+        visual_data: this.debug_mode ? this.debugger.data : [],
       }
     } catch (err) {
       console.warn(err)
