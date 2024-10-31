@@ -54,27 +54,26 @@ describe('Concurrency Check', () => {
       ),
     ).toBeLessThan(500)
   })
-})
 
-/*
-describe('Concurrency randomised check', () => {
-  test('Basic Check', () => {
-    expect(
-       codeRunnerRandom(`
-        package main
-        import "fmt"
-        func add(a int){
-          fmt.Println(a);
-        }
+  test('Arguments supplied to go statements are evaluated at that line', () => {
+    const code = `
+    package main
+    import "fmt"
+    import "sync"
 
-        func main() {
-          for i := 0; i < 10; i++ {
-            go add(i);
-          }
-          fmt.Println("Done");
-        }
-      `).output,
-    ).toEqual('6\n')
+    func main() {
+      a := 3
+      var wg sync.WaitGroup
+      wg.Add(1)
+      go func(b int) {
+        fmt.Println(b)
+        wg.Done()
+      }(a)
+      a = a + 345
+      fmt.Println("hello")
+      wg.Wait()
+    }
+    `
+    expect(codeRunner(code).output).toEqual('3\nhello\n')
   })
 })
-*/

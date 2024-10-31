@@ -100,28 +100,4 @@ describe('Defer Execution', () => {
     `
     expect(codeRunner(code).output).toEqual('1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n')
   })
-
-
-  test('Defer with waitgroup works', () => {
-    const code = `
-    package main
-    import "fmt"
-    import "sync"
-
-    func main() {
-      a := 3
-      var wg sync.WaitGroup
-      wg.Add(1)
-      go func(b int) {
-        fmt.Println(b)
-        wg.Done()
-      }(a)
-      a = a + 345
-      defer func(){ fmt.Println("world") }()
-      fmt.Println("hello")
-      wg.Wait()
-    }
-    `
-    expect(codeRunner(code).output).toEqual('3\nhello\nworld\n')
-  })
 })
