@@ -23,7 +23,7 @@ describe('Defer Execution', () => {
     expect(mainRunner(code).output).toEqual('hello\nworld\n!!!\n')
   })
 
-  test('Defer argument is evaluated at that line', () => {
+  test('Defer argument is evaluated at that line with anonymous function', () => {
     const code = `
     a := 3
     defer func(b int) {
@@ -34,6 +34,20 @@ describe('Defer Execution', () => {
     fmt.Println("hello")
     `
     expect(mainRunner(code).output).toEqual('hello\nworld\n3\n')
+  })
+
+  test('Defer argument is evaluated at that line with calling a pre-declared function directly', () => {
+    const code = `
+    a := 3
+    defer func(b int) {
+      fmt.Println(b)
+    }(a)
+    a = a + 3
+    defer fmt.Println(a)
+    a = a + 345
+    fmt.Println("hello")
+    `
+    expect(mainRunner(code).output).toEqual('hello\n6\n3\n')
   })
 
   test('Defer with wait groups work with a small number of goroutines', () => {

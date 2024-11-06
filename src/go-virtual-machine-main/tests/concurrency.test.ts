@@ -55,7 +55,8 @@ describe('Concurrency Check', () => {
     ).toBeLessThan(500)
   })
 
-  test('Arguments supplied to go statements are evaluated at that line', () => {
+  test(`Arguments supplied to go statements are evaluated at that line
+    with calling an anonymous function`, () => {
     const code = `
     package main
     import "fmt"
@@ -75,5 +76,24 @@ describe('Concurrency Check', () => {
     }
     `
     expect(codeRunner(code).output).toEqual('3\nhello\n')
+  })
+
+  test(`Arguments supplied to go statements are evaluated at that line
+    with calling a pre-declared function`, () => {
+    const code = `
+    package main
+    import "fmt"
+    import "sync"
+
+    func main() {
+      a := 3
+      go fmt.Println(a)
+      a = a + 345
+      go fmt.Println(a)
+      a = a + 1000
+      fmt.Println("hello")
+    }
+    `
+    expect(codeRunner(code).output).toEqual('3\n348\nhello\n')
   })
 })

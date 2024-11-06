@@ -143,4 +143,51 @@ describe('If statement syntax check', () => {
       `).error?.type,
     ).toEqual("parse")
   })
+  test(`Declaring hexadecimal should parse correctly`, () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        func main() {
+          a := 0x789
+          b := 0Xfae
+          fmt.Println(a)
+          fmt.Println(b)
+        }
+      `).output,
+    ).toEqual("1929\n4014\n")
+  })
+
+  test(`Declaring octal should parse correctly`, () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        func main() {
+          a := 0o735
+          b := 0O170
+          fmt.Println(a)
+          fmt.Println(b)
+        }
+      `).output,
+    ).toEqual("477\n120\n")
+  })
+
+  test(`Declaring binary should parse correctly`, () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        func main() {
+          a := 0b111111
+          b := 0B101001
+          fmt.Println(a)
+          fmt.Println(b)
+        }
+      `).output,
+    ).toEqual("63\n41\n")
+  })
 })

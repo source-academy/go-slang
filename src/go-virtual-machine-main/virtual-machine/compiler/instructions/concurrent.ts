@@ -79,7 +79,6 @@ export class GoInstruction extends Instruction {
       }
       new_context.pushDeferStack()
       process.contexts.push(new_context.addr)
-      //process.context.popOS()
 
       if (process.debug_mode) {
         process.debugger.context_id_map.set(
@@ -87,7 +86,10 @@ export class GoInstruction extends Instruction {
           process.debugger.context_id++,
         )
       }
+      process.context.popOS()
     } else {
+      // create the frame for function, put arguments in frame
+      // func is a methodnode
       const receiver = func.receiver()
       receiver.handleMethodCall(process, func.identifier(), this.args)
     }

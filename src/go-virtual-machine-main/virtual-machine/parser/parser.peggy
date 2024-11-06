@@ -101,15 +101,15 @@ identifier = iden:$(letter (letter / unicode_digit)*) &{ return IdentifierToken.
              { return new IdentifierToken(location(), iden) }
 
 //* Integer Literals
-int_lit = number:binary_lit  { return IntegerLiteralToken.fromSource(location(), number, 2) } /
-          number:octal_lit   { return IntegerLiteralToken.fromSource(location(), number, 8) } /
-          number:decimal_lit { return IntegerLiteralToken.fromSource(location(), number, 10) } /
-          number:hex_lit     { return IntegerLiteralToken.fromSource(location(), number, 16) } 
-binary_lit  = "0" "b" "_"? $binary_digits
-octal_lit   = "0" [oO]? "_"? $octal_digits
+int_lit = number:binary_lit  { return IntegerLiteralToken.fromSource(location(), number[3], 2) }  /
+          number:octal_lit   { return IntegerLiteralToken.fromSource(location(), number[3], 8) }  /
+          number:hex_lit     { return IntegerLiteralToken.fromSource(location(), number[3], 16) } /
+          number:decimal_lit { return IntegerLiteralToken.fromSource(location(), number, 10) }
+binary_lit  = "0" [bB] "_"? $binary_digits+
+octal_lit   = "0" [oO] "_"? $octal_digits+
 decimal_lit = $([1-9] "_"? decimal_digits?) /
               "0"
-hex_lit     = "0" [xX] "_"? $hex_digits
+hex_lit     = "0" [xX] "_"? $hex_digits+
 
 binary_digits  = binary_digit  ("_"? binary_digit)*
 octal_digits   = octal_digit   ("_"? octal_digit)*
