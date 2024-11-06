@@ -62,7 +62,7 @@ export class GoInstruction extends Instruction {
       throw Error('Stack does not contain closure')
 
     if (func instanceof FuncNode) {
-      const new_context = process.context.fork()
+      const new_context = process.context.go()
       new_context.pushRTS(func.E())
       new_context.set_PC(func.PC())
       new_context.pushOS(func.addr)
