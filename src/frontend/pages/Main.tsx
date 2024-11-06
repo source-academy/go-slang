@@ -145,7 +145,7 @@ export const Main = () => {
         error,
         output: newOutput,
         visualData,
-      } = runCode(code, heapsize, visualMode)
+      } = runCode(code, heapsize, true, visualMode)
       if (error) {
         const errorTitle = {
           parse: 'Syntax Error',
