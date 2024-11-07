@@ -253,7 +253,7 @@ VarSpec = identifiers:IdentifierList _ rest:(
 
 //* Short Variable Declarations
 ShortVarDecl = identifiers:IdentifierList _ ":=" _ expressions:ExpressionList
-               { return new ShortVariableDeclarationToken(location(), identifiers, expressions) }
+               { return new ShortVariableDeclarationToken(location(), identifiers, undefined, expressions) }
 
 //* Function Declarations
 // Note: TypeParameters? is omitted from FunctionDecl as we do not support generics.

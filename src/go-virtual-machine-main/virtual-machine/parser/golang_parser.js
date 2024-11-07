@@ -440,7 +440,7 @@ function peg$parse(input, options) {
   var peg$f31 = function(identifiers, varType, expressions) { return {varType, expressions} };
   var peg$f32 = function(identifiers, expressions) { return {varType: undefined, expressions} };
   var peg$f33 = function(identifiers, rest) { return new VariableDeclarationToken(location(), identifiers, rest.varType, rest.expressions) };
-  var peg$f34 = function(identifiers, expressions) { return new ShortVariableDeclarationToken(location(), identifiers, expressions) };
+  var peg$f34 = function(identifiers, expressions) { return new ShortVariableDeclarationToken(location(), identifiers, undefined, expressions) };
   var peg$f35 = function(name, signature, body) { return new FunctionDeclarationToken(location(), name, new FunctionLiteralToken(location(), signature, body)) };
   var peg$f36 = function(pkg, iden) { return new QualifiedIdentifierToken(location(), pkg.identifier, iden.identifier) };
   var peg$f37 = function(type, value) { return new ArrayLiteralToken(location(), type, value) };

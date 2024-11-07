@@ -36,6 +36,17 @@ describe('Channel Tests', () => {
     ).toEqual('9\n')
   })
 
+  test('Input type mismatch should throw error', () => {
+    expect(
+      mainRunner(`
+      c1 := make(chan int)
+      go func() {
+          c1<- "Hello"
+      }()
+      fmt.Println(4 + <- c1)`).error?.type,
+    ).toEqual('compile')
+  })
+
   test('Channels Select Case Test', () => {
     const strs = mainRunner(`
         c1 := make(chan int)

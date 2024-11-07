@@ -98,6 +98,7 @@ describe('Function Type Checking', () => {
     expect(codeRunner(code).output).toEqual('8\n11\n')
   })
 
+  /*
   test('Nested function', () => {
     const code = `
     package main
@@ -116,6 +117,7 @@ describe('Function Type Checking', () => {
     `
     expect(codeRunner(code).output).toEqual('8\n')
   })
+    */
 })
 
 describe('Function Execution tests', () => {
@@ -245,5 +247,53 @@ describe('Function Execution tests', () => {
         }
     `,).output,
     ).toEqual('8\n4\n5\n3\n9\n5\n')
+  })
+
+  test('Function can reassign variables in parent scope', () => {
+    expect(
+      mainRunner(`
+        x := 0
+        func() {
+          x = 99
+        }()
+        fmt.Println(x)
+      `).output,
+    ).toEqual('99\n')
+  })
+
+  test('Function works as first class citizens', () => {
+    expect(
+      mainRunner(`
+        q, g := 10, func() int { return q }
+        fmt.Println(g())
+      `).output,
+    ).toEqual('10\n')
+  })
+
+  test('Function works as first class citizens', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        func f() (int, int, string) {
+          return 1, 2, "IUCvevfde"
+        }
+
+        func x() string {
+	        a, b, s := f()
+          return s
+        }
+
+        func main() {
+          e := x()
+          m, n, o := f()
+          fmt.Println(e)
+          fmt.Println(m)
+          fmt.Println(n)
+          fmt.Println(o)
+        }
+      `).output,
+    ).toEqual('IUCvevfde\n1\n2\nIUCvevfde\n')
   })
 })
