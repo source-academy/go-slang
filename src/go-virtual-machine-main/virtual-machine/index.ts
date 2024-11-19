@@ -23,6 +23,7 @@ interface ProgramData {
 const runCode = (
   source_code: string,
   heapsize: number,
+  deterministic = true,
   visualisation = true,
 ): ProgramData => {
   // Parsing.
@@ -71,6 +72,7 @@ const runCode = (
     instructions,
     heapsize,
     symbols,
+    deterministic,
     visualisation,
   )
   if (result.errorMessage) {

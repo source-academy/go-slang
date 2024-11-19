@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { runCode } from '../virtual-machine'
+import { codeRunner } from './utility'
 
 describe('Comments Tests', () => {
   test('Comments are correctly ignored', () => {
@@ -22,6 +22,6 @@ describe('Comments Tests', () => {
         fmt.Println(/* comment in middle of code */a)
     }
     `
-    expect(runCode(code, 2048).output).toEqual('3\n')
+    expect(codeRunner(code).output).toEqual('3\n')
   })
 })

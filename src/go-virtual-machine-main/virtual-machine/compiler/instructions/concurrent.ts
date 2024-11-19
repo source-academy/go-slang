@@ -5,9 +5,11 @@ import {
   ChannelReqNode,
   ReqInfoNode,
 } from '../../heap/types/channel'
+import { FuncNode, MethodNode } from '../../heap/types/func'
 import { IntegerNode } from '../../heap/types/primitives'
 
 import { Instruction } from './base'
+import { CallInstruction } from './funcs'
 
 export class ForkInstruction extends Instruction {
   addr: number
@@ -31,6 +33,70 @@ export class ForkInstruction extends Instruction {
         process.debugger.context_id++,
       )
     }
+  }
+}
+
+export class GoInstruction extends Instruction {
+  addr: number
+
+  constructor(public args: number, addr = 0) {
+    super('GO')
+    this.addr = addr
+  }
+
+  override toString(): string {
+    return 'GO ' + this.args.toString() + ' ARGS'
+  }
+
+  set_addr(addr: number) {
+    this.addr = addr
+  }
+
+  static is(instr: Instruction): instr is GoInstruction {
+    return instr.tag === 'GO'
+  }
+
+  override execute(process: Process): void {
+    const func = process.heap.get_value(process.context.peekOSIdx(this.args))
+    if (!(func instanceof FuncNode) && !(func instanceof MethodNode))
+      throw Error('Stack does not contain closure')
+
+    if (func instanceof FuncNode) {
+      const new_context = process.context.go()
+      new_context.pushRTS(func.E())
+      new_context.set_PC(func.PC())
+      new_context.pushOS(func.addr)
+      const results = []
+      for (let i = this.args - 1; i >= 0; i--) {
+        const src = process.context.popOS()
+        results[i] = src
+      }
+      for (let i = 0; i < this.args; i++) {
+        // making it "pass by value" instead of by reference
+        const allocate = process.heap.allocate(process.heap.get_size(results[i]))
+        process.heap.copy(allocate, results[i])
+        new_context.pushOS(allocate)
+      }
+      new_context.pushDeferStack()
+      process.contexts.push(new_context.addr)
+
+      if (process.debug_mode) {
+        process.debugger.context_id_map.set(
+          new_context.addr,
+          process.debugger.context_id++,
+        )
+      }
+      process.context.popOS()
+    } else {
+      // create the frame for function, put arguments in frame
+      // func is a methodnode
+      const receiver = func.receiver()
+      receiver.handleMethodCall(process, func.identifier(), this.args)
+    }
+  }
+
+  static fromCallInstruction(call: CallInstruction): GoInstruction {
+    return new GoInstruction(call.args)
   }
 }
 

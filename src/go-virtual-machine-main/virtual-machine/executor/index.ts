@@ -7,9 +7,10 @@ const execute_instructions = (
   instrs: Instruction[],
   heapsize: number,
   symbols: (TokenLocation | null)[],
+  deterministic: boolean,
   visualisation = false,
 ) => {
-  const process = new Process(instrs, heapsize, symbols, visualisation)
+  const process = new Process(instrs, heapsize, symbols, deterministic, visualisation)
   return process.start()
 }
 

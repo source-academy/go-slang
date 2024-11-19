@@ -25,10 +25,12 @@ export class Process {
   debug_mode: boolean
   debugger: Debugger
   runtime_count = 0
+  deterministic: boolean
   constructor(
     instructions: Instruction[],
     heapsize: number,
     symbols: (TokenLocation | null)[],
+    deterministic: boolean,
     visualmode = false,
   ) {
     this.instructions = instructions
@@ -47,6 +49,7 @@ export class Process {
     this.context.set_E(base_env.addr)
     const randomSeed = Math.random().toString(36).substring(2)
     this.generator = seedrandom.default(randomSeed)
+    this.deterministic = deterministic
 
     this.debug_mode = visualmode
     this.debugger = new Debugger(this.heap, this.instructions, symbols)
@@ -65,7 +68,11 @@ export class Process {
       let completed = false
       const main_context = this.contexts.peek()
       while (this.contexts.sz()) {
+        if (this.deterministic) {
         this.context = new ContextNode(this.heap, this.contexts.peek())
+        } else {
+          this.context = new ContextNode(this.heap, this.contexts.randompeek())
+        }
         let cur_time = 0
         while (!DoneInstruction.is(this.instructions[this.context.PC()])) {
           if (cur_time >= time_quantum) {
@@ -83,8 +90,14 @@ export class Process {
           // this.context.heap.print_freelist()
           this.runtime_count += 1
           cur_time += 1
+          if (this.context.addr !== main_context && this.context.RTS().sz() === 0) {
+            // thread has completed
+            break
+          }
           if (this.debug_mode) this.debugger.generate_state(pc, this.stdout)
-          if (this.context.is_blocked()) break
+          if (this.context.is_blocked()) {
+            break
+          }
         }
         if (
           DoneInstruction.is(this.instructions[this.context.PC()]) &&
@@ -99,7 +112,7 @@ export class Process {
         // console.log('PC', this.contexts.get_vals())
       }
       if (!completed && !this.heap.blocked_contexts.is_empty())
-        throw Error('All threads are blocked!')
+        throw Error('all goroutines are asleep - deadlock!')
 
       return {
         stdout: this.stdout,

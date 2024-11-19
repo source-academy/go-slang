@@ -1,4 +1,5 @@
 import { Heap } from '../../heap'
+import { MutexNode } from '../../heap/types/mutex'
 import { WaitGroupNode } from '../../heap/types/waitGroup'
 import {
   LoadConstantInstruction,
@@ -52,6 +53,35 @@ export class WaitGroupType extends Type {
   }
 }
 
+export class MutexType extends Type {
+  override isPrimitive(): boolean {
+    return false
+  }
+
+  override toString(): string {
+    return `sync.Mutex`
+  }
+
+  override equals(t: Type): boolean {
+    return t instanceof MutexType
+  }
+
+  override defaultNodeCreator(): (heap: Heap) => number {
+    return (heap) => MutexNode.default(heap).addr
+  }
+
+  override select(identifier: string): Type {
+    if (identifier === 'Lock') {
+      return new FunctionType([], new ReturnType([]))
+    } else if (identifier === 'Unlock') {
+      return new FunctionType([], new ReturnType([]))
+    }
+    throw new Error(
+      `.${identifier} undefined (type ${this} has no field or method ${identifier})`,
+    )
+  }
+}
+
 /**
  * Builtin packages are functions that take in a single `compiler` argument,
  * and does all the package setup within itself.
@@ -77,6 +107,7 @@ export const builtinPackages = {
   sync: (compiler: Compiler): Type => {
     const pkg = new PackageType('sync', {
       WaitGroup: new WaitGroupType(),
+      Mutex: new MutexType(),
     })
     compiler.type_environment.addType('sync', pkg)
     return pkg

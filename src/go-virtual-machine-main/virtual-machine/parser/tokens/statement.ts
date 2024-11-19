@@ -4,9 +4,8 @@ import {
   BlockInstruction,
   CallInstruction,
   DeferredCallInstruction,
-  DoneInstruction,
   ExitBlockInstruction,
-  ForkInstruction,
+  GoInstruction,
   LoadChannelReqInstruction,
   LoadConstantInstruction,
   PopInstruction,
@@ -405,7 +404,6 @@ export class GoStatementToken extends Token {
     super('go', sourceLocation)
   }
 
-  /** Used in the parser to only parse function calls */
   static isValidGoroutine(expression: PrimaryExpressionToken) {
     return (
       expression.rest &&
@@ -415,11 +413,11 @@ export class GoStatementToken extends Token {
   }
 
   override compileUnchecked(compiler: Compiler): Type {
-    const fork_instr = new ForkInstruction()
-    this.pushInstruction(compiler, fork_instr)
     this.call.compile(compiler)
-    this.pushInstruction(compiler, new DoneInstruction())
-    fork_instr.set_addr(compiler.instructions.length)
+    const call = compiler.instructions[compiler.instructions.length - 1] as CallInstruction
+    const go_instr = new GoInstruction(call.args)
+    compiler.instructions[compiler.instructions.length - 1] = go_instr
+    go_instr.set_addr(compiler.instructions.length)
     return new NoType()
   }
 }

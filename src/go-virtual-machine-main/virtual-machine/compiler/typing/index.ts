@@ -11,6 +11,9 @@ import {
 } from '../../heap/types/primitives'
 
 export abstract class Type {
+  variadic: any
+  parameters: any
+  results: any
   abstract isPrimitive(): boolean
   abstract toString(): string
   abstract equals(t: Type): boolean
@@ -198,9 +201,9 @@ export class ParameterType extends Type {
 
 export class FunctionType extends Type {
   constructor(
-    public parameters: ParameterType[],
-    public results: ReturnType,
-    public variadic: boolean = false,
+    public override parameters: ParameterType[],
+    public override results: ReturnType,
+    public override variadic: boolean = false,
   ) {
     super()
   }

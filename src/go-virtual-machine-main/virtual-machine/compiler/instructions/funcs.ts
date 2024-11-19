@@ -108,6 +108,7 @@ export class ReturnInstruction extends Instruction {
     // Clear remnant environment nodes on the RTS (e.g. from blocks).
     while (!(process.context.peekRTS() instanceof CallRefNode)) {
       process.context.popRTS()
+      if (process.context.RTS().sz() === 0) break
     }
 
     const defers = process.context.peekDeferStack()
@@ -157,6 +158,7 @@ export class ReturnInstruction extends Instruction {
       process.context.popDeferStack()
     }
 
+    if (process.context.RTS().sz() === 0) return // handles goroutines exiting
     const callRef = process.heap.get_value(process.context.popRTS())
     if (!(callRef instanceof CallRefNode)) throw new Error('Unreachable')
     process.context.set_PC(callRef.PC())
