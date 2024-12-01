@@ -185,21 +185,27 @@ export class CallToken extends PrimaryExpressionModifierToken {
     }
 
     const argumentTypes = this.expressions.map((e) => e.compile(compiler))
+    let argumentLength = 0
+    for (let i = 0; i < argumentTypes.length; i++) {
+      argumentLength = argumentTypes[i] instanceof ReturnType
+        ? argumentLength + (argumentTypes[i] as ReturnType).types.length
+        : argumentLength + 1
+    }
     this.pushInstruction(compiler, new CallInstruction(
-      argumentTypes[0] instanceof ReturnType ? argumentTypes[0].types.length : argumentTypes.length
+      argumentLength
     ))
 
     // We only implement variadic functions that accept any number of any type of arguments,
     // so variadic functions do not require type checking.
     if (!operandType.variadic) {
-      if (argumentTypes.length < operandType.parameters.length) {
+      if (argumentLength < operandType.parameters.length) {
         throw Error(
           `Not enough arguments in function call\n` +
             `have (${TypeUtility.arrayToString(argumentTypes)})\n` +
             `want (${TypeUtility.arrayToString(operandType.parameters)})`,
         )
       }
-      if (argumentTypes.length > operandType.parameters.length) {
+      if (argumentLength > operandType.parameters.length) {
         throw Error(
           `Too many arguments in function call\n` +
             `have (${TypeUtility.arrayToString(argumentTypes)})\n` +
@@ -207,12 +213,34 @@ export class CallToken extends PrimaryExpressionModifierToken {
         )
       }
 
+      let delta = 0
       for (let i = 0; i < argumentTypes.length; i++) {
-        if (argumentTypes[i].assignableBy(operandType.parameters[i].type))
-          continue
-        throw Error(
-          `Cannot use ${argumentTypes[i]} as ${operandType.parameters[i]} in argument to function call`,
-        )
+        if (argumentTypes[i] instanceof ReturnType) {
+          if ((argumentTypes[i] as ReturnType).types.length > 1) {
+            for (let j = 0; j < (argumentTypes[i] as ReturnType).types.length; j++) {
+              if (((argumentTypes[i] as ReturnType).types[j]).assignableBy(
+                operandType.parameters[i + j + delta].type))
+                continue
+              throw Error(
+                `Cannot use ${((argumentTypes[i] as ReturnType).types[j])}
+                as ${operandType.parameters[i + j + delta]} in argument to function call`,
+              )
+            }
+            delta += (argumentTypes[i] as ReturnType).types.length - 1
+          } else {
+            if (argumentTypes[i].assignableBy(operandType.parameters[i].type))
+              continue
+            throw Error(
+              `Cannot use ${argumentTypes[i]} as ${operandType.parameters[i]} in argument to function call`,
+            )
+          }
+        } else {
+          if (argumentTypes[i].assignableBy(operandType.parameters[i].type))
+            continue
+          throw Error(
+            `Cannot use ${argumentTypes[i]} as ${operandType.parameters[i]} in argument to function call`,
+          )
+        }
       }
     }
 

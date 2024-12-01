@@ -86,13 +86,13 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
         )
       }
         */
-      for (let i = 0; i < identifiers.length; i++) {
-        
+      let delta = 0
+      for (let i = 0; i < expressions.length; i++) {
         const expressionTypes = expressions[i].compile(compiler)
+        let identifier = identifiers[i + delta].identifier
         if (expressionTypes instanceof ReturnType) {
-          if (expressionTypes.types.length > 1) {
-            for (let j = 0; j < expressionTypes.types.length ; j++) {
-              const identifier = identifiers[i].identifier
+            for (let j = 0; j < expressionTypes.types.length; j++) {
+              identifier = identifiers[i + j].identifier
               const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)
               if (expectedType && !expectedType.assignableBy(expressionTypes.types[j])) {
                 throw Error(
@@ -105,8 +105,8 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
                 new LoadVariableInstruction(frame_idx, var_idx, identifier),
               )
               this.pushInstruction(compiler, new StoreInstruction())
-              i++
             }
+            delta += expressionTypes.types.length - 1
 
             // as the return values are loaded onto OS and thus popped in reverse order,
             // storing them into variables should be in reverse order
@@ -122,10 +122,8 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
               this.pushInstruction(compiler, reverse_instructions[j] as Instruction)
               this.pushInstruction(compiler, new StoreInstruction())
             }
-          }
         }
         else {
-          const identifier = identifiers[i].identifier
           const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)
           if (expectedType && !expectedType.assignableBy(expressionTypes)) {
             throw Error(
@@ -190,13 +188,13 @@ export class VariableDeclarationToken extends DeclarationToken {
         )
       }
         */
-      for (let i = 0; i < identifiers.length; i++) {
-        
+      let delta = 0
+      for (let i = 0; i < expressions.length; i++) {
         const expressionTypes = expressions[i].compile(compiler)
+        let identifier = identifiers[i + delta].identifier
         if (expressionTypes instanceof ReturnType) {
-          if (expressionTypes.types.length > 1) {
-            for (let j = 0; j < expressionTypes.types.length ; j++) {
-              const identifier = identifiers[i].identifier
+            for (let j = 0; j < expressionTypes.types.length; j++) {
+              identifier = identifiers[i + j].identifier
               const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)
               if (expectedType && !expectedType.assignableBy(expressionTypes.types[j])) {
                 throw Error(
@@ -209,8 +207,8 @@ export class VariableDeclarationToken extends DeclarationToken {
                 new LoadVariableInstruction(frame_idx, var_idx, identifier),
               )
               this.pushInstruction(compiler, new StoreInstruction())
-              i++
             }
+            delta += expressionTypes.types.length - 1
 
             // as the return values are loaded onto OS and thus popped in reverse order,
             // storing them into variables should be in reverse order
@@ -226,10 +224,8 @@ export class VariableDeclarationToken extends DeclarationToken {
               this.pushInstruction(compiler, reverse_instructions[j] as Instruction)
               this.pushInstruction(compiler, new StoreInstruction())
             }
-          }
         }
         else {
-          const identifier = identifiers[i].identifier
           const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)
           if (expectedType && !expectedType.assignableBy(expressionTypes)) {
             throw Error(

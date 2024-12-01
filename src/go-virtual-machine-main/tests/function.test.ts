@@ -98,16 +98,15 @@ describe('Function Type Checking', () => {
     expect(codeRunner(code).output).toEqual('8\n11\n')
   })
 
-  /*
   test('Nested function', () => {
     const code = `
     package main
     import "fmt"
-    func f(x int) (y int) {
+    func f(x int) int {
       return x + 2;
     }
 
-    func g(x int) (y int) {
+    func g(x int) int {
       return x + 5;
     }
 
@@ -117,7 +116,6 @@ describe('Function Type Checking', () => {
     `
     expect(codeRunner(code).output).toEqual('8\n')
   })
-    */
 })
 
 describe('Function Execution tests', () => {
@@ -295,5 +293,70 @@ describe('Function Execution tests', () => {
         }
       `).output,
     ).toEqual('IUCvevfde\n1\n2\nIUCvevfde\n')
+  })
+
+  test('Function works as first class citizens', () => {
+    expect(
+    codeRunner(`
+        package main
+        import "fmt"
+
+        func f() (int, int, string) {
+          return 1, 2, "IUCvevfde"
+        }
+
+        func x(a int, b int, s string) (int, int, string) {
+          return a * 10, b * 10, s
+        }
+
+        func main() {
+          c, d, e := x(f())
+          fmt.Println(c)
+          fmt.Println(d)
+          fmt.Println(e)
+        }
+      `).output,
+    ).toEqual('10\n20\nIUCvevfde\n')
+  })
+
+  test('Function works as first class citizens', () => {
+    expect(
+    codeRunner(`
+        package main
+        import "fmt"
+
+        func x(a int, b int, s string) (int, int, string) {
+          return a * 10, b * 10, s
+        }
+
+        func main() {
+          c, d, e := x(1, 2, "IUCvevfde")
+          fmt.Println(c)
+          fmt.Println(d)
+          fmt.Println(e)
+        }
+      `).output,
+    ).toEqual('10\n20\nIUCvevfde\n')
+  })
+
+  test('Function works as first class citizens', () => {
+    expect(
+    codeRunner(`
+        package main
+        import "fmt"
+
+        func x(a int, s string) (int, string) {
+          return a * 10, s
+        }
+
+        func main() {
+          c, d, e, f := 3, x(3, "IUCvevfde"), 2
+          fmt.Println(c)
+          fmt.Println(d)
+          fmt.Println(e)
+          fmt.Println(f)
+        }
+      `).output,
+    ).toEqual('3\n30\nIUCvevfde\n2\n')
   })
 })
