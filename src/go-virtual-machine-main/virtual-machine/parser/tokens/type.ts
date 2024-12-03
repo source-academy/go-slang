@@ -3,6 +3,7 @@ import {
   ArrayType,
   BoolType,
   ChannelType,
+  DeclaredType,
   Float64Type,
   FunctionType,
   Int64Type,
@@ -56,13 +57,13 @@ export class PrimitiveTypeToken extends TypeToken {
     this.name = name
   }
 
-  override compileUnchecked(_compiler: Compiler): Type {
+  override compileUnchecked(compiler: Compiler): Type {
     if (this.name === 'bool') return new BoolType()
     else if (this.name === 'float64') return new Float64Type()
     else if (this.name === 'int') return new Int64Type()
     else if (this.name === 'int64') return new Int64Type()
     else if (this.name === 'string') return new StringType()
-    else return new NoType()
+    return new NoType()
   }
 }
 
@@ -150,5 +151,20 @@ export class ChannelTypeToken extends TypeToken {
       this.readable,
       this.writable,
     )
+  }
+}
+
+export class DeclaredTypeToken extends TypeToken {
+  name: string
+  constructor(sourceLocation: TokenLocation, name: string) {
+    super(sourceLocation)
+    this.name = name
+  }
+
+  override compileUnchecked(compiler: Compiler): Type {
+    const baseTypes = compiler.context.env.find_type(this.name)
+    // load the underlying types
+    // need to configure to use declared type if possible
+    return new DeclaredType(this.name, baseTypes)
   }
 }

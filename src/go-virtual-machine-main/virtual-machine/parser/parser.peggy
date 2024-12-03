@@ -10,6 +10,7 @@
     FunctionDeclarationToken,
     VariableDeclarationToken,
     ConstantDeclarationToken,
+    TypeDeclarationToken,
     PrimaryExpressionToken,
     AssignmentStatementToken,
     IdentifierToken,
@@ -24,6 +25,7 @@
     ForStatementToken,
     DeferStatementToken,
     PrimitiveTypeToken,
+    DeclaredTypeToken,
     ArrayTypeToken,
     SliceTypeToken,
     FunctionTypeToken,
@@ -142,8 +144,10 @@ interpreted_string_lit = '"' str:$[^\n"]* '"' { return StringLiteralToken.fromSo
 // Note: `TypeName TypeArgs?` is reduced to `TypeName` as generics are not supported.
 Type     = @TypeName / TypeLit / "(" _ Type _ ")"
 //! TODO (P1): Support qualified identifiers for TypeName.
-TypeName = iden:identifier &{ return PrimitiveTypeToken.isPrimitive(iden.identifier) }
-           { return new PrimitiveTypeToken(location(), iden.identifier) }
+TypeName = iden:identifier
+           { return PrimitiveTypeToken.isPrimitive(iden.identifier)
+            ? new PrimitiveTypeToken(location(), iden.identifier) 
+            : new DeclaredTypeToken(location(), iden.identifier)}
          / @QualifiedIdent
 TypeLit  = ArrayType / StructType / PointerType / FunctionType / InterfaceType / SliceType / MapType / ChannelType
 
@@ -230,10 +234,10 @@ IdentifierList = head:identifier tail:(_ "," _ @identifier _)* { return [head, .
 ExpressionList = head:Expression tail:(_ "," _ @Expression _)* { return [head, ...tail] }
 
 //* Type Declarations
-TypeDecl  = "type" _ (TypeSpec / "(" _ (_ TypeSpec _ ";"?)* _ ")")
+TypeDecl  = "type" _ @(TypeSpec / "(" _ (_ TypeSpec _ ";"?)* _ ")")
 TypeSpec  = AliasDecl / TypeDef
 AliasDecl = identifier _ "=" _ Type
-TypeDef   = identifier _ TypeParameters? _ Type
+TypeDef   = identifier:identifier _ TypeParameters? _ type:Type { return new TypeDeclarationToken(location(), identifier, type, undefined) }
 TypeParameters = "[" _ TypeParamList _ ","? _ "]"
 TypeParamList  = TypeParamDecl (_ "," _ TypeParamDecl)*
 TypeParamDecl  = IdentifierList _ TypeConstraint

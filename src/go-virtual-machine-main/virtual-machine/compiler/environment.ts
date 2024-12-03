@@ -1,13 +1,45 @@
 import { JumpInstruction } from './instructions/control'
 
 class CompileEnvironment {
+  types: Record<string, string>[][]
+  declare_type(name: string, type: string) {
+    const frame_idx = this.frames.length - 1
+    for (const var_name of this.frames[frame_idx]) {
+      if (var_name === name) throw Error('Type already declared')
+    }
+    const new_len = this.frames[frame_idx].push(name)
+    const recordToAdd = {} as Record<string, string>
+    recordToAdd[name] = type
+    this.types[frame_idx].push(recordToAdd)
+    return [0, new_len - 1]
+  }
+
+  find_type(name: string) {
+    let frame_idx = 0
+    const frame_sz = this.frames.length - 1
+    while (frame_sz >= frame_idx) {
+      let var_idx = this.types[frame_sz - frame_idx].length - 1
+      while (var_idx >= 0) {
+        var x = Object.keys(this.types[frame_sz - frame_idx][var_idx])
+        if (Object.keys(this.types[frame_sz - frame_idx][var_idx])[0] === name)
+          return Object.values(this.types[frame_sz - frame_idx][var_idx])[0]
+        var_idx--
+      }
+      frame_idx++
+    }
+    throw Error('Unable to find type: ' + name)
+  }
+
   frames: string[][]
   constructor(parent?: CompileEnvironment) {
     if (!parent) {
       this.frames = [[]]
+      this.types = [[]]
     } else {
       this.frames = parent.frames.slice()
       this.frames.push([])
+      this.types = parent.types.slice()
+      this.types.push([])
     }
   }
 

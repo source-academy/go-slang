@@ -103,4 +103,14 @@ describe('Variable Declaration Tests', () => {
     `
     expect(mainRunner(code).error?.type).toEqual("compile")
   })
+
+  test('Type declaration', () => {
+    const code = `
+    type Age int
+    type B Age
+    var x B = 3
+    fmt.Println(x)
+    `
+    expect(mainRunner(code).output).toEqual('3\n')
+  })
 })

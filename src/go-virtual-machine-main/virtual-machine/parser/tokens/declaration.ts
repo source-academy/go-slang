@@ -11,7 +11,7 @@ import { Token, TokenLocation } from './base'
 import { ExpressionToken, PrimaryExpressionModifierToken, PrimaryExpressionToken } from './expressions'
 import { IdentifierToken } from './identifier'
 import { FunctionLiteralToken } from './literals'
-import { TypeToken } from './type'
+import { PrimitiveTypeToken, TypeToken } from './type'
 
 export type TopLevelDeclarationToken =
   | DeclarationToken
@@ -48,6 +48,37 @@ export class FunctionDeclarationToken extends Token {
 }
 
 export abstract class DeclarationToken extends Token {}
+
+export class TypeDeclarationToken extends DeclarationToken {
+  constructor(
+    sourceLocation: TokenLocation,
+    public identifier: IdentifierToken,
+    public varType: TypeToken,
+    public expressions?: ExpressionToken[],
+  ) {
+    super('type_declaration', sourceLocation)
+  }
+
+  override compileUnchecked(compiler: Compiler): Type {
+    // bind varType to identifier
+    const { identifier, varType } = this
+    if (identifier === undefined && varType === undefined) {
+      //! TODO (P5): Golang implements this as a syntax error. Unfortunately, our current parsing
+      //! is unable to detect this error. A correct parser should require one of them to be present.
+      throw Error(
+        'Either type(s) or name assignment(s) must be defined in type declaration.',
+      )
+    }
+
+    compiler.context.env.declare_type(identifier.identifier, varType.name)
+    const expectedType = varType ? varType.compile(compiler) : undefined
+    compiler.type_environment.addType(
+      identifier.identifier,
+      expectedType as Type,
+    )
+    return new NoType()
+  }
+}
 
 export class ShortVariableDeclarationToken extends DeclarationToken {
   constructor(

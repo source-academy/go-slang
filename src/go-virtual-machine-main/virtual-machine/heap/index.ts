@@ -16,6 +16,7 @@ import { LinkedListEntryNode, LinkedListNode } from './types/linkedlist'
 import { MutexNode } from './types/mutex'
 import {
   BoolNode,
+  DeclaredNode,
   FloatNode,
   IntegerNode,
   StringListNode,
@@ -57,6 +58,7 @@ export enum TAG {
   PKG = 26,
   FMT_PKG = 27,
   MUTEX = 28,
+  DECLARED,
 }
 
 export const word_size = 4
@@ -159,6 +161,8 @@ export class Heap {
         return new FmtPkgNode(this, addr)
       case TAG.MUTEX:
         return new MutexNode(this, addr)
+      case TAG.DECLARED:
+        return new DeclaredNode(this, addr)
       default:
         // return new UnassignedNode(this, addr)
         throw Error('Unknown Data Type')

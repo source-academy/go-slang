@@ -5,10 +5,12 @@ import { PkgNode } from '../../heap/types/fmt'
 import { FuncNode } from '../../heap/types/func'
 import {
   BoolNode,
+  DeclaredNode,
   FloatNode,
   IntegerNode,
   StringNode,
 } from '../../heap/types/primitives'
+import { PrimitiveTypeToken } from '../../parser/tokens'
 
 export abstract class Type {
   variadic: any
@@ -20,6 +22,12 @@ export abstract class Type {
 
   /** Returns true if `t` can be assigned to this type. */
   assignableBy(t: Type): boolean {
+    if (!t.isPrimitive) return this.equals(t)
+    if (this instanceof DeclaredType) {
+      return PrimitiveTypeToken.isPrimitive(this.type)
+    } else {
+      
+    }
     return this.equals(t)
   }
 
@@ -343,4 +351,37 @@ export const TypeUtility = {
   arrayToString(types: Type[] | null) {
     return (types ?? []).map((t) => t.toString()).join(', ')
   },
+}
+
+export class DeclaredType extends Type {
+  constructor(public name: string, public type: string) {
+    super()
+    this.name = name
+    this.type = type
+  }
+
+  override isPrimitive(): boolean {
+    return false
+  }
+
+  override toString(): string {
+    return `type ${this.name}`
+  }
+
+  override equals(t: Type): boolean {
+    return t instanceof DeclaredType && t.name === this.name && t.type === this.type
+  }
+
+  override defaultNodeCreator(): (_heap: Heap) => number {
+    return (heap) => DeclaredNode.create(heap).addr
+  }
+
+  /*
+  override select(identifier: string): Type {
+    if (!(identifier in this.type)) {
+      throw new Error(`undefined: ${this.name}.${identifier}`)
+    }
+    return this.type[identifier]
+  }
+  */
 }
