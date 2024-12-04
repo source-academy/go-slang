@@ -104,7 +104,7 @@ describe('Variable Declaration Tests', () => {
     expect(mainRunner(code).error?.type).toEqual("compile")
   })
 
-  test('Type declaration', () => {
+  test('Type declaration should work for multiple layers', () => {
     const code = `
     type Age int
     type B Age
@@ -112,5 +112,34 @@ describe('Variable Declaration Tests', () => {
     fmt.Println(x)
     `
     expect(mainRunner(code).output).toEqual('3\n')
+  })
+
+  test('Type declaration should work', () => {
+    const code = `
+    type Age int
+    var x Age = 3
+    fmt.Println(x)
+    `
+    expect(mainRunner(code).output).toEqual('3\n')
+  })
+
+  test('Type declaration should not interfere with primitive declarations', () => {
+    const code = `
+    type Age int
+    type B Age
+    var x int = 3
+    fmt.Println(x)
+    `
+    expect(mainRunner(code).output).toEqual('3\n')
+  })
+
+  test('Type declaration should throw error if not found', () => {
+    const code = `
+    type Age int
+    type B Ag
+    var x B = 3
+    fmt.Println(x)
+    `
+    expect(mainRunner(code).error?.type).toEqual("compile")
   })
 })
