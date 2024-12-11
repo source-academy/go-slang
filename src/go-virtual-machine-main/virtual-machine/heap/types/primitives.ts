@@ -5,7 +5,7 @@ import {
   NumStrBinaryToBoolOp,
   NumUnaryOp,
   StrBinaryOp,
-} from '../../executor/ops'
+} from '../../runtime/ops'
 import { Heap, TAG, word_size } from '..'
 
 import { BaseNode } from './base'
@@ -202,7 +202,7 @@ export class StringNode extends PrimitiveNode {
     throw Error('Invalid Opeartion')
   }
 }
-export class StringListNode extends BaseNode {}
+export class StringListNode extends BaseNode { }
 
 export class UnassignedNode extends BaseNode {
   static create(heap: Heap) {

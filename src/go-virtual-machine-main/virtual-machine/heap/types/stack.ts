@@ -14,6 +14,17 @@ export class StackNode extends BaseNode {
     return new StackNode(heap, addr)
   }
 
+  static clone(heap: Heap) {
+    const addr = heap.allocate(2)
+    heap.set_tag(addr, TAG.STACK)
+    if (heap.temp_roots) heap.temp_push(addr)
+    heap.memory.set_number(-1, addr + 1)
+    const list = StackListNode.clone(heap)
+    if (heap.temp_roots) heap.temp_pop()
+    heap.memory.set_word(heap.clone(list.addr), addr + 1)
+    return new StackNode(heap, addr)
+  }
+
   list() {
     return new StackListNode(
       this.heap,
@@ -55,6 +66,13 @@ export class StackListNode extends BaseNode {
     return new StackListNode(heap, addr)
   }
 
+  static clone(heap: Heap) {
+    const addr = heap.clone(this.init_sz)
+    heap.set_tag(addr, TAG.STACK_LIST)
+    heap.memory.set_number(0, addr + 1)
+    return new StackListNode(heap, addr)
+  }
+
   resize(new_size: number) {
     const new_pos = this.heap.allocate(new_size)
     this.heap.set_tag(new_pos, TAG.STACK_LIST)
@@ -85,7 +103,9 @@ export class StackListNode extends BaseNode {
 
   pop() {
     const sz = this.get_sz()
-    if (sz === 0) throw Error('List Empty!')
+    if (sz === 0) {
+      throw Error('List Empty!')
+    }
     const capacity = this.heap.get_size(this.addr)
     const val = this.get_idx(sz - 1)
     this.set_sz(sz - 1)
@@ -95,7 +115,9 @@ export class StackListNode extends BaseNode {
 
   peek() {
     const sz = this.get_sz()
-    if (sz === 0) throw Error('List Empty!')
+    if (sz === 0) {
+      throw Error('List Empty!')
+    }
     return this.get_idx(sz - 1)
   }
 

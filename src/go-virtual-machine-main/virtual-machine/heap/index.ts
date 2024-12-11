@@ -1,4 +1,4 @@
-import { Debugger } from '../executor/debugger'
+import { Debugger } from '../runtime/debugger'
 
 import { ArrayNode, SliceNode } from './types/array'
 import { ChannelNode, ChannelReqNode, ReqInfoNode } from './types/channel'
@@ -13,6 +13,7 @@ import {
   MethodNode,
 } from './types/func'
 import { LinkedListEntryNode, LinkedListNode } from './types/linkedlist'
+import { MutexNode } from './types/mutex'
 import {
   BoolNode,
   FloatNode,
@@ -55,6 +56,8 @@ export enum TAG {
   DEFER_METHOD = 25,
   PKG = 26,
   FMT_PKG = 27,
+  MUTEX = 28,
+  DECLARED,
 }
 
 export const word_size = 4
@@ -155,6 +158,8 @@ export class Heap {
         return new PkgNode(this, addr)
       case TAG.FMT_PKG:
         return new FmtPkgNode(this, addr)
+      case TAG.MUTEX:
+        return new MutexNode(this, addr)
       default:
         // return new UnassignedNode(this, addr)
         throw Error('Unknown Data Type')
@@ -388,7 +393,7 @@ export class Heap {
     for (const root of roots) {
       this.mark(root)
     }
-    for (let cur_addr = 0; cur_addr < this.size; ) {
+    for (let cur_addr = 0; cur_addr < this.size;) {
       if (!this.is_free(cur_addr) && !this.is_marked(cur_addr)) {
         cur_addr = this.free(cur_addr)
       } else {
