@@ -1,4 +1,4 @@
-import { Compiler } from '../../compiler'
+import { Compiler } from '../../executor'
 import {
   BuiltinCapInstruction,
   BuiltinLenInstruction,
@@ -9,8 +9,8 @@ import {
   LoadSliceElementInstruction,
   SelectorOperationInstruction,
   SliceOperationInstruction,
-} from '../../compiler/instructions'
-import { CallInstruction } from '../../compiler/instructions/funcs'
+} from '../../executor/instructions'
+import { CallInstruction } from '../../executor/instructions/funcs'
 import {
   ArrayType,
   BoolType,
@@ -23,7 +23,7 @@ import {
   StringType,
   Type,
   TypeUtility,
-} from '../../compiler/typing'
+} from '../../executor/typing'
 
 import { Token, TokenLocation } from './base'
 import { IdentifierToken } from './identifier'
@@ -76,7 +76,7 @@ export class PrimaryExpressionToken extends Token {
 // Hence, its compilation method must take in an extra argument. Idk if this is the correct way
 // to fix, but it doesn't make sense to force them to follow the structure of Token.
 export abstract class PrimaryExpressionModifierToken {
-  constructor(public type: string, public sourceLocation: TokenLocation) {}
+  constructor(public type: string, public sourceLocation: TokenLocation) { }
   abstract compile(compiler: Compiler, operandType: Type): Type
 
   pushInstruction(compiler: Compiler, ...instr: Instruction[]) {
@@ -201,15 +201,15 @@ export class CallToken extends PrimaryExpressionModifierToken {
       if (argumentLength < operandType.parameters.length) {
         throw Error(
           `Not enough arguments in function call\n` +
-            `have (${TypeUtility.arrayToString(argumentTypes)})\n` +
-            `want (${TypeUtility.arrayToString(operandType.parameters)})`,
+          `have (${TypeUtility.arrayToString(argumentTypes)})\n` +
+          `want (${TypeUtility.arrayToString(operandType.parameters)})`,
         )
       }
       if (argumentLength > operandType.parameters.length) {
         throw Error(
           `Too many arguments in function call\n` +
-            `have (${TypeUtility.arrayToString(argumentTypes)})\n` +
-            `want (${TypeUtility.arrayToString(operandType.parameters)})`,
+          `have (${TypeUtility.arrayToString(argumentTypes)})\n` +
+          `want (${TypeUtility.arrayToString(operandType.parameters)})`,
         )
       }
 

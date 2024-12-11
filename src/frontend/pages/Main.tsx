@@ -11,7 +11,7 @@ import {
 import Cookies from 'js-cookie'
 
 import { runCode } from '../../go-virtual-machine-main/tests/utility'
-import { CompileError } from '../../go-virtual-machine-main/virtual-machine/compiler/index'
+import { CompileError } from '../../go-virtual-machine-main/virtual-machine/executor/index'
 import {
   CodeIDE,
   CodeIDEButtons,

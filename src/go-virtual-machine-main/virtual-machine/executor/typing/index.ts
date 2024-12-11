@@ -10,7 +10,7 @@ import {
   IntegerNode,
   StringNode,
 } from '../../heap/types/primitives'
-import { PrimitiveTypeToken } from '../../parser/tokens'
+import { PrimitiveTypeToken } from '../../compiler/tokens'
 
 export abstract class Type {
   variadic: any
@@ -26,7 +26,7 @@ export abstract class Type {
     if (this instanceof DeclaredType) {
       return PrimitiveTypeToken.isPrimitive(this.type)
     } else {
-      
+
     }
     return this.equals(t)
   }

@@ -1,6 +1,6 @@
-import { CompileError, Compiler } from '../../compiler'
-import { Instruction } from '../../compiler/instructions'
-import { Type } from '../../compiler/typing'
+import { CompileError, Compiler } from '../../executor'
+import { Instruction } from '../../executor/instructions'
+import { Type } from '../../executor/typing'
 
 export type TokenLocation = {
   start: { offset: number; line: number; column: number }
@@ -8,7 +8,7 @@ export type TokenLocation = {
 }
 
 export abstract class Token {
-  constructor(public type: string, public sourceLocation: TokenLocation) {}
+  constructor(public type: string, public sourceLocation: TokenLocation) { }
 
   abstract compileUnchecked(compiler: Compiler): Type
 

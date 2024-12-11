@@ -1,4 +1,4 @@
-import { Process } from '../../executor/process'
+import { Process } from '../../runtime/process'
 import { Heap, TAG } from '..'
 
 import { ArrayNode } from './array'

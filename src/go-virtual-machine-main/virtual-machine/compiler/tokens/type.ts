@@ -1,4 +1,4 @@
-import { Compiler } from '../../compiler'
+import { Compiler } from '../../executor'
 import {
   ArrayType,
   BoolType,
@@ -13,7 +13,7 @@ import {
   SliceType,
   StringType,
   Type,
-} from '../../compiler/typing'
+} from '../../executor/typing'
 
 import { Token, TokenLocation } from './base'
 import { IntegerLiteralToken } from './literals'

@@ -1,4 +1,4 @@
-import { Process } from '../../executor/process'
+import { Process } from '../../runtime/process'
 import { BoolNode } from '../../heap/types/primitives'
 
 import { Instruction } from './base'

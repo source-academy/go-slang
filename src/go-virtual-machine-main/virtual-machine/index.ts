@@ -1,9 +1,9 @@
-import { Instruction } from './compiler/instructions'
-import { StateInfo } from './executor/debugger'
-import parser from './parser/parser'
-import { SourceFileToken, TokenLocation } from './parser/tokens'
-import { compile_tokens, CompileError } from './compiler'
-import { execute_instructions } from './executor'
+import { Instruction } from './executor/instructions'
+import { StateInfo } from './runtime/debugger'
+import parser from './compiler/parser'
+import { SourceFileToken, TokenLocation } from './compiler/tokens'
+import { compile_tokens, CompileError } from './executor'
+import { execute_instructions } from './runtime'
 
 interface InstructionData {
   val: string
@@ -82,7 +82,7 @@ const runCode = (
       output: result.errorMessage,
       error: {
         message: result.errorMessage,
-        type: 'runtime', 
+        type: 'runtime',
         details: result.errorMessage,
       },
       visualData: [],

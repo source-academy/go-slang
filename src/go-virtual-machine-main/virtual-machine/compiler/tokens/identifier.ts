@@ -1,6 +1,6 @@
-import { Compiler } from '../../compiler'
-import { LoadVariableInstruction } from '../../compiler/instructions'
-import { PackageType, Type } from '../../compiler/typing'
+import { Compiler } from '../../executor'
+import { LoadVariableInstruction } from '../../executor/instructions'
+import { PackageType, Type } from '../../executor/typing'
 
 import { Token, TokenLocation } from './base'
 

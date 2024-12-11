@@ -1,13 +1,13 @@
-import { Compiler } from '../../compiler'
+import { Compiler } from '../../executor'
 import {
   BlockInstruction,
   CallInstruction,
   LoadConstantInstruction,
   LoadVariableInstruction,
   StoreInstruction,
-} from '../../compiler/instructions'
-import { BoolType, NoType, Type } from '../../compiler/typing'
-import { builtinPackages } from '../../compiler/typing/packages'
+} from '../../executor/instructions'
+import { BoolType, NoType, Type } from '../../executor/typing'
+import { builtinPackages } from '../../executor/typing/packages'
 
 import { Token, TokenLocation } from './base'
 import { TopLevelDeclarationToken } from './declaration'

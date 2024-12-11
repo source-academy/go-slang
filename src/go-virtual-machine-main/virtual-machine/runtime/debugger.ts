@@ -1,8 +1,8 @@
-import { Instruction } from '../compiler/instructions'
+import { Instruction } from '../executor/instructions'
 import { Heap } from '../heap'
 import { ContextNode } from '../heap/types/context'
 import { EnvironmentNode } from '../heap/types/environment'
-import { TokenLocation } from '../parser/tokens'
+import { TokenLocation } from '../compiler/tokens'
 
 export type OSInfo = {
   val: string
@@ -62,7 +62,7 @@ export class Debugger {
     public heap: Heap,
     public instructions: Instruction[],
     public symbols: (TokenLocation | null)[],
-  ) {}
+  ) { }
 
   /**
    * Finds all environments that can be reached from a given addr

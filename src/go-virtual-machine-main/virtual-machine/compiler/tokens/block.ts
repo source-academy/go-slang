@@ -1,9 +1,9 @@
-import { Compiler } from '../../compiler'
+import { Compiler } from '../../executor'
 import {
   BlockInstruction,
   ExitBlockInstruction,
-} from '../../compiler/instructions'
-import { NoType, ReturnType, Type } from '../../compiler/typing'
+} from '../../executor/instructions'
+import { NoType, ReturnType, Type } from '../../executor/typing'
 
 import { Token, TokenLocation } from './base'
 import { StatementToken } from './statement'

@@ -1,4 +1,4 @@
-import { Debugger } from '../executor/debugger'
+import { Debugger } from '../runtime/debugger'
 
 import { ArrayNode, SliceNode } from './types/array'
 import { ChannelNode, ChannelReqNode, ReqInfoNode } from './types/channel'
@@ -393,7 +393,7 @@ export class Heap {
     for (const root of roots) {
       this.mark(root)
     }
-    for (let cur_addr = 0; cur_addr < this.size; ) {
+    for (let cur_addr = 0; cur_addr < this.size;) {
       if (!this.is_free(cur_addr) && !this.is_marked(cur_addr)) {
         cur_addr = this.free(cur_addr)
       } else {

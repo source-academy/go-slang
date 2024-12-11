@@ -1,4 +1,4 @@
-import { Compiler } from '../../compiler'
+import { Compiler } from '../../executor'
 import {
   FuncBlockInstruction,
   JumpInstruction,
@@ -8,7 +8,7 @@ import {
   LoadFuncInstruction,
   LoadSliceInstruction,
   ReturnInstruction,
-} from '../../compiler/instructions'
+} from '../../executor/instructions'
 import {
   ArrayType,
   Float64Type,
@@ -18,7 +18,7 @@ import {
   SliceType,
   StringType,
   Type,
-} from '../../compiler/typing'
+} from '../../executor/typing'
 
 import { Token, TokenLocation } from './base'
 import { BlockToken } from './block'

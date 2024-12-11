@@ -1,11 +1,11 @@
 import * as seedrandom from 'seedrandom'
 
-import { DoneInstruction, Instruction } from '../compiler/instructions'
+import { DoneInstruction, Instruction } from '../executor/instructions'
 import { Heap } from '../heap'
 import { ContextNode } from '../heap/types/context'
 import { EnvironmentNode, FrameNode } from '../heap/types/environment'
 import { QueueNode } from '../heap/types/queue'
-import { TokenLocation } from '../parser/tokens'
+import { TokenLocation } from '../compiler/tokens'
 
 import { Debugger, StateInfo } from './debugger'
 
@@ -69,7 +69,7 @@ export class Process {
       const main_context = this.contexts.peek()
       while (this.contexts.sz()) {
         if (this.deterministic) {
-        this.context = new ContextNode(this.heap, this.contexts.peek())
+          this.context = new ContextNode(this.heap, this.contexts.peek())
         } else {
           this.context = new ContextNode(this.heap, this.contexts.randompeek())
         }

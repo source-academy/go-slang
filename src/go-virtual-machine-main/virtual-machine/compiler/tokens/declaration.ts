@@ -1,11 +1,11 @@
 import { env } from 'process'
-import { Compiler } from '../../compiler'
+import { Compiler } from '../../executor'
 import {
   Instruction,
   LoadVariableInstruction,
   StoreInstruction,
-} from '../../compiler/instructions'
-import { DeclaredType, NoType, ReturnType, Type } from '../../compiler/typing'
+} from '../../executor/instructions'
+import { DeclaredType, NoType, ReturnType, Type } from '../../executor/typing'
 
 import { Token, TokenLocation } from './base'
 import { ExpressionToken, PrimaryExpressionModifierToken, PrimaryExpressionToken } from './expressions'
@@ -47,7 +47,7 @@ export class FunctionDeclarationToken extends Token {
   }
 }
 
-export abstract class DeclarationToken extends Token {}
+export abstract class DeclarationToken extends Token { }
 
 export class TypeDeclarationToken extends DeclarationToken {
   constructor(
@@ -122,37 +122,37 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
         const expressionTypes = expressions[i].compile(compiler)
         let identifier = identifiers[i + delta].identifier
         if (expressionTypes instanceof ReturnType) {
-            for (let j = 0; j < expressionTypes.types.length; j++) {
-              identifier = identifiers[i + j].identifier
-              const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)
-              if (expectedType && !expectedType.assignableBy(expressionTypes.types[j])) {
-                throw Error(
-                  `Cannot use ${expressionTypes.types[j]} as ${expectedType} in variable declaration`,
-                )
-              }
-              compiler.type_environment.addType(identifier, expressionTypes.types[j])
-              this.pushInstruction(
-                compiler,
-                new LoadVariableInstruction(frame_idx, var_idx, identifier),
+          for (let j = 0; j < expressionTypes.types.length; j++) {
+            identifier = identifiers[i + j].identifier
+            const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)
+            if (expectedType && !expectedType.assignableBy(expressionTypes.types[j])) {
+              throw Error(
+                `Cannot use ${expressionTypes.types[j]} as ${expectedType} in variable declaration`,
               )
-              this.pushInstruction(compiler, new StoreInstruction())
             }
-            delta += expressionTypes.types.length - 1
+            compiler.type_environment.addType(identifier, expressionTypes.types[j])
+            this.pushInstruction(
+              compiler,
+              new LoadVariableInstruction(frame_idx, var_idx, identifier),
+            )
+            this.pushInstruction(compiler, new StoreInstruction())
+          }
+          delta += expressionTypes.types.length - 1
 
-            // as the return values are loaded onto OS and thus popped in reverse order,
-            // storing them into variables should be in reverse order
-            // it is impossible to change how return values are loaded onto OS
-            // as it will conflict with other instructions such as binops.
-            let reverse_instructions = []
-            for (let j = 0; j < expressionTypes.types.length; j++) {
-              compiler.instructions.pop() // store instruction gets popped
-              reverse_instructions[j] = compiler.instructions.pop() // load instruction gets popped
-            }
+          // as the return values are loaded onto OS and thus popped in reverse order,
+          // storing them into variables should be in reverse order
+          // it is impossible to change how return values are loaded onto OS
+          // as it will conflict with other instructions such as binops.
+          let reverse_instructions = []
+          for (let j = 0; j < expressionTypes.types.length; j++) {
+            compiler.instructions.pop() // store instruction gets popped
+            reverse_instructions[j] = compiler.instructions.pop() // load instruction gets popped
+          }
 
-            for (let j = 0; j < expressionTypes.types.length; j++) {
-              this.pushInstruction(compiler, reverse_instructions[j] as Instruction)
-              this.pushInstruction(compiler, new StoreInstruction())
-            }
+          for (let j = 0; j < expressionTypes.types.length; j++) {
+            this.pushInstruction(compiler, reverse_instructions[j] as Instruction)
+            this.pushInstruction(compiler, new StoreInstruction())
+          }
         }
         else {
           const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)
@@ -224,37 +224,37 @@ export class VariableDeclarationToken extends DeclarationToken {
         const expressionTypes = expressions[i].compile(compiler)
         let identifier = identifiers[i + delta].identifier
         if (expressionTypes instanceof ReturnType) {
-            for (let j = 0; j < expressionTypes.types.length; j++) {
-              identifier = identifiers[i + j].identifier
-              const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)
-              if (expectedType && !expectedType.assignableBy(expressionTypes.types[j])) {
-                throw Error(
-                  `Cannot use ${expressionTypes.types[j]} as ${expectedType} in variable declaration`,
-                )
-              }
-              compiler.type_environment.addType(identifier, expressionTypes.types[j])
-              this.pushInstruction(
-                compiler,
-                new LoadVariableInstruction(frame_idx, var_idx, identifier),
+          for (let j = 0; j < expressionTypes.types.length; j++) {
+            identifier = identifiers[i + j].identifier
+            const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)
+            if (expectedType && !expectedType.assignableBy(expressionTypes.types[j])) {
+              throw Error(
+                `Cannot use ${expressionTypes.types[j]} as ${expectedType} in variable declaration`,
               )
-              this.pushInstruction(compiler, new StoreInstruction())
             }
-            delta += expressionTypes.types.length - 1
+            compiler.type_environment.addType(identifier, expressionTypes.types[j])
+            this.pushInstruction(
+              compiler,
+              new LoadVariableInstruction(frame_idx, var_idx, identifier),
+            )
+            this.pushInstruction(compiler, new StoreInstruction())
+          }
+          delta += expressionTypes.types.length - 1
 
-            // as the return values are loaded onto OS and thus popped in reverse order,
-            // storing them into variables should be in reverse order
-            // it is impossible to change how return values are loaded onto OS
-            // as it will conflict with other instructions such as binops.
-            let reverse_instructions = []
-            for (let j = 0; j < expressionTypes.types.length; j++) {
-              compiler.instructions.pop() // store instruction gets popped
-              reverse_instructions[j] = compiler.instructions.pop() // load instruction gets popped
-            }
+          // as the return values are loaded onto OS and thus popped in reverse order,
+          // storing them into variables should be in reverse order
+          // it is impossible to change how return values are loaded onto OS
+          // as it will conflict with other instructions such as binops.
+          let reverse_instructions = []
+          for (let j = 0; j < expressionTypes.types.length; j++) {
+            compiler.instructions.pop() // store instruction gets popped
+            reverse_instructions[j] = compiler.instructions.pop() // load instruction gets popped
+          }
 
-            for (let j = 0; j < expressionTypes.types.length; j++) {
-              this.pushInstruction(compiler, reverse_instructions[j] as Instruction)
-              this.pushInstruction(compiler, new StoreInstruction())
-            }
+          for (let j = 0; j < expressionTypes.types.length; j++) {
+            this.pushInstruction(compiler, reverse_instructions[j] as Instruction)
+            this.pushInstruction(compiler, new StoreInstruction())
+          }
         }
         else {
           const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)

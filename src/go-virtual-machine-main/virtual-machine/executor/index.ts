@@ -1,17 +1,38 @@
-import { Instruction } from '../compiler/instructions'
-import { TokenLocation } from '../parser/tokens'
+import { Token, TokenLocation } from '../compiler/tokens'
 
-import { Process } from './process'
+import { TypeEnvironment } from './typing/type_environment'
+import { CompileContext } from './environment'
+import { DoneInstruction, Instruction } from './instructions'
 
-const execute_instructions = (
-  instrs: Instruction[],
-  heapsize: number,
-  symbols: (TokenLocation | null)[],
-  deterministic: boolean,
-  visualisation = false,
-) => {
-  const process = new Process(instrs, heapsize, symbols, deterministic, visualisation)
-  return process.start()
+export class CompileError extends Error {
+  constructor(message: string, public sourceLocation: TokenLocation) {
+    super(message)
+  }
 }
 
-export { execute_instructions }
+export class Compiler {
+  instructions: Instruction[] = []
+  symbols: (TokenLocation | null)[] = []
+  context = new CompileContext()
+  type_environment = new TypeEnvironment()
+
+  compile_program(token: Token) {
+    token.compile(this)
+    this.instructions.push(new DoneInstruction())
+  }
+
+  throwCompileError(message: string, sourceLocation: TokenLocation): never {
+    throw new CompileError(message, sourceLocation)
+  }
+}
+
+const compile_tokens = (token: Token) => {
+  const compiler = new Compiler()
+  compiler.compile_program(token)
+  return {
+    instructions: compiler.instructions,
+    symbols: compiler.symbols,
+  }
+}
+
+export { compile_tokens }

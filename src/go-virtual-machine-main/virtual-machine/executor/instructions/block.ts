@@ -1,4 +1,4 @@
-import { Process } from '../../executor/process'
+import { Process } from '../../runtime/process'
 import { FrameNode } from '../../heap/types/environment'
 import { Type } from '../typing'
 

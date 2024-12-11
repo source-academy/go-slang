@@ -1,4 +1,4 @@
-import { Process } from '../../executor/process'
+import { Process } from '../../runtime/process'
 
 export abstract class Instruction {
   tag: string

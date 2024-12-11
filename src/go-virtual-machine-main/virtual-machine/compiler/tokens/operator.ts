@@ -1,12 +1,12 @@
-import { Compiler } from '../../compiler'
+import { Compiler } from '../../executor'
 import {
   BinaryInstruction,
   LoadChannelReqInstruction,
   LoadDefaultInstruction,
   TryChannelReqInstruction,
   UnaryInstruction,
-} from '../../compiler/instructions'
-import { BoolType, ChannelType, Type } from '../../compiler/typing'
+} from '../../executor/instructions'
+import { BoolType, ChannelType, Type } from '../../executor/typing'
 
 import { Token, TokenLocation } from './base'
 

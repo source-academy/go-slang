@@ -1,4 +1,4 @@
-import { Compiler } from '../../compiler'
+import { Compiler } from '../../executor'
 import {
   BinaryInstruction,
   BlockInstruction,
@@ -13,12 +13,12 @@ import {
   SelectInstruction,
   StoreInstruction,
   TryChannelReqInstruction,
-} from '../../compiler/instructions'
+} from '../../executor/instructions'
 import {
   ExitLoopInstruction,
   JumpIfFalseInstruction,
   JumpInstruction,
-} from '../../compiler/instructions/control'
+} from '../../executor/instructions/control'
 import {
   BoolType,
   ChannelType,
@@ -26,7 +26,7 @@ import {
   NoType,
   ReturnType,
   Type,
-} from '../../compiler/typing'
+} from '../../executor/typing'
 
 import { Token, TokenLocation } from './base'
 import { BlockToken } from './block'

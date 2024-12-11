@@ -1,7 +1,7 @@
 import { Edge, Handle, MarkerType, Node, NodeProps, Position } from 'reactflow'
 import { Box } from '@chakra-ui/react'
 
-import { EnvironmentInfo } from '../../../go-virtual-machine-main/virtual-machine/executor/debugger'
+import { EnvironmentInfo } from '../../../go-virtual-machine-main/virtual-machine/runtime/debugger'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Nodes = Node<any, string | undefined>[]

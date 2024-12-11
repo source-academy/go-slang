@@ -1,4 +1,4 @@
-import { Process } from '../../executor/process'
+import { Process } from '../../runtime/process'
 import { ArrayNode, SliceNode } from '../../heap/types/array'
 import { IntegerNode } from '../../heap/types/primitives'
 

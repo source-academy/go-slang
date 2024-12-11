@@ -11,8 +11,8 @@
     "eject": "react-scripts eject",
     "lint-no-fix": "eslint ./ --ignore-path .gitignore && prettier . -c",
     "lint": "eslint ./ --ignore-path .gitignore --fix && prettier . -c --write",
-    "generate-parser": "npx peggy --format es -o src/go-virtual-machine-main/virtual-machine/parser/golang_parser.js src/go-virtual-machine-main/virtual-machine/parser/parser.peggy",
-    "generate-parser-watch": "npx peggy -m -w --format es -o src/go-virtual-machine-main/virtual-machine/parser/golang_parser.js src/go-virtual-machine-main/virtual-machine/parser/parser.peggy"
+    "generate-parser": "npx peggy --format es -o src/go-virtual-machine-main/virtual-machine/compiler/golang_parser.js src/go-virtual-machine-main/virtual-machine/compiler/parser.peggy",
+    "generate-parser-watch": "npx peggy -m -w --format es -o src/go-virtual-machine-main/virtual-machine/compiler/golang_parser.js src/go-virtual-machine-main/virtual-machine/compiler/parser.peggy"
   },
   "author": "",
   "license": "ISC",
