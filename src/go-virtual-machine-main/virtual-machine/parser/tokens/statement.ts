@@ -74,6 +74,8 @@ export class AssignmentStatementToken extends Token {
 
   override compileUnchecked(compiler: Compiler): Type {
     // TODO: Custom Instructions to avoid recalculation?
+    // needs to find a way to determine whether to use lenient check (transitive check)
+    // or strict check (declared types must match exactly even if they are transitive)
     for (let i = 0; i < this.left.length; i++) {
       const left = this.left[i]
       const right = this.right[i]

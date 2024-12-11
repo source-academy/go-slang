@@ -1,14 +1,17 @@
 import { JumpInstruction } from './instructions/control'
+import { Type } from './typing'
 
 class CompileEnvironment {
-  types: Record<string, string>[][]
-  declare_type(name: string, type: string) {
+  declare_type(name: string, type: Type) {
     const frame_idx = this.frames.length - 1
     for (const var_name of this.frames[frame_idx]) {
       if (var_name === name) throw Error('Type already declared')
     }
-    const new_len = this.frames[frame_idx].push(name)
-    const recordToAdd = {} as Record<string, string>
+    for (const var_name of this.typenames[frame_idx]) {
+      if (var_name === name) throw Error('Type already declared')
+    }
+    const new_len = this.typenames[frame_idx].push(name)
+    const recordToAdd = {} as Record<string, Type>
     recordToAdd[name] = type
     this.types[frame_idx].push(recordToAdd)
     return [0, new_len - 1]
@@ -22,7 +25,7 @@ class CompileEnvironment {
       while (var_idx >= 0) {
         var x = Object.keys(this.types[frame_sz - frame_idx][var_idx])
         if (Object.keys(this.types[frame_sz - frame_idx][var_idx])[0] === name)
-          return Object.values(this.types[frame_sz - frame_idx][var_idx])[0]
+          return Object.values(this.types[frame_sz - frame_idx][var_idx])
         var_idx--
       }
       frame_idx++
@@ -30,16 +33,21 @@ class CompileEnvironment {
     throw Error('Unable to find type: ' + name)
   }
 
+  typenames: string[][]
+  types: Record<string, Type>[][]
   frames: string[][]
   constructor(parent?: CompileEnvironment) {
     if (!parent) {
       this.frames = [[]]
+      this.typenames = [[]]
       this.types = [[]]
     } else {
       this.frames = parent.frames.slice()
       this.frames.push([])
       this.types = parent.types.slice()
       this.types.push([])
+      this.typenames = parent.typenames.slice()
+      this.typenames.push([])
     }
   }
 
@@ -61,6 +69,9 @@ class CompileEnvironment {
   declare_var(name: string) {
     const frame_idx = this.frames.length - 1
     for (const var_name of this.frames[frame_idx]) {
+      if (var_name === name) throw Error('Variable already declared')
+    }
+    for (const var_name of this.typenames[frame_idx]) {
       if (var_name === name) throw Error('Variable already declared')
     }
     const new_len = this.frames[frame_idx].push(name)

@@ -16,7 +16,6 @@ import { LinkedListEntryNode, LinkedListNode } from './types/linkedlist'
 import { MutexNode } from './types/mutex'
 import {
   BoolNode,
-  DeclaredNode,
   FloatNode,
   IntegerNode,
   StringListNode,
@@ -161,8 +160,6 @@ export class Heap {
         return new FmtPkgNode(this, addr)
       case TAG.MUTEX:
         return new MutexNode(this, addr)
-      case TAG.DECLARED:
-        return new DeclaredNode(this, addr)
       default:
         // return new UnassignedNode(this, addr)
         throw Error('Unknown Data Type')

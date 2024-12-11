@@ -1,3 +1,4 @@
+import { compiler } from 'peggy'
 import { Heap } from '../../heap'
 import { ArrayNode, SliceNode } from '../../heap/types/array'
 import { ChannelNode } from '../../heap/types/channel'
@@ -5,7 +6,6 @@ import { PkgNode } from '../../heap/types/fmt'
 import { FuncNode } from '../../heap/types/func'
 import {
   BoolNode,
-  DeclaredNode,
   FloatNode,
   IntegerNode,
   StringNode,
@@ -354,7 +354,7 @@ export const TypeUtility = {
 }
 
 export class DeclaredType extends Type {
-  constructor(public name: string, public type: string) {
+  constructor(public name: string, public type: Type) {
     super()
     this.name = name
     this.type = type
@@ -370,10 +370,6 @@ export class DeclaredType extends Type {
 
   override equals(t: Type): boolean {
     return t instanceof DeclaredType && t.name === this.name && t.type === this.type
-  }
-
-  override defaultNodeCreator(): (_heap: Heap) => number {
-    return (heap) => DeclaredNode.create(heap).addr
   }
 
   /*

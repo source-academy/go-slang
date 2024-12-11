@@ -144,11 +144,11 @@ interpreted_string_lit = '"' str:$[^\n"]* '"' { return StringLiteralToken.fromSo
 // Note: `TypeName TypeArgs?` is reduced to `TypeName` as generics are not supported.
 Type     = @TypeName / TypeLit / "(" _ Type _ ")"
 //! TODO (P1): Support qualified identifiers for TypeName.
-TypeName = iden:identifier
+TypeName = @QualifiedIdent /
+           (iden:identifier
            { return PrimitiveTypeToken.isPrimitive(iden.identifier)
             ? new PrimitiveTypeToken(location(), iden.identifier) 
-            : new DeclaredTypeToken(location(), iden.identifier)}
-         / @QualifiedIdent
+            : new DeclaredTypeToken(location(), iden.identifier)})
 TypeLit  = ArrayType / StructType / PointerType / FunctionType / InterfaceType / SliceType / MapType / ChannelType
 
 //* Array Types
@@ -163,7 +163,7 @@ SliceType = "[" "]" element:ElementType { return new SliceTypeToken(location(), 
 
 //* Struct Types
 StructType    = "struct" _ "{" _ (_ FieldDecl _ ";"?)* _ "}"
-FieldDecl      = (IdentifierList Type / EmbeddedField) Tag?
+FieldDecl     = (IdentifierList Type / EmbeddedField) Tag?
 EmbeddedField = "*"? TypeName
 Tag           = string_lit
 

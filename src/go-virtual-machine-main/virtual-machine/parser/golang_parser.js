@@ -1947,21 +1947,21 @@ function peg$parse(input, options) {
     var s0, s1;
 
     s0 = peg$currPos;
-    s1 = peg$parseidentifier();
+    s1 = peg$parseQualifiedIdent();
     if (s1 !== peg$FAILED) {
-      peg$savedPos = s0;
-      s1 = peg$f12(s1);
+      s0 = s1;
+    } else {
+      peg$currPos = s0;
+      s0 = peg$FAILED;
     }
-    s0 = s1;
     if (s0 === peg$FAILED) {
       s0 = peg$currPos;
-      s1 = peg$parseQualifiedIdent();
+      s1 = peg$parseidentifier();
       if (s1 !== peg$FAILED) {
-        s0 = s1;
-      } else {
-        peg$currPos = s0;
-        s0 = peg$FAILED;
+        peg$savedPos = s0;
+        s1 = peg$f12(s1);
       }
+      s0 = s1;
     }
 
     return s0;

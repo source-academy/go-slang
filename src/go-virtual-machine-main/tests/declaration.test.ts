@@ -142,4 +142,38 @@ describe('Variable Declaration Tests', () => {
     `
     expect(mainRunner(code).error?.type).toEqual("compile")
   })
+
+  test('Type declaration should throw error if types do not match in binop', () => {
+    const code = `
+    type Age int
+    type Num Age
+    var x Num = 3
+    var y int = 2
+    x = x + y
+    fmt.Println(x)
+    `
+    expect(mainRunner(code).error?.type).toEqual("compile")
+  })
+
+  test('Type declaration should throw error if types do not match in assignment', () => {
+    const code = `
+    type Age int
+    type Num Age
+    var x Num = 3
+    var y int = 2
+    x = y
+    fmt.Println(x)
+    `
+    expect(mainRunner(code).error?.type).toEqual("compile")
+  })
+
+  test('Type declaration based on int should still work correctly when applying binops', () => {
+    const code = `
+    type Age int
+    type Num Age
+    var x Num = 3
+    fmt.Println(x + 2)
+    `
+    expect(mainRunner(code).output).toEqual("5\n")
+  })
 })

@@ -5,13 +5,13 @@ import {
   LoadVariableInstruction,
   StoreInstruction,
 } from '../../compiler/instructions'
-import { NoType, ReturnType, Type } from '../../compiler/typing'
+import { DeclaredType, NoType, ReturnType, Type } from '../../compiler/typing'
 
 import { Token, TokenLocation } from './base'
 import { ExpressionToken, PrimaryExpressionModifierToken, PrimaryExpressionToken } from './expressions'
 import { IdentifierToken } from './identifier'
 import { FunctionLiteralToken } from './literals'
-import { PrimitiveTypeToken, TypeToken } from './type'
+import { DeclaredTypeToken, PrimitiveTypeToken, TypeToken } from './type'
 
 export type TopLevelDeclarationToken =
   | DeclarationToken
@@ -70,7 +70,7 @@ export class TypeDeclarationToken extends DeclarationToken {
       )
     }
 
-    compiler.context.env.declare_type(identifier.identifier, varType.name)
+    compiler.context.env.declare_type(identifier.identifier, varType.compile(compiler))
     const expectedType = varType ? varType.compile(compiler) : undefined
     compiler.type_environment.addType(
       identifier.identifier,
@@ -208,7 +208,7 @@ export class VariableDeclarationToken extends DeclarationToken {
       compiler.context.env.declare_var(identifier.identifier)
     }
 
-    const expectedType = varType ? varType.compile(compiler) : undefined
+    let expectedType = varType ? varType.compile(compiler) : undefined
 
     // Compile and add identifiers to type environment.
     if (expressions) {
@@ -258,6 +258,17 @@ export class VariableDeclarationToken extends DeclarationToken {
         }
         else {
           const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)
+          // varType is the type of the variable to be declared
+          if (varType instanceof DeclaredTypeToken) {
+            let actualType = varType.name
+            let nextType = compiler.context.env.find_type(actualType)[0]
+            while (nextType instanceof DeclaredType) {
+              actualType = nextType.name
+              nextType = compiler.context.env.find_type(actualType)[0]
+            }
+            expectedType = nextType
+          }
+
           if (expectedType && !expectedType.assignableBy(expressionTypes)) {
             throw Error(
               `Cannot use ${expressionTypes} as ${expectedType} in variable declaration`,

@@ -76,6 +76,8 @@ export class BinaryOperator extends Operator {
   }
 
   override compileUnchecked(compiler: Compiler): Type {
+    // needs to find a way to determine whether to use lenient check (transitive check)
+    // or strict check (declared types must match exactly even if they are transitive)
     const leftType = this.children[0].compile(compiler)
     const rightType = this.children[1].compile(compiler)
     if (!leftType.equals(rightType)) {

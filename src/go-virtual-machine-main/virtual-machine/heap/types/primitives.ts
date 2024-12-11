@@ -204,14 +204,6 @@ export class StringNode extends PrimitiveNode {
 }
 export class StringListNode extends BaseNode {}
 
-export class DeclaredNode extends BaseNode {
-  static create(heap: Heap) {
-    const addr = heap.allocate(1)
-    heap.set_tag(addr, TAG.DECLARED)
-    return new DeclaredNode(heap, addr)
-  }
-}
-
 export class UnassignedNode extends BaseNode {
   static create(heap: Heap) {
     const addr = heap.allocate(1)
