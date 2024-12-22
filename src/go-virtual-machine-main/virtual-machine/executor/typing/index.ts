@@ -22,12 +22,6 @@ export abstract class Type {
 
   /** Returns true if `t` can be assigned to this type. */
   assignableBy(t: Type): boolean {
-    if (!t.isPrimitive) return this.equals(t)
-    if (this instanceof DeclaredType) {
-      return PrimitiveTypeToken.isPrimitive(this.type)
-    } else {
-
-    }
     return this.equals(t)
   }
 
@@ -370,6 +364,11 @@ export class DeclaredType extends Type {
 
   override equals(t: Type): boolean {
     return t instanceof DeclaredType && t.name === this.name && t.type === this.type
+  }
+
+  override defaultNodeCreator(): (heap: Heap) => number {
+    // Do nothing.
+    return (_) => 0
   }
 
   /*

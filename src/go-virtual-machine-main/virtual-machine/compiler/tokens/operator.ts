@@ -6,9 +6,10 @@ import {
   TryChannelReqInstruction,
   UnaryInstruction,
 } from '../../executor/instructions'
-import { BoolType, ChannelType, Type } from '../../executor/typing'
+import { BoolType, ChannelType, DeclaredType, Type } from '../../executor/typing'
 
 import { Token, TokenLocation } from './base'
+import { PrimaryExpressionToken } from './expressions'
 
 abstract class Operator extends Token {
   name: string
@@ -78,8 +79,36 @@ export class BinaryOperator extends Operator {
   override compileUnchecked(compiler: Compiler): Type {
     // needs to find a way to determine whether to use lenient check (transitive check)
     // or strict check (declared types must match exactly even if they are transitive)
-    const leftType = this.children[0].compile(compiler)
-    const rightType = this.children[1].compile(compiler)
+    let leftType = this.children[0].compile(compiler)
+    let rightType = this.children[1].compile(compiler)
+    // literals have unnamed types, so it can match a declared type
+    if (this.children[0] instanceof PrimaryExpressionToken
+      && this.children[0].operand.type === "literal"
+      && rightType instanceof DeclaredType) {
+      // LHS of the binop is a literal, make it match type of RHS
+      let actualType = rightType
+      let nextType = compiler.context.env.find_type(actualType.name)[0]
+      while (nextType instanceof DeclaredType) {
+        actualType = nextType
+        nextType = compiler.context.env.find_type(actualType.name)[0]
+      }
+      if (nextType.assignableBy(leftType)) {
+        leftType = rightType
+      }
+    } else if (this.children[1] instanceof PrimaryExpressionToken
+      && this.children[1].operand.type === "literal"
+      && leftType instanceof DeclaredType) {
+      // RHS of the binop is a literal, make it match type of LHS
+      let actualType = leftType
+      let nextType = compiler.context.env.find_type(actualType.name)[0]
+      while (nextType instanceof DeclaredType) {
+        actualType = nextType
+        nextType = compiler.context.env.find_type(actualType.name)[0]
+      }
+      if (nextType.assignableBy(rightType)) {
+        rightType = leftType
+      }
+    }
     if (!leftType.equals(rightType)) {
       throw Error(
         `Invalid operation (mismatched types ${leftType} and ${rightType})`,
