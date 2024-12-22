@@ -137,8 +137,6 @@ describe('Variable Declaration Tests', () => {
     const code = `
     type Age int
     type B Ag
-    var x B = 3
-    fmt.Println(x)
     `
     expect(mainRunner(code).error?.type).toEqual("compile")
   })
@@ -150,7 +148,6 @@ describe('Variable Declaration Tests', () => {
     var x Num = 3
     var y int = 2
     x = x + y
-    fmt.Println(x)
     `
     expect(mainRunner(code).error?.type).toEqual("compile")
   })
@@ -162,7 +159,6 @@ describe('Variable Declaration Tests', () => {
     var x Num = 3
     var y int = 2
     x = y
-    fmt.Println(x)
     `
     expect(mainRunner(code).error?.type).toEqual("compile")
   })
@@ -171,9 +167,41 @@ describe('Variable Declaration Tests', () => {
     const code = `
     type Age int
     type Num Age
-    var x Num = 3
+    var x Num = 6
     fmt.Println(x + 2)
+    fmt.Println(x / 2)
+    fmt.Println(x * 2)
+    fmt.Println(x - 2)
+    fmt.Println((x + 2) * 2)
+    fmt.Println((x - 2) / 2)
+    fmt.Println(x * x)
+    fmt.Println(x / x)
     `
-    expect(mainRunner(code).output).toEqual("5\n")
+    expect(mainRunner(code).output).toEqual("8\n3\n12\n4\n16\n2\n36\n1\n")
+  })
+
+  test('Type declaration based on int should still work correctly when applying arithmetic assignments', () => {
+    const code = `
+    type Age int
+    type Num Age
+    var x Num = 6
+    x += 3
+    fmt.Println(x)
+    x -= 1
+    fmt.Println(x)
+    x *= 3
+    fmt.Println(x)
+    x /= 4
+    fmt.Println(x)
+    x += 2 * x
+    fmt.Println(x)
+    x *= x - 1
+    fmt.Println(x)
+    x /= x / 2
+    fmt.Println(x)
+    x -= x + 2
+    fmt.Println(x)
+    `
+    expect(mainRunner(code).output).toEqual("9\n8\n24\n6\n18\n306\n2\n-2\n")
   })
 })

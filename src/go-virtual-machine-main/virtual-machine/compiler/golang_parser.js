@@ -318,7 +318,7 @@ function peg$parse(input, options) {
   var peg$r11 = /^[^`]/;
   var peg$r12 = /^[^\n"]/;
   var peg$r13 = /^[a-zA-Z]/;
-  var peg$r14 = /^[*+]/;
+  var peg$r14 = /^[*+\-\/]/;
 
   var peg$e0 = peg$classExpectation([" ", "\t", "\r", "\n"], false, false);
   var peg$e1 = peg$literalExpectation("\n", false);
@@ -387,7 +387,7 @@ function peg$parse(input, options) {
   var peg$e64 = peg$literalExpectation("!", false);
   var peg$e65 = peg$literalExpectation("++", false);
   var peg$e66 = peg$literalExpectation("--", false);
-  var peg$e67 = peg$classExpectation(["*", "+"], false, false);
+  var peg$e67 = peg$classExpectation(["*", "+", "-", "/"], false, false);
   var peg$e68 = peg$literalExpectation("if", false);
   var peg$e69 = peg$literalExpectation("else", false);
   var peg$e70 = peg$literalExpectation("switch", false);

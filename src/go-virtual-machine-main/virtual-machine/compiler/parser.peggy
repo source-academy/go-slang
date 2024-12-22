@@ -407,7 +407,7 @@ IncDecStmt = expression:Expression _ op:("++" / "--")
 //* Assignment Statements
 Assignment = left:ExpressionList _ op:$assign_op _ right:ExpressionList
              { return new AssignmentStatementToken(location(), left, op, right) }
-assign_op  = [\*\+]? "="
+assign_op  = [\*\+\-\/]? "="
 
 //* If Statements
 IfStmt = "if" _ init:(@SimpleStmt _ ";")? _ pred:Expression _ cons:Block _
