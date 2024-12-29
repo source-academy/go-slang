@@ -1,8 +1,9 @@
 import { Process } from '../../runtime/process'
 import { FrameNode } from '../../heap/types/environment'
-import { Type } from '../typing'
+import { DeclaredType, Type } from '../typing'
 
 import { Instruction } from './base'
+import { PrimitiveTypeToken } from '../../compiler/tokens'
 
 export class BlockInstruction extends Instruction {
   frame: Type[] = []
@@ -28,7 +29,19 @@ export class BlockInstruction extends Instruction {
     process.heap.temp_push(new_frame.addr)
     for (let i = 0; i < this.frame.length; i++) {
       const T = this.frame[i]
-      new_frame.set_idx(T.defaultNodeCreator()(process.heap), i)
+      if (T instanceof DeclaredType) {
+        // Find underlying type to load default values into
+        let actualType = T
+        let nextType = T.type
+        // TODO: Morph to support structs
+        while (nextType[0] instanceof DeclaredType) {
+          actualType = nextType[0]
+          nextType = actualType.type
+          }
+        new_frame.set_idx(nextType[0].defaultNodeCreator()(process.heap), i)
+      } else {
+        new_frame.set_idx(T.defaultNodeCreator()(process.heap), i)
+      }
     }
     const new_env = process.context
       .E()

@@ -204,4 +204,22 @@ describe('Variable Declaration Tests', () => {
     `
     expect(mainRunner(code).output).toEqual("9\n8\n24\n6\n18\n306\n2\n-2\n")
   })
+
+  test('Type declaration based on string should still work correctly when applying +', () => {
+    const code = `
+    type text string
+    var x text = "Hello"
+    fmt.Println(x + "4")
+    `
+    expect(mainRunner(code).output).toEqual("Hello4\n")
+  })
+
+  test('Type declaration based on string should still work correctly when uninitialised', () => {
+    const code = `
+    type text string
+    var x text
+    fmt.Println(x + "4")
+    `
+    expect(mainRunner(code).output).toEqual("4\n")
+  })
 })
