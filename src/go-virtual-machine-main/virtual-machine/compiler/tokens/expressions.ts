@@ -15,9 +15,11 @@ import {
   ArrayType,
   BoolType,
   ChannelType,
+  DeclaredType,
   FunctionType,
   Int64Type,
   NoType,
+  ParameterType,
   ReturnType,
   SliceType,
   StringType,
@@ -218,27 +220,77 @@ export class CallToken extends PrimaryExpressionModifierToken {
         if (argumentTypes[i] instanceof ReturnType) {
           if ((argumentTypes[i] as ReturnType).types.length > 1) {
             for (let j = 0; j < (argumentTypes[i] as ReturnType).types.length; j++) {
-              if (((argumentTypes[i] as ReturnType).types[j]).assignableBy(
-                operandType.parameters[i + j + delta].type))
+              // literals have unnamed types, so it can match a declared type
+              let type = (argumentTypes[i] as ReturnType).types[j]
+              if (this.expressions[i] instanceof PrimaryExpressionToken
+                && (this.expressions[i] as PrimaryExpressionToken).operand.type === "literal"
+                && operandType.parameters[i + j + delta] instanceof ParameterType
+                && operandType.parameters[i + j + delta].type instanceof DeclaredType) {
+                // argument is a literal, make it match type of required type by function
+                let actualType = operandType.parameters[i + j + delta].type as DeclaredType
+                let nextType = compiler.context.env.find_type(actualType.name)[0]
+                while (nextType instanceof DeclaredType) {
+                  actualType = nextType
+                  nextType = compiler.context.env.find_type(actualType.name)[0]
+                }
+                if ((argumentTypes[i] as ReturnType).types[j].assignableBy(nextType)) {
+                  type = nextType
+                  break
+                }
+              }
+              if (type.assignableBy(operandType.parameters[i + j + delta].type))
                 continue
               throw Error(
-                `Cannot use ${((argumentTypes[i] as ReturnType).types[j])}
-                as ${operandType.parameters[i + j + delta]} in argument to function call`,
+                `Cannot use ${type} as ${operandType.parameters[i + j + delta]} in argument to function call`,
               )
             }
             delta += (argumentTypes[i] as ReturnType).types.length - 1
           } else {
-            if (argumentTypes[i].assignableBy(operandType.parameters[i].type))
+            let type = argumentTypes[i]
+            if (this.expressions[i] instanceof PrimaryExpressionToken
+              && (this.expressions[i] as PrimaryExpressionToken).operand.type === "literal"
+              && operandType.parameters[i] instanceof ParameterType
+              && operandType.parameters[i].type instanceof DeclaredType) {
+              // argument is a literal, make it match type of required type by function
+              let actualType = operandType.parameters[i].type as DeclaredType
+              let nextType = compiler.context.env.find_type(actualType.name)[0]
+              while (nextType instanceof DeclaredType) {
+                actualType = nextType
+                nextType = compiler.context.env.find_type(actualType.name)[0]
+              }
+              if (argumentTypes[i].assignableBy(nextType)) {
+                type = nextType
+                break
+              }
+            }
+            if (type.assignableBy(operandType.parameters[i].type))
               continue
             throw Error(
-              `Cannot use ${argumentTypes[i]} as ${operandType.parameters[i]} in argument to function call`,
+              `Cannot use ${type} as ${operandType.parameters[i]} in argument to function call`,
             )
           }
         } else {
-          if (argumentTypes[i].assignableBy(operandType.parameters[i].type))
+          let type = argumentTypes[i]
+          if (this.expressions[i] instanceof PrimaryExpressionToken
+            && (this.expressions[i] as PrimaryExpressionToken).operand.type === "literal"
+            && operandType.parameters[i] instanceof ParameterType
+            && operandType.parameters[i].type instanceof DeclaredType) {
+            // argument is a literal, make it match type of required type by function
+            let actualType = operandType.parameters[i].type as DeclaredType
+            let nextType = compiler.context.env.find_type(actualType.name)[0]
+            while (nextType instanceof DeclaredType) {
+              actualType = nextType
+              nextType = compiler.context.env.find_type(actualType.name)[0]
+            }
+            if (argumentTypes[i].assignableBy(nextType)) {
+              type = nextType
+              break
+            }
+          }
+          if (type.assignableBy(operandType.parameters[i].type))
             continue
           throw Error(
-            `Cannot use ${argumentTypes[i]} as ${operandType.parameters[i]} in argument to function call`,
+            `Cannot use ${type} as ${operandType.parameters[i]} in argument to function call`,
           )
         }
       }

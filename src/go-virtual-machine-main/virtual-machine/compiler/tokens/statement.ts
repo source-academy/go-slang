@@ -295,6 +295,25 @@ export class ReturnStatementToken extends Token {
       )
     }
 
+    if (this.returns) {
+      for (let i = 0; i < this.returns.length; i++) {
+        let actualType = compiler.type_environment.expectedReturn.types[i]
+        let nextType = actualType
+        if (this.returns[i] instanceof PrimaryExpressionToken
+          && (this.returns[i] as PrimaryExpressionToken).operand.type === "literal"
+          && compiler.type_environment.expectedReturn.types[i] instanceof DeclaredType) {
+            nextType = (compiler.type_environment.expectedReturn.types[i] as DeclaredType).type[0]
+            while (nextType instanceof DeclaredType) {
+              actualType = nextType
+              nextType = (actualType as DeclaredType).type[0]
+            }
+            if (returnType.types[i].assignableBy(nextType)) {
+              returnType.types[i] = compiler.type_environment.expectedReturn.types[i]
+            }
+        }
+      }
+    }
+
     if (!returnType.equals(compiler.type_environment.expectedReturn)) {
       throw new Error(
         `Cannot use ${returnType} as ${compiler.type_environment.expectedReturn} value in return statement.`,

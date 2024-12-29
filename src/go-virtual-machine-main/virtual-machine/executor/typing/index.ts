@@ -363,7 +363,8 @@ export class DeclaredType extends Type {
   }
 
   override equals(t: Type): boolean {
-    return t instanceof DeclaredType && t.name === this.name && t.type === this.type
+    // TODO: Morph to support structs
+    return t instanceof DeclaredType && t.name === this.name && this.type[0].equals(t.type[0])
   }
 
   override defaultNodeCreator(): (heap: Heap) => number {

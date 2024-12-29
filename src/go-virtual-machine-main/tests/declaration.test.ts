@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { mainRunner } from './utility'
+import { codeRunner, mainRunner } from './utility'
 
 describe('Variable Declaration Tests', () => {
   test('Const Variables', () => {
@@ -221,5 +221,240 @@ describe('Variable Declaration Tests', () => {
     fmt.Println(x + "4")
     `
     expect(mainRunner(code).output).toEqual("4\n")
+  })
+
+  test('Type declaration based on int should still work correctly when uninitialised', () => {
+    const code = `
+    type Num int
+    var x Num
+    fmt.Println(x + 45)
+    `
+    expect(mainRunner(code).output).toEqual("45\n")
+  })
+
+  test('Type declaration based on float should still work correctly when uninitialised', () => {
+    const code = `
+    type Num float64
+    var x Num
+    fmt.Println(x + 49.25)
+    `
+    expect(mainRunner(code).output).toEqual("49.25\n")
+  })
+
+  test('+ should work on 2 variables with string as underlying type', () => {
+    const code = `
+    type text string
+    var x text = "Hello"
+    var y text = " there"
+    fmt.Println(x + y)
+    `
+    expect(mainRunner(code).output).toEqual("Hello there\n")
+  })
+
+  test('+ should work on 2 variables with int as underlying type', () => {
+    const code = `
+    type Age int
+    type Num Age
+    var x Num = 3
+    var y Num = 2
+    fmt.Println(x + y)
+    `
+    expect(mainRunner(code).output).toEqual("5\n")
+  })
+
+  test('+ should work on 2 variables with float as underlying type', () => {
+    const code = `
+    type Age float64
+    type Num Age
+    var x Num = 3.5
+    var y Num = 2.25
+    fmt.Println(x + y)
+    `
+    expect(mainRunner(code).output).toEqual("5.75\n")
+  })
+
+  test('+ should work on a variable with float as underlying type and int literal', () => {
+    const code = `
+    type Age float64
+    type Num Age
+    var x Num = 3.25
+    fmt.Println(x + 33)
+    `
+    expect(mainRunner(code).output).toEqual("36.25\n")
+  })
+
+  test('Type declaration works on function arguments with typed variable', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    type A int
+    func help(a A) {
+      fmt.Println(a)
+    }
+
+    func main() {
+      var aa A = 38
+      help(aa)
+    }
+    `
+    expect(codeRunner(code).output).toEqual("38\n")
+  })
+
+  test('Type declaration works on function arguments with literal', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    type A int
+    func help(a A) {
+      fmt.Println(a)
+    }
+
+    func main() {
+      help(47)
+    }
+    `
+    expect(codeRunner(code).output).toEqual("47\n")
+  })
+
+  test('Type declaration of multiple layers works on function arguments with literal', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    type A int
+    type B A
+    func help(a B) {
+      fmt.Println(a)
+    }
+
+    func main() {
+      help(474)
+    }
+    `
+    expect(codeRunner(code).output).toEqual("474\n")
+  })
+
+  test('Type declaration fails if function argument types do not match (argument = declared, supplied = underlying)', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    type A int
+    func help(a A) {
+      fmt.Println(a)
+    }
+
+    func main() {
+      var aa int = 0
+      help(aa)
+    }
+    `
+    expect(codeRunner(code).error?.type).toEqual("compile")
+  })
+
+  test('Type declaration fails if function argument types do not match (argument = underlying, supplied = declared)', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    type A int
+    func help(a int) {
+      fmt.Println(a)
+    }
+
+    func main() {
+      var aa A = 0
+      help(aa)
+    }
+    `
+    expect(codeRunner(code).error?.type).toEqual("compile")
+  })
+
+  test('Type declaration should work on functions with literal as return values used for another function)', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    type A int
+    func help(c A) {
+      fmt.Println(c)
+    }
+
+    func help2(a A) A {
+      return 30
+    }
+
+    func main() {
+      help(help2(6))
+    }
+    `
+    expect(codeRunner(code).output).toEqual("30\n")
+  })
+
+  test('Type declaration should work on functions with matching type return values used for another function)', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    type A int
+    func help(c A) {
+      fmt.Println(c)
+    }
+
+    func help2(a A) A {
+      return a * 2
+    }
+
+    func main() {
+      help(help2(6))
+    }
+    `
+    expect(codeRunner(code).output).toEqual("12\n")
+  })
+
+  test('Type declaration should fail on functions with not matching type return values used for another function)', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    type A int
+    type B int
+    func help(c B) {
+      fmt.Println(c)
+    }
+
+    func help2(a A) A {
+      return 2
+    }
+
+    func main() {
+      help(help2(6))
+    }
+    `
+    expect(codeRunner(code).error?.type).toEqual("compile")
+  })
+
+  test('Type declaration should fail on functions with not matching but transitive type return values used for another function)', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    type A int
+    type B A
+    func help(c B) {
+      fmt.Println(c)
+    }
+
+    func help2(a A) A {
+      return 2
+    }
+
+    func main() {
+      help(help2(6))
+    }
+    `
+    expect(codeRunner(code).error?.type).toEqual("compile")
   })
 })

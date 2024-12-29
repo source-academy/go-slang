@@ -109,6 +109,7 @@ export class BinaryOperator extends Operator {
         rightType = leftType
       }
     }
+    // special handling for literals to act as int or float
     if (!leftType.equals(rightType)) {
       throw Error(
         `Invalid operation (mismatched types ${leftType} and ${rightType})`,

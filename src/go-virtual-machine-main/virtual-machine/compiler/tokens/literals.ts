@@ -48,6 +48,7 @@ export class IntegerLiteralToken extends LiteralToken {
   }
 
   override compileUnchecked(compiler: Compiler): Type {
+    // may need to change so that it can be a float as well
     this.pushInstruction(
       compiler,
       new LoadConstantInstruction(this.value, new Int64Type()),
