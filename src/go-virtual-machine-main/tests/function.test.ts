@@ -350,7 +350,8 @@ describe('Function Execution tests', () => {
         }
 
         func main() {
-          c, d, e, f := 3, x(3, "IUCvevfde"), 2
+          d, e := x(3, "IUCvevfde")
+          c, f := 3, 2
           fmt.Println(c)
           fmt.Println(d)
           fmt.Println(e)

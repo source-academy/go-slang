@@ -11,6 +11,7 @@ import {
 } from '../../executor/instructions'
 import {
   ArrayType,
+  DeclaredType,
   Float64Type,
   FunctionType,
   Int64Type,
@@ -22,7 +23,7 @@ import {
 
 import { Token, TokenLocation } from './base'
 import { BlockToken } from './block'
-import { ExpressionToken } from './expressions'
+import { ExpressionToken, PrimaryExpressionToken } from './expressions'
 import { ArrayTypeToken, FunctionTypeToken, SliceTypeToken } from './type'
 
 export abstract class LiteralToken extends Token {
@@ -218,8 +219,22 @@ export class LiteralValueToken extends Token {
     if (element instanceof LiteralValueToken) {
       element.compileWithType(compiler, type)
     } else {
-      const actualType = element.compile(compiler)
-      if (!type.equals(actualType)) {
+      let actualType = element.compile(compiler)
+      // make untyped element match the required type
+      let finalType = type
+      if (element instanceof PrimaryExpressionToken
+        && (element as PrimaryExpressionToken).operand.type === "literal"
+        && type instanceof DeclaredType) {
+        let nextType = (type as DeclaredType).type[0]
+        while (nextType instanceof DeclaredType) {
+          finalType = nextType
+          nextType = (finalType as DeclaredType).type[0]
+        }
+        if (actualType.assignableBy(nextType)) {
+          actualType = type
+        }
+      }
+      if (!type.equals(actualType)) { 
         throw new Error(
           `Cannot use ${actualType} as ${type} value in ${typeName}.`,
         )

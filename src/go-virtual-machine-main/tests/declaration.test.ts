@@ -436,25 +436,144 @@ describe('Variable Declaration Tests', () => {
     expect(codeRunner(code).error?.type).toEqual("compile")
   })
 
-  test('Type declaration should fail on functions with not matching but transitive type return values used for another function)', () => {
+  test('Type declaration should work on arrays', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    func main() {
+      type B int
+      a := []B{12, 21}
+      fmt.Println(a)
+    }
+    `
+    expect(codeRunner(code).output).toEqual("[12 21]\n")
+  })
+
+  test('Type declaration should work on arrays (double layer)', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    func main() {
+      type A int
+      type B A
+      a := []B{12, 21}
+      fmt.Println(a)
+    }
+    `
+    expect(codeRunner(code).output).toEqual("[12 21]\n")
+  })
+
+  test('Type declaration should work on arrays', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    func main() {
+      type B int
+      a := []B{12, 21}
+      fmt.Println(a)
+    }
+    `
+    expect(codeRunner(code).output).toEqual("[12 21]\n")
+  })
+
+  test('Type declaration should work on arrays (double layer)', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    func main() {
+      type A int
+      type B A
+      a := []B{12, 21}
+      fmt.Println(a)
+    }
+    `
+    expect(codeRunner(code).output).toEqual("[12 21]\n")
+  })
+
+  test('Type declaration should work on array elements', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    func main() {
+      type B int
+      a := []B{12, 21}
+      fmt.Println(a[0] + a[1])
+    }
+    `
+    expect(codeRunner(code).output).toEqual("33\n")
+  })
+
+  test('Type declaration should work on array elements (double layer)', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    func main() {
+      type A int
+      type B A
+      a := []B{12, 21}
+      fmt.Println(a[0] + a[1])
+    }
+    `
+    expect(codeRunner(code).output).toEqual("33\n")
+  })
+
+  test('Type declaration should fail on array elements of different types', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    func main() {
+      type A int
+      type B A
+      a := []B{12, 21}
+      b := []A{48, 77}
+      fmt.Println(a[0] + b[1])
+    }
+    `
+    expect(codeRunner(code).error?.type).toEqual("compile")
+  })
+
+  test('Type declaration should fail on arrays of different types', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    func main() {
+      type A int
+      type B A
+      a := []B{12, 21}
+      b := []A{48, 77}
+      b = a
+    }
+    `
+    expect(codeRunner(code).error?.type).toEqual("compile")
+  })
+
+  test('Type declaration should work on functions with matching type return values used for array element assignment', () => {
     const code = `
     package main
     import "fmt"
 
     type A int
-    type B A
-    func help(c B) {
+    func help(c A) {
       fmt.Println(c)
     }
 
     func help2(a A) A {
-      return 2
+      return a * 2
     }
 
     func main() {
-      help(help2(6))
+      a := []A{help2(24), help2(67)}
+      fmt.Println(a)
     }
     `
-    expect(codeRunner(code).error?.type).toEqual("compile")
+    expect(codeRunner(code).output).toEqual("[48 134]\n")
   })
 })

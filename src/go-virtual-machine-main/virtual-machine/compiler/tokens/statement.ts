@@ -6,6 +6,7 @@ import {
   DeferredCallInstruction,
   ExitBlockInstruction,
   GoInstruction,
+  Instruction,
   LoadChannelReqInstruction,
   LoadConstantInstruction,
   PopInstruction,
@@ -75,9 +76,9 @@ export class AssignmentStatementToken extends Token {
 
   override compileUnchecked(compiler: Compiler): Type {
     // TODO: Custom Instructions to avoid recalculation?
-    for (let i = 0; i < this.left.length; i++) {
-      const left = this.left[i]
-      const right = this.right[i]
+    for (let i = 0; i < this.right.length; i++) {
+      let left = this.left[i]
+      let right = this.right[i]
       let assignType: Type
       if (this.operation === '+=') {
         let leftType = left.compile(compiler)
@@ -236,11 +237,47 @@ export class AssignmentStatementToken extends Token {
       } else {
         throw Error('Unimplemented')
       }
-      const varType = left.compile(compiler)
-      if (!varType.assignableBy(assignType)) {
-        throw Error(`Cannot use ${assignType} as ${varType} in assignment`)
+      if (assignType instanceof ReturnType) {
+        for (let j = 0; j < assignType.types.length; j++) {
+          left = this.left[i]
+          const varType = left.compile(compiler)
+          if (!varType.assignableBy(assignType.types[j])) {
+            throw Error(`Cannot use ${assignType.types[j]} as ${varType} in assignment`)
+          }
+          this.pushInstruction(compiler, new StoreInstruction())
+          i++
+        }
+        // as the return values are loaded onto OS and thus popped in reverse order,
+        // storing them into variables should be in reverse order
+        // it is impossible to change how return values are loaded onto OS
+        // as it will conflict with other instructions such as binops.
+        let reverse_instructions = []
+        for (let j = 0; j < assignType.types.length; j++) {
+          compiler.instructions.pop() // store instruction gets popped
+          let instructionSet = []
+          let a = 0
+          let next = compiler.instructions.pop()
+          while (!(next instanceof StoreInstruction || next instanceof CallInstruction)) {
+            instructionSet[a] = next // load and intermediate instructions get popped
+            a++
+            next = compiler.instructions.pop()
+          }
+          compiler.instructions.push(next)
+          reverse_instructions[j] = instructionSet
+        }
+        for (let j = 0; j < assignType.types.length; j++) {
+          for (let k = reverse_instructions[j].length - 1; k >= 0; k--) {
+            this.pushInstruction(compiler, reverse_instructions[j][k] as Instruction)
+          }
+          this.pushInstruction(compiler, new StoreInstruction())
+        }
+      } else {
+        const varType = left.compile(compiler)
+        if (!varType.assignableBy(assignType)) {
+          throw Error(`Cannot use ${assignType} as ${varType} in assignment`)
+        }
+        this.pushInstruction(compiler, new StoreInstruction())
       }
-      this.pushInstruction(compiler, new StoreInstruction())
     }
     return new NoType()
   }

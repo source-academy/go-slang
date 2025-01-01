@@ -1,6 +1,7 @@
 import { env } from 'process'
 import { Compiler } from '../../executor'
 import {
+  CallInstruction,
   Instruction,
   LoadVariableInstruction,
   StoreInstruction,
@@ -146,11 +147,21 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
           let reverse_instructions = []
           for (let j = 0; j < expressionTypes.types.length; j++) {
             compiler.instructions.pop() // store instruction gets popped
-            reverse_instructions[j] = compiler.instructions.pop() // load instruction gets popped
+            let instructionSet = []
+            let a = 0
+            let next = compiler.instructions.pop()
+            while (!(next instanceof StoreInstruction || next instanceof CallInstruction)) {
+              instructionSet[a] = next // load and intermediate instructions get popped
+              a++
+              next = compiler.instructions.pop()
+            }
+            compiler.instructions.push(next)
+            reverse_instructions[j] = instructionSet
           }
-
           for (let j = 0; j < expressionTypes.types.length; j++) {
-            this.pushInstruction(compiler, reverse_instructions[j] as Instruction)
+            for (let k = reverse_instructions[j].length - 1; k >= 0; k--) {
+              this.pushInstruction(compiler, reverse_instructions[j][k] as Instruction)
+            }
             this.pushInstruction(compiler, new StoreInstruction())
           }
         }
@@ -249,11 +260,21 @@ export class VariableDeclarationToken extends DeclarationToken {
           let reverse_instructions = []
           for (let j = 0; j < expressionTypes.types.length; j++) {
             compiler.instructions.pop() // store instruction gets popped
-            reverse_instructions[j] = compiler.instructions.pop() // load instruction gets popped
+            let instructionSet = []
+            let a = 0
+            let next = compiler.instructions.pop()
+            while (!(next instanceof StoreInstruction || next instanceof CallInstruction)) {
+              instructionSet[a] = next // load and intermediate instructions get popped
+              a++
+              next = compiler.instructions.pop()
+            }
+            compiler.instructions.push(next)
+            reverse_instructions[j] = instructionSet
           }
-
           for (let j = 0; j < expressionTypes.types.length; j++) {
-            this.pushInstruction(compiler, reverse_instructions[j] as Instruction)
+            for (let k = reverse_instructions[j].length - 1; k >= 0; k--) {
+              this.pushInstruction(compiler, reverse_instructions[j][k] as Instruction)
+            }
             this.pushInstruction(compiler, new StoreInstruction())
           }
         }
