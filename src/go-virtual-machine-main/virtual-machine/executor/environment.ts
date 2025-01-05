@@ -11,10 +11,28 @@ class CompileEnvironment {
       if (var_name === name) throw Error('Type already declared')
     }
     const new_len = this.typenames[frame_idx].push(name)
+    name = name + frame_idx // internal name
     const recordToAdd = {} as Record<string, Type>
     recordToAdd[name] = type
     this.types[frame_idx].push(recordToAdd)
     return [0, new_len - 1]
+  }
+
+  create_type(name: string) {
+    let frame_idx = 0
+    const frame_sz = this.frames.length - 1
+    while (frame_sz >= frame_idx) {
+      let var_idx = this.types[frame_sz - frame_idx].length - 1
+      while (var_idx >= 0) {
+        var x = Object.keys(this.types[frame_sz - frame_idx][var_idx])
+        var y = name + (frame_sz - frame_idx)
+        if (Object.keys(this.types[frame_sz - frame_idx][var_idx])[0] === y)
+          return [Object.values(this.types[frame_sz - frame_idx][var_idx]), y]
+        var_idx--
+      }
+      frame_idx++
+    }
+    throw Error('Unable to find type: ' + name)
   }
 
   find_type(name: string) {
@@ -24,7 +42,8 @@ class CompileEnvironment {
       let var_idx = this.types[frame_sz - frame_idx].length - 1
       while (var_idx >= 0) {
         var x = Object.keys(this.types[frame_sz - frame_idx][var_idx])
-        if (Object.keys(this.types[frame_sz - frame_idx][var_idx])[0] === name)
+        var y = name
+        if (Object.keys(this.types[frame_sz - frame_idx][var_idx])[0] === y)
           return Object.values(this.types[frame_sz - frame_idx][var_idx])
         var_idx--
       }

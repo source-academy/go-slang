@@ -576,4 +576,113 @@ describe('Variable Declaration Tests', () => {
     `
     expect(codeRunner(code).output).toEqual("[48 134]\n")
   })
+
+  test('Same type name on different scopes should be seen as different types', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    type A int
+    var a A = 1
+
+    func main() {
+      type A int
+      var b A = 1
+      fmt.Println(a + b)
+    }
+    `
+    expect(codeRunner(code).error?.type).toEqual("compile")
+  })
+
+  test('Type not in scope but with same name should fail', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    var a A = 1
+
+    func main() {
+      type A int
+      var b A = 1
+      fmt.Println(a + b)
+    }
+    `
+    expect(codeRunner(code).error?.type).toEqual("compile")
+  })
+
+  test('Same type name on different scopes should be seen as different types (multiple layers)', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    type A int
+    var a A = 1
+
+    func main() {
+      type B A
+      type A B
+      var b A = 1
+      fmt.Println(b + a)
+    }
+    `
+    expect(codeRunner(code).error?.type).toEqual("compile")
+  })
+
+  test('Same type name on different scopes should be seen as different types (for loops)', () => {
+    const code = `
+    package main
+    import "fmt"
+    
+    func main() {
+      type A int
+      var c A = 3
+      for i := 0; i < 9; i++ {
+        type A int
+        var b A = 2
+        fmt.Println(b + c)
+      }
+    }
+    `
+    expect(codeRunner(code).error?.type).toEqual("compile")
+  })
+
+  test('Type declarations are preserved in loops', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    func main() {
+      type A int
+      var c A = 3
+      for i := 0; i < 9; i++ {
+        var b A = 2
+        fmt.Println(b + c)
+      }
+    }
+    `
+    expect(codeRunner(code).output).toEqual("5\n5\n5\n5\n5\n5\n5\n5\n5\n")
+  })
+
+  test('Type declarations are preserved across functions', () => {
+    const code = `
+    package main
+    import "fmt"
+    
+    type A int
+
+    func help(a A) A {
+      var b A = a
+      fmt.Println(b * a)
+      return b
+    }
+
+    func main() {
+      var c A = 14
+      var d A = help(c)
+      fmt.Println(c + d)
+      fmt.Println(d)
+    }
+    `
+    expect(codeRunner(code).output).toEqual("196\n28\n14\n")
+  })
 })

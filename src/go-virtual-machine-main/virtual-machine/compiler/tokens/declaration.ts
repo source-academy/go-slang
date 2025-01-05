@@ -281,9 +281,9 @@ export class VariableDeclarationToken extends DeclarationToken {
         else {
           const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)
           // varType is the type of the variable to be declared
-          if (varType instanceof DeclaredTypeToken) {
+          if (expectedType instanceof DeclaredType) {
             // change the type of literal values, not the declared variable
-            let actualType = varType.name
+            let actualType = expectedType.name
             let nextType = compiler.context.env.find_type(actualType)[0]
             while (nextType instanceof DeclaredType) {
               actualType = nextType.name

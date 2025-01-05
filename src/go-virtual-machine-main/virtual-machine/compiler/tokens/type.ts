@@ -162,9 +162,9 @@ export class DeclaredTypeToken extends TypeToken {
   }
 
   override compileUnchecked(compiler: Compiler): Type {
-    const baseTypes = compiler.context.env.find_type(this.name)
+    const [baseTypes, internalName] = compiler.context.env.create_type(this.name)
     // load the underlying types
     // need to configure to use declared type if possible
-    return new DeclaredType(this.name, baseTypes)
+    return new DeclaredType(internalName, baseTypes)
   }
 }
