@@ -28,6 +28,7 @@
     DeclaredTypeToken,
     ArrayTypeToken,
     SliceTypeToken,
+    StructTypeToken,
     FunctionTypeToken,
     MapTypeToken,
     ChannelTypeToken,
@@ -59,7 +60,8 @@
 }}
 
 /*
-The result of parsing a source file should be a single SourceFileToken.
+The result of parsing a source file should be a single list of tokens,
+which we shall call it SourceFileTokens.
 A token may be composed of many other tokens.
 The structure of what each token looks like can be found in each Token class.
 */
@@ -162,8 +164,8 @@ ElementType = Type
 SliceType = "[" "]" element:ElementType { return new SliceTypeToken(location(), element) }
 
 //* Struct Types
-StructType    = "struct" _ "{" _ (_ FieldDecl _ ";"?)* _ "}"
-FieldDecl     = (IdentifierList Type / EmbeddedField) Tag?
+StructType    = "struct" _ "{" _ fields:(_ @FieldDecl _ ";"? _)* "}" { return new StructTypeToken(location(), [...fields].flat(), fields) }
+FieldDecl     = list:IdentifierList _ type:(Type / EmbeddedField) _ Tag? { return {list, type} }
 EmbeddedField = "*"? TypeName
 Tag           = string_lit
 
@@ -256,7 +258,7 @@ VarSpec = identifiers:IdentifierList _ rest:(
           { return new VariableDeclarationToken(location(), identifiers, rest.varType, rest.expressions) }
 
 //* Short Variable Declarations
-ShortVarDecl = identifiers:IdentifierList _ ":=" _ expressions:ExpressionList
+ShortVarDecl = identifiers:IdentifierList _ ":=" _ expressions:(ExpressionList / StructType)
                { return new ShortVariableDeclarationToken(location(), identifiers, undefined, expressions) }
 
 //* Function Declarations
