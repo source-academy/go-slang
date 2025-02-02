@@ -12,8 +12,10 @@ import {
   ReturnType,
   SliceType,
   StringType,
+  StructType,
   Type,
 } from '../../executor/typing'
+import { IdentifierToken } from './identifier'
 
 import { Token, TokenLocation } from './base'
 import { IntegerLiteralToken } from './literals'
@@ -166,5 +168,48 @@ export class DeclaredTypeToken extends TypeToken {
     // load the underlying types
     // need to configure to use declared type if possible
     return new DeclaredType(internalName, baseTypes)
+  }
+}
+
+export class StructTypeToken extends TypeToken {
+  constructor(
+    sourceLocation: TokenLocation,
+    public fields: Token[],
+    public types: Token[]
+  ) {
+    super(sourceLocation)
+    this.fields = fields
+  }
+
+  override compileUnchecked(compiler: Compiler): Type {
+    // load the underlying types
+    // need to configure to use declared type if possible
+    // make sense of the fields to construct the structure of the struct
+    const struct = {} as Record<string, Type>
+    for (let i = 0; i < this.fields.length; i++) {
+      for (let j = 0; j < this.fields[i].length; j++) {
+        if (this.fields[0][j] != null && this.fields[0][j][0] instanceof Array) {
+          let type = undefined
+          // get type first
+          for (let k = 0; k < this.fields[i][j][0].length; k++) {
+            if (this.fields[i][j][0][k] instanceof TypeToken) {
+              type = this.fields[i][j][0][k].compile(compiler)
+              break
+            }
+          }
+          for (let k = 0; k < this.fields[i][j][0].length; k++) {
+            if (!(this.fields[i][j][0][k] instanceof TypeToken) && this.fields[i][j][0][k].length > 0) {
+              for (let l = 0; l < this.fields[i][j][0][k].length; l++) {
+                if (this.fields[i][j][0][k][l] instanceof IdentifierToken) {
+                  var x = this.fields[i][j][0][k][l]
+                  struct[this.fields[i][j][0][k][l].identifier] = type
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    return new StructType(struct)
   }
 }

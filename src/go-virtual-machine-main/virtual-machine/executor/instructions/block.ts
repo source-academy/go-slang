@@ -1,9 +1,10 @@
 import { Process } from '../../runtime/process'
 import { FrameNode } from '../../heap/types/environment'
-import { DeclaredType, Type } from '../typing'
+import { ArrayType, DeclaredType, StructType, Type } from '../typing'
 
 import { Instruction } from './base'
 import { PrimitiveTypeToken } from '../../compiler/tokens'
+import { ArrayNode } from '../../heap/types/array'
 
 export class BlockInstruction extends Instruction {
   frame: Type[] = []
@@ -37,8 +38,17 @@ export class BlockInstruction extends Instruction {
         while (nextType[0] instanceof DeclaredType) {
           actualType = nextType[0]
           nextType = actualType.type
-          }
+        }
         new_frame.set_idx(nextType[0].defaultNodeCreator()(process.heap), i)
+      } else if (T instanceof ArrayType) {
+        let length = T.length
+        let next = T.element
+        while (next instanceof ArrayType) {
+          length = length * next.length
+          next = next.element
+        }
+        let addr = ArrayNode.default(length, next.bulkDefaultNodeCreator(), process.heap).addr
+        new_frame.set_idx(addr, i)
       } else {
         new_frame.set_idx(T.defaultNodeCreator()(process.heap), i)
       }

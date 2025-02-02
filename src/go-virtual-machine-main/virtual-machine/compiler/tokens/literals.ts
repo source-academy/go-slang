@@ -2,13 +2,18 @@ import { Compiler } from '../../executor'
 import {
   FuncBlockInstruction,
   JumpInstruction,
+  LoadArrayElementInstruction,
   LoadArrayInstruction,
   LoadConstantInstruction,
   LoadDefaultInstruction,
   LoadFuncInstruction,
   LoadSliceInstruction,
+  LoadVariableInstruction,
   ReturnInstruction,
+  StoreArrayElementInstruction,
+  StoreInstruction,
 } from '../../executor/instructions'
+import { MemoryAllocationInstruction } from '../../executor/instructions/memory'
 import {
   ArrayType,
   DeclaredType,
@@ -181,16 +186,30 @@ export class LiteralValueToken extends Token {
           `Array literal has ${this.elements.length} elements but only expected ${type.length}, in type ${type}.`,
         )
       }
-
+      let a = 0
       for (const element of this.elements) {
         this.compileElement(compiler, type.element, element, 'array literal')
+        // load element in actual array and then store element
+        this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+        //this.pushInstruction(compiler, new LoadConstantInstruction(a, new Int64Type()))
+        //this.pushInstruction(compiler, new LoadArrayElementInstruction())
+        //this.pushInstruction(compiler, new StoreInstruction())
+        this.pushInstruction(compiler, new StoreArrayElementInstruction(a))
+        a++
       }
       for (let i = 0; i < type.length - this.elements.length; i++) {
         // Ran out of literal values, use the default values.
         this.pushInstruction(compiler, new LoadDefaultInstruction(type.element))
+        // load element in actual array and then store element
+        this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+        //this.pushInstruction(compiler, new LoadConstantInstruction(a, new Int64Type()))
+        //this.pushInstruction(compiler, new LoadArrayElementInstruction())
+        //this.pushInstruction(compiler, new StoreInstruction())
+        this.pushInstruction(compiler, new StoreArrayElementInstruction(a))
+        a++
       }
 
-      this.pushInstruction(compiler, new LoadArrayInstruction(type.length))
+      //this.pushInstruction(compiler, new LoadArrayInstruction(type.length))
     } else if (type instanceof SliceType) {
       for (const element of this.elements) {
         this.compileElement(compiler, type.element, element, 'slice literal')
@@ -254,6 +273,15 @@ export class ArrayLiteralToken extends Token {
 
   override compileUnchecked(compiler: Compiler): Type {
     const type = this.arrayType.compile(compiler)
+    /* if (type instanceof ArrayType) {
+      let length = type.length
+      let next = type.element
+      while (next instanceof ArrayType) {
+        length = length * next.length
+        next = next.element
+      }
+      this.pushInstruction(compiler, new MemoryAllocationInstruction(length))
+    } */
     this.body.compileWithType(compiler, type)
     return type
   }

@@ -78,10 +78,12 @@ export class LoadArrayInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
+    // during funcblock it is already allocated, no need to allocate again
     const arrayNode = ArrayNode.create(this.length, process.heap)
-    for (let i = this.length - 1; i >= 0; i--) {
+    /*for (let i = this.length - 1; i >= 0; i--) {
       arrayNode.set_child(i, process.context.popOS())
     }
+    */
     process.context.pushOS(arrayNode.addr)
   }
 }

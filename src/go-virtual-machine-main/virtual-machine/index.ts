@@ -1,7 +1,7 @@
 import { Instruction } from './executor/instructions'
 import { StateInfo } from './runtime/debugger'
 import parser from './compiler/parser'
-import { SourceFileToken, TokenLocation } from './compiler/tokens'
+import { SourceFileTokens, TokenLocation } from './compiler/tokens'
 import { compile_tokens, CompileError } from './executor'
 import { execute_instructions } from './runtime'
 
@@ -20,6 +20,18 @@ interface ProgramData {
   visualData: StateInfo[]
 }
 
+interface CompileData {
+  output?: string
+  instructions: Instruction[]
+  symbols: (TokenLocation | null)[],
+  error?: {
+    message: string
+    type: 'parse' | 'compile' | 'runtime'
+    details?: Error | string
+  }
+  visualData: StateInfo[]
+}
+
 const runCode = (
   source_code: string,
   heapsize: number,
@@ -27,9 +39,9 @@ const runCode = (
   visualisation = true,
 ): ProgramData => {
   // Parsing.
-  let tokens: SourceFileToken
+  let tokens: SourceFileTokens
   try {
-    tokens = parser.parse(source_code) as SourceFileToken
+    tokens = parser.parse(source_code) as SourceFileTokens
     console.log(tokens)
   } catch (err) {
     const message = (err as Error).message
@@ -97,4 +109,4 @@ const runCode = (
   }
 }
 
-export { type InstructionData, type ProgramData, runCode }
+export { type InstructionData, type ProgramData, runCode, type CompileData }

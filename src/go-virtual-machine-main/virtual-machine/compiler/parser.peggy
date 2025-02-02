@@ -5,7 +5,7 @@
     StringLiteralToken,
     BinaryOperator,
     UnaryOperator,
-    SourceFileToken,
+    SourceFileTokens,
     ImportToken,
     FunctionDeclarationToken,
     VariableDeclarationToken,
@@ -493,7 +493,7 @@ DeferStmt = "defer" _ expression:Expression { return new DeferStatementToken(loc
 //* =============== Packages ===============
 //* Source File
 SourceFile = pkg:PackageClause _ ";"? _ imports:(_ @ImportDecl _ ";"? _)* declarations:(_ @TopLevelDecl _ ";"?)*
-             { return new SourceFileToken(location(), pkg, imports, declarations) }
+             { return new SourceFileTokens(location(), pkg, imports, declarations) }
 
 //* Package Clause
 PackageClause = "package" _ @PackageName

@@ -137,11 +137,15 @@ export class Debugger {
       /**
        * Generate OS Info
        */
+      const a = context.OS()
+      const b = a.list()
+      const c = b.get_children()
       const OS = context
         .OS()
         .list()
         .get_children()
         .map((x) => {
+          const y = this.identifier_map
           const var_name = this.identifier_map.get(x)
           return {
             val:

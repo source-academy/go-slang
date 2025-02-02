@@ -1,11 +1,12 @@
 import { describe, expect, test } from 'vitest'
-
 import { Heap } from '../virtual-machine/heap'
 import { ContextNode } from '../virtual-machine/heap/types/context'
 import {
   EnvironmentNode,
   FrameNode,
 } from '../virtual-machine/heap/types/environment'
+import { CompileData, ProgramData } from '../virtual-machine'
+import { compileCode, parseCode, runCodeWithHeap } from './utility'
 
 describe('Heap Tests', () => {
   test('Get Set Bits', () => {
@@ -45,5 +46,22 @@ describe('Heap Tests', () => {
     heap.allocate(2)
     heap.allocate(2)
     expect(() => heap.allocate(4)).toThrow(Error)
+  })
+
+  test('Array memory allocation', () => {
+    const code =
+    `
+    package main
+    import "fmt"
+    func main() {
+      a := [3][3]int{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+      fmt.Println(a)
+    }
+    `
+    let compiled = compileCode(code) as CompileData
+    let heap = new Heap(2048)
+    let res = runCodeWithHeap(compiled, heap)
+    expect(res.output).toEqual("3")
+    //expect(heap.get_children(168)).toEqual("3")
   })
 })

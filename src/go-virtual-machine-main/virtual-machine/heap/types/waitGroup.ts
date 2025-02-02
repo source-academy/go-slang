@@ -8,6 +8,7 @@ import { MethodNode } from './func'
 import { LinkedListEntryNode } from './linkedlist'
 import { IntegerNode } from './primitives'
 import { QueueNode } from './queue'
+import { ChannelArrayNode } from './channel'
 
 /**
  * Each WaitGroupNode occupies 3 words.
@@ -94,7 +95,7 @@ export class WaitGroupNode extends BaseNode {
     process.context.popOS()
     if (this.count() === 0) return
     this.queue().push(process.context.addr)
-    process.context.set_waitlist(ArrayNode.create(1, process.heap).addr)
+    process.context.set_waitlist(ChannelArrayNode.create(1, process.heap).addr)
     process.context
       .waitlist()
       .set_child(

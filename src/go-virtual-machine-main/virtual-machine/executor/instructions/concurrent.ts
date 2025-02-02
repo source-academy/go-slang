@@ -1,5 +1,5 @@
 import { Process } from '../../runtime/process'
-import { ArrayNode } from '../../heap/types/array'
+import { ChannelArrayNode } from '../../heap/types/channel'
 import {
   ChannelNode,
   ChannelReqNode,
@@ -157,7 +157,7 @@ export class TryChannelReqInstruction extends Instruction {
     const chan = chan_req.channel()
     const req = chan_req.req()
     if (!chan.try(req)) {
-      process.context.set_waitlist(ArrayNode.create(2, process.heap).addr)
+      process.context.set_waitlist(ChannelArrayNode.create(2, process.heap).addr)
       process.context.waitlist().set_child(0, chan.wait(req))
       process.context
         .waitlist()
@@ -209,7 +209,7 @@ export class SelectInstruction extends Instruction {
       } else {
         process.context.set_blocked(true)
         process.context.set_waitlist(
-          ArrayNode.create(cases.length + 1, process.heap).addr,
+          ChannelArrayNode.create(cases.length + 1, process.heap).addr,
         )
         for (let i = 0; i < cases.length; i++) {
           const chan = cases[i].channel()

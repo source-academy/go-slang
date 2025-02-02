@@ -13,7 +13,7 @@ import { Token, TokenLocation } from './base'
 import { TopLevelDeclarationToken } from './declaration'
 import { StringLiteralToken } from './literals'
 
-export class SourceFileToken extends Token {
+export class SourceFileTokens extends Token {
   constructor(
     sourceLocation: TokenLocation,
     public pkg: string,

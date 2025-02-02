@@ -1,7 +1,7 @@
 import { Debugger } from '../runtime/debugger'
 
 import { ArrayNode, SliceNode } from './types/array'
-import { ChannelNode, ChannelReqNode, ReqInfoNode } from './types/channel'
+import { ChannelArrayNode, ChannelNode, ChannelReqNode, ReqInfoNode } from './types/channel'
 import { ContextNode } from './types/context'
 import { EnvironmentNode, FrameNode } from './types/environment'
 import { FmtPkgNode, PkgNode } from './types/fmt'
@@ -26,6 +26,7 @@ import { QueueListNode, QueueNode } from './types/queue'
 import { StackListNode, StackNode } from './types/stack'
 import { WaitGroupNode } from './types/waitGroup'
 import { Memory } from './memory'
+import { StructNode } from './types/struct'
 
 export enum TAG {
   UNKNOWN = 0,
@@ -57,7 +58,9 @@ export enum TAG {
   PKG = 26,
   FMT_PKG = 27,
   MUTEX = 28,
-  DECLARED,
+  DECLARED = 29,
+  STRUCT = 30,
+  CHANNEL_ARRAY = 31,
 }
 
 export const word_size = 4
@@ -160,6 +163,10 @@ export class Heap {
         return new FmtPkgNode(this, addr)
       case TAG.MUTEX:
         return new MutexNode(this, addr)
+      case TAG.STRUCT:
+        return new StructNode(this, addr)
+      case TAG.CHANNEL_ARRAY:
+        return new ChannelArrayNode(this, addr)
       default:
         // return new UnassignedNode(this, addr)
         throw Error('Unknown Data Type')

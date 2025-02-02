@@ -72,9 +72,46 @@ describe('Array Execution', () => {
   test('Nested arrays work.', () => {
     expect(
       mainRunner(
-        'a := [3][3]int{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}; fmt.Println(a[1][2])',
+        `a := [3][3]int{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+        fmt.Println(a[1][2])
+        fmt.Println(a[0][1])
+        fmt.Println(a[2][1])
+        fmt.Println(a[1][1])
+        fmt.Println(a[0][2])
+        fmt.Println(a[0][0])
+        fmt.Println(a[2][2])
+        fmt.Println(a[1][0])
+        fmt.Println(a[2][0])
+        `,
       ).output,
-    ).toEqual('6\n')
+    ).toEqual('6\n2\n8\n5\n3\n1\n9\n4\n7\n')
+  })
+
+  test('Nested arrays work.', () => {
+    expect(
+      mainRunner(
+        `a := [3][3]int{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+        a[0][0] = 5
+        a[0][1] = 6
+        a[0][2] = 7
+        a[1][0] = 8
+        a[1][1] = 9
+        a[1][2] = 10
+        a[2][0] = 11
+        a[2][1] = 12
+        a[2][2] = 13
+        fmt.Println(a[1][2])
+        fmt.Println(a[0][1])
+        fmt.Println(a[2][1])
+        fmt.Println(a[1][1])
+        fmt.Println(a[0][2])
+        fmt.Println(a[0][0])
+        fmt.Println(a[2][2])
+        fmt.Println(a[1][0])
+        fmt.Println(a[2][0])
+        `,
+      ).output,
+    ).toEqual('10\n6\n12\n9\n7\n5\n13\n8\n11\n')
   })
 
   test('Single element assignment should fail when using multiple return values from a single function', () => {

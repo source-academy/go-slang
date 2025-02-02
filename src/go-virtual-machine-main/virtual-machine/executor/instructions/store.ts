@@ -17,3 +17,22 @@ export class StoreInstruction extends Instruction {
     }
   }
 }
+
+export class StoreArrayElementInstruction extends Instruction {
+  index: number
+  constructor(index: number) {
+    super('STORE ARRAY ELEMENT ' + index)
+    this.index = index
+  }
+
+  override execute(process: Process): void {
+    const dst = process.context.popOS()
+    const src = process.context.popOS()
+    process.heap.copy(dst + 4 + 2 * this.index, src)
+    process.context.pushOS(dst)
+
+    if (process.debug_mode) {
+      process.debugger.modified_buffer.add(dst)
+    }
+  }
+}

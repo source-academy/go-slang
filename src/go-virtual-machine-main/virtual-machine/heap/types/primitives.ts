@@ -31,6 +31,26 @@ export class IntegerNode extends PrimitiveNode {
     return IntegerNode.create(0, heap)
   }
 
+  static bulkDefault(heap: Heap, length: number) {
+    const addr = heap.allocate(2 * length)
+    for (let i = 0; i < length; i++) {
+      heap.set_tag(addr + 2 * i, TAG.NUMBER)
+      heap.memory.set_number(0, addr + 1 + 2 * i)
+      let l = heap.get_value(addr + 2 * i)
+      new IntegerNode(heap, addr + 2 * i)
+      let m = heap.get_value(addr + 2 * i)
+    }
+    let z = heap.get_value(119)
+    let a = heap.get_value(120)
+    let b = heap.get_value(121)
+    let c = heap.get_value(122)
+    let d = heap.get_value(123)
+    let e = heap.get_value(124)
+    let f = heap.get_value(125)
+    let g = heap.get_value(126)
+    return new IntegerNode(heap, addr)
+  }
+
   get_value() {
     return this.heap.memory.get_number(this.addr + 1)
   }
@@ -73,6 +93,15 @@ export class FloatNode extends PrimitiveNode {
     return FloatNode.create(0.0, heap)
   }
 
+  static bulkDefault(heap: Heap, length: number) {
+    const addr = heap.allocate(2 * length)
+    for (let i = 0; i < length; i++) {
+      heap.set_tag(addr + 2 * i, TAG.FLOAT)
+      heap.memory.set_float(0.0, addr + 1 + 2 * i)
+    }
+    return new FloatNode(heap, addr)
+  }
+
   get_value() {
     return this.heap.memory.get_float(this.addr + 1)
   }
@@ -109,6 +138,15 @@ export class BoolNode extends PrimitiveNode {
   }
   static default(heap: Heap) {
     return BoolNode.create(false, heap)
+  }
+
+  static bulkDefault(heap: Heap, length: number) {
+    const addr = heap.allocate(1 * length)
+    for (let i = 0; i < length; i++) {
+      heap.set_tag(addr + i, TAG.BOOLEAN)
+      heap.memory.set_bits(0, addr + i, 1, 16)
+    }
+    return new BoolNode(heap, addr)
   }
 
   get_value() {
@@ -156,6 +194,30 @@ export class StringNode extends PrimitiveNode {
 
   static default(heap: Heap) {
     return StringNode.create('', heap)
+  }
+
+  static bulkDefault(heap: Heap, length: number) {
+    const addr = heap.allocate(2 * length)
+    for (let i = 0; i < length; i++) {
+      heap.set_tag(addr + 2 * i, TAG.STRING)
+      heap.temp_push(addr + 2 * i)
+      heap.memory.set_number(-1, addr + 1 + 2 * i)
+      const list_addr = heap.allocate(Math.ceil((''.length + 1) / word_size) + 1)
+      heap.set_tag(list_addr, TAG.STRING_LIST)
+      heap.memory.set_word(list_addr, addr + 1 + 2 * i)
+      heap.temp_pop()
+      for (let j = 0; j <= ''.length; j++) {
+        let val = 0
+        if (j < ''.length) val = ''.charCodeAt(j)
+        heap.memory.set_bytes(
+          val,
+          Math.floor(j / word_size) + list_addr + 1,
+          1,
+          j % word_size,
+        )
+      }
+    }
+    return new StringNode(heap, addr)
   }
 
   get_list() {

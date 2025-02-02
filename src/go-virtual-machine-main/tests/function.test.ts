@@ -356,8 +356,9 @@ describe('Function Execution tests', () => {
           fmt.Println(d)
           fmt.Println(e)
           fmt.Println(f)
+          fmt.Println(x(3, "IUCvevfde"))
         }
       `).output,
-    ).toEqual('3\n30\nIUCvevfde\n2\n')
+    ).toEqual('3\n30\nIUCvevfde\n2\n30 IUCvevfde\n')
   })
 })

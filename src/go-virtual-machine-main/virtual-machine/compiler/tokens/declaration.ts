@@ -6,13 +6,13 @@ import {
   LoadVariableInstruction,
   StoreInstruction,
 } from '../../executor/instructions'
-import { DeclaredType, NoType, ReturnType, Type } from '../../executor/typing'
+import { ArrayType, DeclaredType, NoType, ReturnType, StructType, Type } from '../../executor/typing'
 
 import { Token, TokenLocation } from './base'
 import { ExpressionToken, PrimaryExpressionModifierToken, PrimaryExpressionToken } from './expressions'
 import { IdentifierToken } from './identifier'
 import { FunctionLiteralToken } from './literals'
-import { DeclaredTypeToken, PrimitiveTypeToken, TypeToken } from './type'
+import { DeclaredTypeToken, PrimitiveTypeToken, StructTypeToken, TypeToken } from './type'
 
 export type TopLevelDeclarationToken =
   | DeclarationToken
@@ -55,7 +55,6 @@ export class TypeDeclarationToken extends DeclarationToken {
     sourceLocation: TokenLocation,
     public identifier: IdentifierToken,
     public varType: TypeToken,
-    public expressions?: ExpressionToken[],
   ) {
     super('type_declaration', sourceLocation)
   }
@@ -71,12 +70,28 @@ export class TypeDeclarationToken extends DeclarationToken {
       )
     }
 
-    compiler.context.env.declare_type(identifier.identifier, varType.compile(compiler))
-    const expectedType = varType ? varType.compile(compiler) : undefined
-    compiler.type_environment.addType(
-      identifier.identifier,
-      expectedType as Type,
-    )
+    // handle structs and normal types separately
+    // structs will have an array as varType, even though it is mostly garbage data
+    if (varType instanceof Array) {
+      // get the actual important part, which is the element with index 3
+      for (let i = 0; i < varType[3][0].length; i++) {
+        if (varType[3][0][i] instanceof StructTypeToken) {
+          compiler.context.env.declare_type(identifier.identifier, varType[3][0][i].varType.compile(compiler))
+          const expectedType = varType[3][0][i].varType ? varType[3][0][i].varType.compile(compiler) : undefined
+          compiler.type_environment.addType(
+            identifier.identifier,
+            expectedType as Type,
+          )
+        }
+      }
+    } else {
+      compiler.context.env.declare_type(identifier.identifier, varType.compile(compiler))
+      const expectedType = varType ? varType.compile(compiler) : undefined
+      compiler.type_environment.addType(
+        identifier.identifier,
+        expectedType as Type,
+      )
+    }
     return new NoType()
   }
 }
@@ -120,6 +135,7 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
         */
       let delta = 0
       for (let i = 0; i < expressions.length; i++) {
+        let start = compiler.instructions.length
         const expressionTypes = expressions[i].compile(compiler)
         let identifier = identifiers[i + delta].identifier
         if (expressionTypes instanceof ReturnType) {
@@ -167,6 +183,13 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
         }
         else {
           const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)
+          if (expressionTypes instanceof ArrayType) {
+            for (let j = start; j < compiler.instructions.length; j++) {
+              if (compiler.instructions[j] instanceof LoadVariableInstruction) {
+                compiler.instructions[j] = new LoadVariableInstruction(frame_idx, var_idx, identifier)
+              }
+            }
+          }
           if (expectedType && !expectedType.assignableBy(expressionTypes)) {
             throw Error(
               `Cannot use ${expressionTypes} as ${expectedType} in variable declaration`,
@@ -232,6 +255,7 @@ export class VariableDeclarationToken extends DeclarationToken {
         */
       let delta = 0
       for (let i = 0; i < expressions.length; i++) {
+        let start = compiler.instructions.length
         // if literal, use declared type instead of inferred primitive
         let expressionTypes = expressions[i].compile(compiler)
         let identifier = identifiers[i + delta].identifier
@@ -280,6 +304,13 @@ export class VariableDeclarationToken extends DeclarationToken {
         }
         else {
           const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)
+          if (expressionTypes instanceof ArrayType) {
+            for (let j = start; j < compiler.instructions.length; j++) {
+              if (compiler.instructions[j] instanceof LoadVariableInstruction) {
+                compiler.instructions[j] = new LoadVariableInstruction(frame_idx, var_idx, identifier)
+              }
+            }
+          }
           // varType is the type of the variable to be declared
           if (expectedType instanceof DeclaredType) {
             // change the type of literal values, not the declared variable

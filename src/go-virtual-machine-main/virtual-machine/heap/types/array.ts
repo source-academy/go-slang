@@ -8,6 +8,7 @@ import { BaseNode } from './base'
  * Word 1: Length of array.
  * Remaining `length` words: Each word is the address of an element.
  */
+// Should bulk allocate then 
 export class ArrayNode extends BaseNode {
   static create(length: number, heap: Heap): ArrayNode {
     const addr = heap.allocate(2 + length)
@@ -23,18 +24,23 @@ export class ArrayNode extends BaseNode {
    */
   static default(
     length: number,
-    defaultCreator: (heap: Heap) => number,
+    bulkDefaultCreator: (heap: Heap, length: number) => number,
     heap: Heap,
   ) {
-    const addr = heap.allocate(2 + length)
+    const addr = heap.allocate(3)
     heap.set_tag(addr, TAG.ARRAY)
     heap.memory.set_number(length, addr + 1)
     heap.temp_push(addr)
-    for (let i = 0; i < length; i++) heap.memory.set_number(-1, addr + i + 2)
-    for (let i = 0; i < length; i++) {
-      heap.memory.set_word(defaultCreator(heap), addr + 2 + i)
-    }
+    heap.memory.set_word(bulkDefaultCreator(heap, length), addr + 2)
     heap.temp_pop()
+    let z = heap.get_value(119)
+    let a = heap.get_value(120)
+    let b = heap.get_value(121)
+    let c = heap.get_value(122)
+    let d = heap.get_value(123)
+    let e = heap.get_value(124)
+    let f = heap.get_value(125)
+    let g = heap.get_value(126)
     return new ArrayNode(heap, addr)
   }
 
@@ -51,9 +57,9 @@ export class ArrayNode extends BaseNode {
   }
 
   get_child(index: number): number {
-    return this.heap.memory.get_word(this.addr + 2 + index)
+    return this.heap.memory.get_word(this.addr + 2) + 2 * index
   }
-
+ 
   override get_children(): number[] {
     return [...Array(this.length()).keys()].map((x) => this.get_child(x))
   }

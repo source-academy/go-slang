@@ -10,7 +10,8 @@ import {
   IntegerNode,
   StringNode,
 } from '../../heap/types/primitives'
-import { PrimitiveTypeToken } from '../../compiler/tokens'
+import { IdentifierToken, PrimitiveTypeToken } from '../../compiler/tokens'
+import { StructNode } from '../../heap/types/struct'
 
 export abstract class Type {
   variadic: any
@@ -27,6 +28,13 @@ export abstract class Type {
 
   /** Returns a function that creates a default node of this type on the heap, and returns its address. */
   abstract defaultNodeCreator(): (heap: Heap) => number
+
+  /** Returns a function that sets a default node on already allocated memory, and returns its address.
+   *  It is mainly used for arrays and structs as memory must be pre-allocated first
+   *  to ensure that the memory is contiguous.
+  */
+  abstract bulkDefaultNodeCreator(): (heap: Heap, length: number) => number
+  
 
   /** Returns the type of selecting an identifier on the given type. */
   select(identifier: string): Type {
@@ -53,6 +61,10 @@ export class NoType extends Type {
   override defaultNodeCreator(): (heap: Heap) => number {
     throw new Error('Cannot create values of type NoType')
   }
+
+  override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
+    throw new Error('Cannot create values of type NoType')
+  }
 }
 
 export class BoolType extends Type {
@@ -70,6 +82,10 @@ export class BoolType extends Type {
 
   override defaultNodeCreator(): (heap: Heap) => number {
     return (heap) => BoolNode.default(heap).addr
+  }
+
+  override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
+    return (heap, length) => BoolNode.bulkDefault(heap, length).addr
   }
 }
 
@@ -89,6 +105,10 @@ export class Int64Type extends Type {
   override defaultNodeCreator(): (heap: Heap) => number {
     return (heap) => IntegerNode.default(heap).addr
   }
+
+  override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
+    return (heap, length) => IntegerNode.bulkDefault(heap, length).addr
+  }
 }
 
 export class Float64Type extends Type {
@@ -107,6 +127,10 @@ export class Float64Type extends Type {
   override defaultNodeCreator(): (heap: Heap) => number {
     return (heap) => FloatNode.default(heap).addr
   }
+
+  override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
+    return (heap, length) => FloatNode.bulkDefault(heap, length).addr
+  }
 }
 
 export class StringType extends Type {
@@ -124,6 +148,10 @@ export class StringType extends Type {
 
   override defaultNodeCreator(): (heap: Heap) => number {
     return (heap) => StringNode.default(heap).addr
+  }
+
+  override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
+    return (heap, length) => StringNode.bulkDefault(heap, length).addr
   }
 }
 
@@ -152,6 +180,11 @@ export class ArrayType extends Type {
     const elementCreator = this.element.defaultNodeCreator()
     return (heap) => ArrayNode.default(this.length, elementCreator, heap).addr
   }
+
+  override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
+    const elementCreator = this.element.bulkDefaultNodeCreator()
+    return (heap) => ArrayNode.default(this.length, elementCreator, heap).addr
+  }
 }
 
 export class SliceType extends Type {
@@ -172,6 +205,10 @@ export class SliceType extends Type {
   }
 
   override defaultNodeCreator(): (heap: Heap) => number {
+    return (heap) => SliceNode.default(heap).addr
+  }
+
+  override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
     return (heap) => SliceNode.default(heap).addr
   }
 }
@@ -196,6 +233,11 @@ export class ParameterType extends Type {
   }
 
   override defaultNodeCreator(): (heap: Heap) => number {
+    // Do nothing.
+    return (_) => 0
+  }
+
+  override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
     // Do nothing.
     return (_) => 0
   }
@@ -229,6 +271,10 @@ export class FunctionType extends Type {
   }
 
   override defaultNodeCreator(): (heap: Heap) => number {
+    return (heap) => FuncNode.default(heap).addr
+  }
+
+  override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
     return (heap) => FuncNode.default(heap).addr
   }
 }
@@ -278,6 +324,10 @@ export class ChannelType extends Type {
   override defaultNodeCreator(): (heap: Heap) => number {
     return (heap) => ChannelNode.default(heap).addr
   }
+
+  override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
+    return (heap) => ChannelNode.default(heap).addr
+  }
 }
 
 export class ReturnType extends Type {
@@ -306,6 +356,11 @@ export class ReturnType extends Type {
     throw Error('Unreachable')
   }
 
+  override bulkDefaultNodeCreator(): (_heap: Heap) => number {
+    // Return values are pushed onto the OS, and should not be allocated.
+    throw Error('Unreachable')
+  }
+
   isVoid(): boolean {
     return this.types.length === 0
   }
@@ -329,6 +384,10 @@ export class PackageType extends Type {
   }
 
   override defaultNodeCreator(): (_heap: Heap) => number {
+    return (heap) => PkgNode.default(heap).addr
+  }
+
+  override bulkDefaultNodeCreator(): (_heap: Heap) => number {
     return (heap) => PkgNode.default(heap).addr
   }
 
@@ -372,12 +431,44 @@ export class DeclaredType extends Type {
     return (_) => 0
   }
 
-  /*
-  override select(identifier: string): Type {
-    if (!(identifier in this.type)) {
-      throw new Error(`undefined: ${this.name}.${identifier}`)
-    }
-    return this.type[identifier]
+  override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
+    // Do nothing.
+    return (_) => 0
   }
-  */
+}
+
+export class StructType extends Type {
+  constructor(public fields: Record<string, Type>) {
+    super()
+  }
+
+  override isPrimitive(): boolean {
+    return false
+  }
+
+  override toString(): string {
+    return `struct ${this.fields.toString()}`
+  }
+
+  override equals(t: Type): boolean {
+    // TODO: Morph to support structs
+    return t instanceof StructType
+      && t.fields === this.fields
+  }
+
+  override defaultNodeCreator(): (heap: Heap) => number {
+    const creators = [] as Array<(heap: Heap) => number>
+    for (let key in this.fields) {
+      creators.push(this.fields[key].defaultNodeCreator())
+    }
+    return (heap) => StructNode.default(this.fields, creators, heap).addr
+  }
+
+  override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
+    const creators = [] as Array<(heap: Heap) => number>
+    for (let key in this.fields) {
+      creators.push(this.fields[key].defaultNodeCreator())
+    }
+    return (heap) => StructNode.default(this.fields, creators, heap).addr
+  }
 }

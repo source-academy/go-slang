@@ -26,9 +26,9 @@ export class Compiler {
   }
 }
 
-const compile_tokens = (token: Token) => {
+const compile_tokens = (tokens: Token) => {
   const compiler = new Compiler()
-  compiler.compile_program(token)
+  compiler.compile_program(tokens)
   return {
     instructions: compiler.instructions,
     symbols: compiler.symbols,

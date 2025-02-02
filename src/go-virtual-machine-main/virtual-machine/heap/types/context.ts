@@ -2,6 +2,7 @@ import { Heap, TAG } from '..'
 
 import { ArrayNode } from './array'
 import { BaseNode } from './base'
+import { ChannelArrayNode } from './channel'
 import { EnvironmentNode } from './environment'
 import { CallRefNode } from './func'
 import { PrimitiveNode } from './primitives'
@@ -149,7 +150,7 @@ export class ContextNode extends BaseNode {
   }
 
   waitlist() {
-    return new ArrayNode(this.heap, this.heap.memory.get_number(this.addr + 4))
+    return new ChannelArrayNode(this.heap, this.heap.memory.get_number(this.addr + 4))
   }
 
   deferStack(): StackNode {
