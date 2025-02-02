@@ -36,18 +36,8 @@ export class IntegerNode extends PrimitiveNode {
     for (let i = 0; i < length; i++) {
       heap.set_tag(addr + 2 * i, TAG.NUMBER)
       heap.memory.set_number(0, addr + 1 + 2 * i)
-      let l = heap.get_value(addr + 2 * i)
       new IntegerNode(heap, addr + 2 * i)
-      let m = heap.get_value(addr + 2 * i)
     }
-    let z = heap.get_value(119)
-    let a = heap.get_value(120)
-    let b = heap.get_value(121)
-    let c = heap.get_value(122)
-    let d = heap.get_value(123)
-    let e = heap.get_value(124)
-    let f = heap.get_value(125)
-    let g = heap.get_value(126)
     return new IntegerNode(heap, addr)
   }
 
