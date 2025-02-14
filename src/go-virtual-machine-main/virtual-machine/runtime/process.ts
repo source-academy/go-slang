@@ -62,10 +62,11 @@ export class Process {
   }
 
   start(): ProcessOutput {
+    const time_quantum = 30
+    this.runtime_count = 0
+    let completed = false
+    let a = 0
     try {
-      const time_quantum = 30
-      this.runtime_count = 0
-      let completed = false
       const main_context = this.contexts.peek()
       while (this.contexts.sz()) {
         if (this.deterministic) {
@@ -81,6 +82,7 @@ export class Process {
             break
           }
           const pc = this.context.PC()
+          a = pc
           const instr = this.instructions[this.context.incr_PC()]
           // console.log('ctx:', this.context.addr)
           // console.log('Instr:', instr, this.context.PC() - 1)

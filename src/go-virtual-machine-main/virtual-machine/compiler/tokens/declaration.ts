@@ -185,7 +185,9 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
           const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)
           if (expressionTypes instanceof ArrayType) {
             for (let j = start; j < compiler.instructions.length; j++) {
-              if (compiler.instructions[j] instanceof LoadVariableInstruction) {
+              if (compiler.instructions[j] instanceof LoadVariableInstruction
+                && (compiler.instructions[j] as LoadVariableInstruction).id === ""
+              ) {
                 compiler.instructions[j] = new LoadVariableInstruction(frame_idx, var_idx, identifier)
               }
             }
@@ -196,11 +198,13 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
             )
           }
           compiler.type_environment.addType(identifier, expressionTypes)
-          this.pushInstruction(
-            compiler,
-            new LoadVariableInstruction(frame_idx, var_idx, identifier),
-          )
-          this.pushInstruction(compiler, new StoreInstruction())
+          if (!(expressionTypes instanceof ArrayType)) {
+            this.pushInstruction(
+              compiler,
+              new LoadVariableInstruction(frame_idx, var_idx, identifier),
+            )
+            this.pushInstruction(compiler, new StoreInstruction())
+          }
         }
       }
     } else {
@@ -275,6 +279,7 @@ export class VariableDeclarationToken extends DeclarationToken {
             )
             this.pushInstruction(compiler, new StoreInstruction())
           }
+          
           delta += expressionTypes.types.length - 1
 
           // as the return values are loaded onto OS and thus popped in reverse order,
@@ -306,7 +311,9 @@ export class VariableDeclarationToken extends DeclarationToken {
           const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)
           if (expressionTypes instanceof ArrayType) {
             for (let j = start; j < compiler.instructions.length; j++) {
-              if (compiler.instructions[j] instanceof LoadVariableInstruction) {
+              if (compiler.instructions[j] instanceof LoadVariableInstruction
+                && (compiler.instructions[j] as LoadVariableInstruction).id === ""
+              ) {
                 compiler.instructions[j] = new LoadVariableInstruction(frame_idx, var_idx, identifier)
               }
             }
@@ -334,11 +341,13 @@ export class VariableDeclarationToken extends DeclarationToken {
             )
           }
           compiler.type_environment.addType(identifier, expressionTypes)
-          this.pushInstruction(
-            compiler,
-            new LoadVariableInstruction(frame_idx, var_idx, identifier),
-          )
-          this.pushInstruction(compiler, new StoreInstruction())
+          if (!(expressionTypes instanceof ArrayType)) {
+            this.pushInstruction(
+              compiler,
+              new LoadVariableInstruction(frame_idx, var_idx, identifier),
+            )
+            this.pushInstruction(compiler, new StoreInstruction())
+          }
         }
       }
     } else {

@@ -11,11 +11,34 @@ describe('Array Type Checking', () => {
     )
   })
 
+  test('Commas as part of string literals should pass correctly', () => {
+    expect(
+      mainRunner(`var a [3]string = [3]string{"1", "2, 3", "4"}
+        fmt.Println(a)`).output,
+    ).toEqual(
+      '[1 2, 3 4]\n',
+    )
+  })
+
   test('Array literal with less elements than in the type should still pass.', () => {
     const code =
       `var a [3]int = [3]int{1}
     fmt.Println(a)`
     expect(mainRunner(code).output).toEqual('[1 0 0]\n')
+  })
+
+  test('Array boolean literal with less elements than in the type should still pass.', () => {
+    const code =
+      `var a [3]bool = [3]bool{true}
+    fmt.Println(a)`
+    expect(mainRunner(code).output).toEqual('[true false false]\n')
+  })
+
+  test('Array string literal with less elements than in the type should still pass.', () => {
+    const code =
+      `var a [3]string = [3]string{"Hi", "there"}
+    fmt.Println(a)`
+    expect(mainRunner(code).output).toEqual('[Hi there ]\n')
   })
 
   test('Array literal should ignore newline between elements being declared.', () => {
@@ -69,7 +92,17 @@ describe('Array Execution', () => {
     ).toEqual('Execution Error: Index out of range [3] with length 3')
   })
 
-  test('Nested arrays work.', () => {
+  test('2D arrays work with partial initialisation.', () => {
+    expect(
+      mainRunner(
+        `a := [3][3]int{{1, 2}, {4, 5, 6}, {7}};
+        fmt.Println(a)
+        `,
+      ).output,
+    ).toEqual('[[1 2 0] [4 5 6] [7 0 0]]\n')
+  })
+
+  test('2D arrays work.', () => {
     expect(
       mainRunner(
         `a := [3][3]int{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
@@ -82,12 +115,23 @@ describe('Array Execution', () => {
         fmt.Println(a[2][2])
         fmt.Println(a[1][0])
         fmt.Println(a[2][0])
+        fmt.Println(a)
         `,
       ).output,
-    ).toEqual('6\n2\n8\n5\n3\n1\n9\n4\n7\n')
+    ).toEqual('6\n2\n8\n5\n3\n1\n9\n4\n7\n[[1 2 3] [4 5 6] [7 8 9]]\n')
   })
 
-  test('Nested arrays work.', () => {
+  test('3D arrays work.', () => {
+    expect(
+      mainRunner(
+        `arr2D := [2][3][4]int{{{1, 2, 3, 11}, {4, 5, 6, 22}, {7, 8, 9, 33}}, {{10, 20, 30, 44}, {40, 50, 60, 55}, {70, 80, 90, 66}}}
+        fmt.Println(arr2D)
+        `,
+      ).output,
+    ).toEqual('[[[1 2 3 11] [4 5 6 22] [7 8 9 33]] [[10 20 30 44] [40 50 60 55] [70 80 90 66]]]\n')
+  })
+
+  test('2D arrays work with reassignments.', () => {
     expect(
       mainRunner(
         `a := [3][3]int{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};

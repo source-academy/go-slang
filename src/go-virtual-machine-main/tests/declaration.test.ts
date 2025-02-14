@@ -570,7 +570,7 @@ describe('Variable Declaration Tests', () => {
     }
 
     func main() {
-      a := []A{help2(24), help2(67)}
+      a := [2]A{help2(24), help2(67)}
       fmt.Println(a)
     }
     `

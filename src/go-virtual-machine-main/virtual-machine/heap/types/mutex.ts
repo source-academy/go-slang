@@ -1,7 +1,6 @@
 import { Process } from '../../runtime/process'
 import { Heap, TAG } from '..'
 
-import { ArrayNode } from './array'
 import { BaseNode } from './base'
 import { ContextNode } from './context'
 import { MethodNode } from './func'

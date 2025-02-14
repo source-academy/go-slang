@@ -177,13 +177,11 @@ export class ArrayType extends Type {
   }
 
   override defaultNodeCreator(): (heap: Heap) => number {
-    const elementCreator = this.element.defaultNodeCreator()
-    return (heap) => ArrayNode.default(this.length, elementCreator, heap).addr
+    return (heap) => ArrayNode.default(this.length, this.element, heap).addr
   }
 
   override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
-    const elementCreator = this.element.bulkDefaultNodeCreator()
-    return (heap) => ArrayNode.default(this.length, elementCreator, heap).addr
+    return (heap, length) => this.element.bulkDefaultNodeCreator()(heap, length)
   }
 }
 

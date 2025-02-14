@@ -1,6 +1,6 @@
 import { Process } from '../../runtime/process'
 import { FrameNode } from '../../heap/types/environment'
-import { ArrayType, DeclaredType, StructType, Type } from '../typing'
+import { ArrayType, BoolType, DeclaredType, StructType, Type } from '../typing'
 
 import { Instruction } from './base'
 import { PrimitiveTypeToken } from '../../compiler/tokens'
@@ -41,14 +41,63 @@ export class BlockInstruction extends Instruction {
         }
         new_frame.set_idx(nextType[0].defaultNodeCreator()(process.heap), i)
       } else if (T instanceof ArrayType) {
+        let dimensions = [] as number[]
         let length = T.length
         let next = T.element
+        dimensions.push(length)
         while (next instanceof ArrayType) {
+          dimensions.push(next.length)
           length = length * next.length
           next = next.element
         }
-        let addr = ArrayNode.default(length, next.bulkDefaultNodeCreator(), process.heap).addr
-        new_frame.set_idx(addr, i)
+        if (next instanceof DeclaredType) {
+          // Find underlying type to load default values into
+          let actualType = next
+          let nextType = next.type
+          // TODO: Morph to support structs
+          while (nextType[0] instanceof DeclaredType) {
+            actualType = nextType[0]
+            nextType = actualType.type
+          }
+          next = nextType[0]
+        }
+        let addr = next.bulkDefaultNodeCreator()(process.heap, length)
+        let sizeof = 2
+        if (next instanceof BoolType) sizeof = 1
+        let arrayNodes = [] as ArrayNode[]
+        if (T.element instanceof ArrayType) {
+          let next2 = T.element
+          while (next2.element instanceof ArrayType) {
+            next2 = next2.element
+          }
+          let baseType = next2.element
+          if (baseType instanceof BoolType) sizeof = 1
+          let addr2 = addr
+          // handle multi-dimensional arrays: inner-most layer
+          // we ensured that the memory block is contiguous earlier
+          // so we need to link ArrayNodes to the correct memory addresses
+          for (let a = 0; a < length / next2.length; a++) {
+            arrayNodes.push(ArrayNode.create(next2.length, process.heap, sizeof, addr2))
+            addr2 += sizeof * next2.length
+          }
+          dimensions.pop()
+          while (dimensions.length > 0) {
+            let dim = dimensions.pop()
+            let n = arrayNodes.length
+            for (let a = 0; a < n / dim; a++) {
+              let array = ArrayNode.create(dim, process.heap, sizeof, addr)
+              for (let b = 0; b < dim; b++) {
+                array.set_child(b, arrayNodes.shift().addr)
+              }
+              arrayNodes.push(array)
+            }
+          }
+          new_frame.set_idx(arrayNodes.pop().addr, i)
+        } else {
+          // in the case of 1D array
+          let array = ArrayNode.create(T.length, process.heap, sizeof, addr)
+          new_frame.set_idx(array.addr, i)
+        }
       } else {
         new_frame.set_idx(T.defaultNodeCreator()(process.heap), i)
       }

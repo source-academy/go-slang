@@ -187,26 +187,33 @@ export class LiteralValueToken extends Token {
         )
       }
       let a = 0
+      if (a == 0 && compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction) {
+        a += (compiler.instructions[compiler.instructions.length - 1] as StoreArrayElementInstruction).index + 1
+      }
       for (const element of this.elements) {
         this.compileElement(compiler, type.element, element, 'array literal')
         // load element in actual array and then store element
+        if (!(type.element instanceof ArrayType)) {
         this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
         //this.pushInstruction(compiler, new LoadConstantInstruction(a, new Int64Type()))
         //this.pushInstruction(compiler, new LoadArrayElementInstruction())
         //this.pushInstruction(compiler, new StoreInstruction())
         this.pushInstruction(compiler, new StoreArrayElementInstruction(a))
         a++
+        }
       }
       for (let i = 0; i < type.length - this.elements.length; i++) {
         // Ran out of literal values, use the default values.
         this.pushInstruction(compiler, new LoadDefaultInstruction(type.element))
         // load element in actual array and then store element
+        if (!(type.element instanceof ArrayType)) {
         this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
         //this.pushInstruction(compiler, new LoadConstantInstruction(a, new Int64Type()))
         //this.pushInstruction(compiler, new LoadArrayElementInstruction())
         //this.pushInstruction(compiler, new StoreInstruction())
         this.pushInstruction(compiler, new StoreArrayElementInstruction(a))
         a++
+        }
       }
 
       //this.pushInstruction(compiler, new LoadArrayInstruction(type.length))
