@@ -30,6 +30,7 @@ export class StructNode extends BaseNode {
     defaultCreator: Array<(heap: Heap) => number>,
     heap: Heap,
   ) {
+    // change it to contiguous memory
     const addr = heap.allocate(2 + defaultCreator.length)
     heap.set_tag(addr, TAG.STRUCT)
     heap.memory.set_number(defaultCreator.length, addr + 1)
@@ -70,6 +71,6 @@ export class StructNode extends BaseNode {
     for (let i = 0; i < length; i++) {
       elements.push(this.heap.get_value(this.get_child(i)).toString())
     }
-    return `[${elements.join(' ')}]`
+    return `{${elements.join(' ')}}`
   }
 }

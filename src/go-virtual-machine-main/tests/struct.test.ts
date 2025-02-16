@@ -2,8 +2,8 @@ import { describe, expect, test } from 'vitest'
 
 import { codeRunner } from './utility'
 
-describe('test', () => {
-  test('test', () => {
+describe('Struct tests', () => {
+  test('Single field line with multiple fields work', () => {
     expect(
       codeRunner(`
         package main
@@ -17,10 +17,10 @@ describe('test', () => {
           fmt.Println(a)
         }
       `).output,
-    ).toEqual('[0 0]\n')
+    ).toEqual('{0 0}\n')
   })
 
-  test('test', () => {
+  test('Multiple (2) field lines work', () => {
     expect(
       codeRunner(`
         package main
@@ -36,10 +36,10 @@ describe('test', () => {
           fmt.Println(a)
         }
       `).output,
-    ).toEqual('[0 ]\n')
+    ).toEqual('{0 }\n')
   })
 
-  test('test', () => {
+  test('Multiple (3) field lines work', () => {
     expect(
       codeRunner(`
         package main
@@ -56,10 +56,10 @@ describe('test', () => {
           fmt.Println(a)
         }
       `).output,
-    ).toEqual('[false  0]\n')
+    ).toEqual('{false  0}\n')
   })
 
-  test('test', () => {
+  test('Short variable declaration of struct works', () => {
     expect(
       codeRunner(`
         package main
@@ -72,6 +72,6 @@ describe('test', () => {
           fmt.Println(a)
         }
       `).output,
-    ).toEqual('{0 0}')
+    ).toEqual('{0 0}\n')
   })
 })

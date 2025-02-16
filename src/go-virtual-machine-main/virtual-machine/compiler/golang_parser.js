@@ -424,7 +424,7 @@ function peg$parse(input, options) {
             : new DeclaredTypeToken(location(), iden.identifier)};
   var peg$f13 = function(length, element) { return new ArrayTypeToken(location(), element, length) };
   var peg$f14 = function(element) { return new SliceTypeToken(location(), element) };
-  var peg$f15 = function(fields) { return new StructTypeToken(location(), [...fields].flat(), fields) };
+  var peg$f15 = function(fields) { return new StructTypeToken(location(), [...fields].flat()) };
   var peg$f16 = function(list, type) { return {list, type} };
   var peg$f17 = function(params, result) { return new FunctionTypeToken(location(), params, result) };
   var peg$f18 = function(type) { return [{ type }] };

@@ -465,7 +465,7 @@ describe('Variable Declaration Tests', () => {
     expect(codeRunner(code).output).toEqual("[12 21]\n")
   })
 
-  test('Type declaration should work on arrays', () => {
+  test('Type declaration should work on 1D arrays', () => {
     const code = `
     package main
     import "fmt"
@@ -477,6 +477,20 @@ describe('Variable Declaration Tests', () => {
     }
     `
     expect(codeRunner(code).output).toEqual("[12 21]\n")
+  })
+
+  test('Type declaration should work on 2D arrays', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    func main() {
+      type B int
+      a := [][]B{{12, 18}, {21, 93}}
+      fmt.Println(a)
+    }
+    `
+    expect(codeRunner(code).output).toEqual("[[12 18] [21 93]]\n")
   })
 
   test('Type declaration should work on arrays (double layer)', () => {
@@ -570,7 +584,7 @@ describe('Variable Declaration Tests', () => {
     }
 
     func main() {
-      a := [2]A{help2(24), help2(67)}
+      a := []A{help2(24), help2(67)}
       fmt.Println(a)
     }
     `

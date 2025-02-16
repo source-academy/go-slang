@@ -69,29 +69,12 @@ export class TypeDeclarationToken extends DeclarationToken {
         'Either type(s) or name assignment(s) must be defined in type declaration.',
       )
     }
-
-    // handle structs and normal types separately
-    // structs will have an array as varType, even though it is mostly garbage data
-    if (varType instanceof Array) {
-      // get the actual important part, which is the element with index 3
-      for (let i = 0; i < varType[3][0].length; i++) {
-        if (varType[3][0][i] instanceof StructTypeToken) {
-          compiler.context.env.declare_type(identifier.identifier, varType[3][0][i].varType.compile(compiler))
-          const expectedType = varType[3][0][i].varType ? varType[3][0][i].varType.compile(compiler) : undefined
-          compiler.type_environment.addType(
-            identifier.identifier,
-            expectedType as Type,
-          )
-        }
-      }
-    } else {
-      compiler.context.env.declare_type(identifier.identifier, varType.compile(compiler))
-      const expectedType = varType ? varType.compile(compiler) : undefined
-      compiler.type_environment.addType(
-        identifier.identifier,
-        expectedType as Type,
-      )
-    }
+    compiler.context.env.declare_type(identifier.identifier, varType.compile(compiler))
+    const expectedType = varType ? varType.compile(compiler) : undefined
+    compiler.type_environment.addType(
+      identifier.identifier,
+      expectedType as Type,
+    )
     return new NoType()
   }
 }
@@ -205,6 +188,12 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
             )
             this.pushInstruction(compiler, new StoreInstruction())
           }
+        }
+      }
+      if (expressions instanceof StructTypeToken) {
+        const expressionTypes = expressions.compile(compiler)
+        for (let i = 0; i < identifiers.length; i++) {
+          compiler.type_environment.addType(identifiers[i].identifier, expressionTypes)
         }
       }
     } else {

@@ -164,7 +164,7 @@ ElementType = Type
 SliceType = "[" "]" element:ElementType { return new SliceTypeToken(location(), element) }
 
 //* Struct Types
-StructType    = "struct" _ "{" _ fields:(_ @FieldDecl _ ";"? _)* "}" { return new StructTypeToken(location(), [...fields].flat(), fields) }
+StructType    = "struct" _ "{" _ fields:(_ @FieldDecl _ ";"? _)* "}" { return new StructTypeToken(location(), [...fields].flat()) }
 FieldDecl     = list:IdentifierList _ type:(Type / EmbeddedField) _ Tag? { return {list, type} }
 EmbeddedField = "*"? TypeName
 Tag           = string_lit

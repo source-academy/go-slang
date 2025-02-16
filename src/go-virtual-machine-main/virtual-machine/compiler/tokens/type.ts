@@ -175,7 +175,6 @@ export class StructTypeToken extends TypeToken {
   constructor(
     sourceLocation: TokenLocation,
     public fields: Token[],
-    public types: Token[]
   ) {
     super(sourceLocation)
     this.fields = fields
@@ -186,6 +185,17 @@ export class StructTypeToken extends TypeToken {
     // need to configure to use declared type if possible
     // make sense of the fields to construct the structure of the struct
     const struct = {} as Record<string, Type>
+    // this.fields.length represents the number of lines of code
+    // used to declare the fields of the struct
+    for (let i = 0; i < this.fields.length; i++) {
+      // get type of each field line first
+      const type = (this.fields[i].type as TypeToken).compile(compiler)
+      for (let j = 0; j < this.fields[i].list.length; j++) {
+        // link the identifier of each field line to the type
+        struct[this.fields[i].list[j].identifier] = type
+      }
+    }
+    /*
     for (let i = 0; i < this.fields.length; i++) {
       for (let j = 0; j < this.fields[i].length; j++) {
         if (this.fields[0][j] != null && this.fields[0][j][0] instanceof Array) {
@@ -210,6 +220,7 @@ export class StructTypeToken extends TypeToken {
         }
       }
     }
+    */
     return new StructType(struct)
   }
 }

@@ -224,7 +224,7 @@ export class LiteralValueToken extends Token {
       const sliceLength = this.elements.length
       this.pushInstruction(
         compiler,
-        new LoadArrayInstruction(sliceLength),
+        new LoadArrayInstruction(sliceLength, type),
         new LoadConstantInstruction(0, new Int64Type()),
         new LoadConstantInstruction(sliceLength, new Int64Type()),
         new LoadSliceInstruction(),

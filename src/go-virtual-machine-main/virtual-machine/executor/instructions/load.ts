@@ -69,7 +69,7 @@ export class LoadDefaultInstruction extends Instruction {
  * Pushes the address of the array back onto the OS.
  */
 export class LoadArrayInstruction extends Instruction {
-  constructor(public length: number) {
+  constructor(public length: number, public type: Type) {
     super('LDA')
   }
 
@@ -78,12 +78,12 @@ export class LoadArrayInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
-    // during funcblock it is already allocated, no need to allocate again
+    // this is for dynamic arrays (slices) only, actual arrays are allocated 
+    // when entering function and uses a different instruction
     const arrayNode = ArrayNode.create(this.length, process.heap)
-    /*for (let i = this.length - 1; i >= 0; i--) {
+    for (let i = this.length - 1; i >= 0; i--) {
       arrayNode.set_child(i, process.context.popOS())
     }
-    */
     process.context.pushOS(arrayNode.addr)
   }
 }

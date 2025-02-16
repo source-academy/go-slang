@@ -26,6 +26,7 @@ export class BlockInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
+    // make structs contiguous too
     const new_frame = FrameNode.create(this.frame.length, process.heap)
     process.heap.temp_push(new_frame.addr)
     for (let i = 0; i < this.frame.length; i++) {
