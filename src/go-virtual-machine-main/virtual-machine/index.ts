@@ -1,9 +1,9 @@
-import { Instruction } from './compiler/instructions'
-import { StateInfo } from './executor/debugger'
-import parser from './parser/parser'
-import { SourceFileToken, TokenLocation } from './parser/tokens'
-import { compile_tokens, CompileError } from './compiler'
-import { execute_instructions } from './executor'
+import { Instruction } from './executor/instructions'
+import { StateInfo } from './runtime/debugger'
+import parser from './compiler/parser'
+import { SourceFileTokens, TokenLocation } from './compiler/tokens'
+import { compile_tokens, CompileError } from './executor'
+import { execute_instructions } from './runtime'
 
 interface InstructionData {
   val: string
@@ -20,15 +20,28 @@ interface ProgramData {
   visualData: StateInfo[]
 }
 
+interface CompileData {
+  output?: string
+  instructions: Instruction[]
+  symbols: (TokenLocation | null)[],
+  error?: {
+    message: string
+    type: 'parse' | 'compile' | 'runtime'
+    details?: Error | string
+  }
+  visualData: StateInfo[]
+}
+
 const runCode = (
   source_code: string,
   heapsize: number,
+  deterministic = true,
   visualisation = true,
 ): ProgramData => {
   // Parsing.
-  let tokens: SourceFileToken
+  let tokens: SourceFileTokens
   try {
-    tokens = parser.parse(source_code) as SourceFileToken
+    tokens = parser.parse(source_code) as SourceFileTokens
     console.log(tokens)
   } catch (err) {
     const message = (err as Error).message
@@ -71,6 +84,7 @@ const runCode = (
     instructions,
     heapsize,
     symbols,
+    deterministic,
     visualisation,
   )
   if (result.errorMessage) {
@@ -80,7 +94,7 @@ const runCode = (
       output: result.errorMessage,
       error: {
         message: result.errorMessage,
-        type: 'runtime', 
+        type: 'runtime',
         details: result.errorMessage,
       },
       visualData: [],
@@ -95,4 +109,4 @@ const runCode = (
   }
 }
 
-export { type InstructionData, type ProgramData, runCode }
+export { type InstructionData, type ProgramData, runCode, type CompileData }

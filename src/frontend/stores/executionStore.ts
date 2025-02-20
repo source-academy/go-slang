@@ -1,8 +1,8 @@
 import { shallow } from 'zustand/shallow'
 import { createWithEqualityFn } from 'zustand/traditional'
 
-import { ContextInfo, StateInfo } from '../../virtual-machine/executor/debugger'
-import { TokenLocation } from '../../virtual-machine/parser/tokens'
+import { ContextInfo, StateInfo } from '../../go-virtual-machine-main/virtual-machine/runtime/debugger'
+import { TokenLocation } from '../../go-virtual-machine-main/virtual-machine/compiler/tokens'
 
 export interface ExecutionState {
   currentStep: number

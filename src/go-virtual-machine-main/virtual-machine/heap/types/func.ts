@@ -1,4 +1,4 @@
-import { Process } from '../../executor/process'
+import { Process } from '../../runtime/process'
 import { Heap, TAG } from '..'
 
 import { BaseNode } from './base'
@@ -106,11 +106,19 @@ export class DeferFuncNode extends BaseNode {
     process.heap.memory.set_word(-1, addr + 2)
 
     const stack = StackNode.create(process.heap)
+    const results = []
+    for (let i = argCount - 1; i >= 0; i--) {
+      const src = process.context.popOS()
+      results[i] = src
+    }
+    for (let i = 0; i < argCount; i++) {
+      // pass by value instead of pass by reference
+      const allocate = process.heap.allocate(process.heap.get_size(results[i]))
+      process.heap.copy(allocate, results[i])
+      stack.push(allocate)
+    }
     process.heap.memory.set_word(stack.addr, addr + 2)
-    for (let i = 0; i < argCount; i++) stack.push(process.context.popOS())
-
     process.heap.memory.set_word(process.context.popOS(), addr + 1)
-
     process.heap.temp_pop()
     return new DeferFuncNode(process.heap, addr)
   }
@@ -124,11 +132,11 @@ export class DeferFuncNode extends BaseNode {
   }
 
   argCount(): number {
-    return this.heap.memory.get_number(this.addr + 2)
+    return this.stack().sz()
   }
 
   stackAddr(): number {
-    return this.heap.memory.get_word(this.addr + 3)
+    return this.heap.memory.get_word(this.addr + 2)
   }
 
   stack(): StackNode {
@@ -160,7 +168,17 @@ export class DeferMethodNode extends BaseNode {
 
     const stack = StackNode.create(process.heap)
     process.heap.memory.set_word(stack.addr, addr + 2)
-    for (let i = 0; i < argCount; i++) stack.push(process.context.popOS())
+    const results = []
+    for (let i = argCount - 1; i >= 0; i--) {
+      const src = process.context.popOS()
+      results[i] = src
+    }
+    for (let i = 0; i < argCount; i++) {
+      // pass by value instead of pass by reference
+      const allocate = process.heap.allocate(process.heap.get_size(results[i]))
+      process.heap.copy(allocate, results[i])
+      stack.push(allocate)
+    }
 
     const methodNode = process.context.popOS()
     process.heap.memory.set_word(methodNode, addr + 1)

@@ -2,6 +2,7 @@ import { Heap, TAG } from '..'
 
 import { ArrayNode } from './array'
 import { BaseNode } from './base'
+import { ChannelArrayNode } from './channel'
 import { EnvironmentNode } from './environment'
 import { CallRefNode } from './func'
 import { PrimitiveNode } from './primitives'
@@ -12,12 +13,12 @@ export class ContextNode extends BaseNode {
   static create(heap: Heap) {
     const addr = heap.allocate(6)
     heap.set_tag(addr, TAG.CONTEXT)
-    heap.memory.set_number(0, addr + 1)
+    heap.memory.set_number(0, addr + 1) // PC
     heap.temp_push(addr)
     for (let i = 2; i <= 5; i++) heap.memory.set_number(-1, addr + i)
-    heap.memory.set_word(StackNode.create(heap).addr, addr + 2)
-    heap.memory.set_word(StackNode.create(heap).addr, addr + 3)
-    heap.memory.set_word(StackNode.create(heap).addr, addr + 5)
+    heap.memory.set_word(StackNode.create(heap).addr, addr + 2) // OS
+    heap.memory.set_word(StackNode.create(heap).addr, addr + 3) // RTS
+    heap.memory.set_word(StackNode.create(heap).addr, addr + 5) // DeferStack
     heap.temp_pop()
     return new ContextNode(heap, addr)
   }
@@ -137,12 +138,19 @@ export class ContextNode extends BaseNode {
     return newContext
   }
 
+  go() {
+    const newContext = ContextNode.create(this.heap)
+    newContext.set_PC(this.PC())
+    newContext.set_E(this.E().addr)
+    return newContext
+  }
+
   set_waitlist(addr: number) {
     this.heap.memory.set_number(addr, this.addr + 4)
   }
 
   waitlist() {
-    return new ArrayNode(this.heap, this.heap.memory.get_number(this.addr + 4))
+    return new ChannelArrayNode(this.heap, this.heap.memory.get_number(this.addr + 4))
   }
 
   deferStack(): StackNode {

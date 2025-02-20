@@ -1,8 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { runCode } from '../virtual-machine'
-
-import { mainRunner } from './utility'
+import { codeRunner, mainRunner } from './utility'
 
 describe('Function Type Checking', () => {
   test('Function assignment', () => {
@@ -80,7 +78,7 @@ describe('Function Type Checking', () => {
       fmt.Print(u(6));
     }
     `
-    expect(runCode(code, 2048).output).toEqual('6 6')
+    expect(codeRunner(code).output).toEqual('6 6')
   })
 
   test('Function with more than 1 return value to be assigned to variables', () => {
@@ -97,18 +95,18 @@ describe('Function Type Checking', () => {
       fmt.Println(b);
     }
     `
-    expect(runCode(code, 2048).output).toEqual('8\n11\n')
+    expect(codeRunner(code).output).toEqual('8\n11\n')
   })
 
   test('Nested function', () => {
     const code = `
     package main
     import "fmt"
-    func f(x int) (y int) {
+    func f(x int) int {
       return x + 2;
     }
 
-    func g(x int) (y int) {
+    func g(x int) int {
       return x + 5;
     }
 
@@ -116,7 +114,7 @@ describe('Function Type Checking', () => {
       fmt.Println(g(f(1)));
     }
     `
-    expect(runCode(code, 2048).output).toEqual('8\n')
+    expect(codeRunner(code).output).toEqual('8\n')
   })
 })
 
@@ -134,7 +132,7 @@ describe('Function Execution tests', () => {
 
   test('Function Declaration', () => {
     expect(
-      runCode(
+      codeRunner(
         `package main
         import "fmt"
 
@@ -149,15 +147,13 @@ describe('Function Execution tests', () => {
             return x + y + 100
           }
           fmt.Println(f(1, 2))
-        }`,
-        2048,
-      ).output,
+        }`,).output,
     ).toEqual('103\n')
   })
 
   test('Function assignment in loop', () => {
     expect(
-      runCode(
+      codeRunner(
         `package main
         import "fmt"
         func main() {
@@ -170,15 +166,13 @@ describe('Function Execution tests', () => {
             }
           }
           fmt.Println(f(1, 2))
-        }`,
-        2048,
-      ).output,
+        }`,).output,
     ).toEqual('8\n')
   })
 
   test('Function assignment in loop and if', () => {
     expect(
-      runCode(
+      codeRunner(
         `package main
         import "fmt"
         func main() {
@@ -193,15 +187,13 @@ describe('Function Execution tests', () => {
             }
           }
           fmt.Println(f(1, 2))
-        }`,
-        2048,
-      ).output,
+        }`,).output,
     ).toEqual('103\n')
   })
 
   test('Recursive function', () => {
     expect(
-      runCode(
+      codeRunner(
         `package main
 
       import "fmt"
@@ -215,9 +207,7 @@ describe('Function Execution tests', () => {
       
       func main() {
         fmt.Println(f(10))
-      }`,
-        2048,
-      ).output,
+      }`,).output,
     ).toEqual('10\n')
   })
 
@@ -229,7 +219,7 @@ describe('Function Execution tests', () => {
 
   test('Closures', () => {
     expect(
-      runCode(
+      codeRunner(
         `package main
         import "fmt"
 
@@ -253,9 +243,122 @@ describe('Function Execution tests', () => {
           fmt.Println(f2(2, 3))
           fmt.Println(f2(1, 1))
         }
-    `,
-        2048,
-      ).output,
+    `,).output,
     ).toEqual('8\n4\n5\n3\n9\n5\n')
+  })
+
+  test('Function can reassign variables in parent scope', () => {
+    expect(
+      mainRunner(`
+        x := 0
+        func() {
+          x = 99
+        }()
+        fmt.Println(x)
+      `).output,
+    ).toEqual('99\n')
+  })
+
+  test('Function works as first class citizens', () => {
+    expect(
+      mainRunner(`
+        q, g := 10, func() int { return q }
+        fmt.Println(g())
+      `).output,
+    ).toEqual('10\n')
+  })
+
+  test('Function works as first class citizens', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        func f() (int, int, string) {
+          return 1, 2, "IUCvevfde"
+        }
+
+        func x() string {
+	        a, b, s := f()
+          return s
+        }
+
+        func main() {
+          e := x()
+          m, n, o := f()
+          fmt.Println(e)
+          fmt.Println(m)
+          fmt.Println(n)
+          fmt.Println(o)
+        }
+      `).output,
+    ).toEqual('IUCvevfde\n1\n2\nIUCvevfde\n')
+  })
+
+  test('Function works as first class citizens', () => {
+    expect(
+    codeRunner(`
+        package main
+        import "fmt"
+
+        func f() (int, int, string) {
+          return 1, 2, "IUCvevfde"
+        }
+
+        func x(a int, b int, s string) (int, int, string) {
+          return a * 10, b * 10, s
+        }
+
+        func main() {
+          c, d, e := x(f())
+          fmt.Println(c)
+          fmt.Println(d)
+          fmt.Println(e)
+        }
+      `).output,
+    ).toEqual('10\n20\nIUCvevfde\n')
+  })
+
+  test('Function works as first class citizens', () => {
+    expect(
+    codeRunner(`
+        package main
+        import "fmt"
+
+        func x(a int, b int, s string) (int, int, string) {
+          return a * 10, b * 10, s
+        }
+
+        func main() {
+          c, d, e := x(1, 2, "IUCvevfde")
+          fmt.Println(c)
+          fmt.Println(d)
+          fmt.Println(e)
+        }
+      `).output,
+    ).toEqual('10\n20\nIUCvevfde\n')
+  })
+
+  test('Function works as first class citizens', () => {
+    expect(
+    codeRunner(`
+        package main
+        import "fmt"
+
+        func x(a int, s string) (int, string) {
+          return a * 10, s
+        }
+
+        func main() {
+          d, e := x(3, "IUCvevfde")
+          c, f := 3, 2
+          fmt.Println(c)
+          fmt.Println(d)
+          fmt.Println(e)
+          fmt.Println(f)
+          fmt.Println(x(3, "IUCvevfde"))
+        }
+      `).output,
+    ).toEqual('3\n30\nIUCvevfde\n2\n30 IUCvevfde\n')
   })
 })

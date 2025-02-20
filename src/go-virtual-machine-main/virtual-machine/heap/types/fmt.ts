@@ -1,4 +1,4 @@
-import { Process } from '../../executor/process'
+import { Process } from '../../runtime/process'
 import { Heap, TAG } from '..'
 
 import { BaseNode } from './base'
@@ -84,11 +84,11 @@ export class FmtPkgNode extends BaseNode {
       if (i > 0) {
         // the argument before and after the string argument will coalesce with the string argument
         if (process.heap.get_value(argAddresses[i]) instanceof StringNode
-          || (i < argCount - 1 
+          || (i < argCount - 1
             && process.heap.get_value(argAddresses[i + 1]) instanceof StringNode)
-          || (i > 0 
+          || (i > 0
             && process.heap.get_value(argAddresses[i - 1]) instanceof StringNode)) {
-            process.print('')
+          process.print('')
         } else {
           process.print(' ')
         }
@@ -110,11 +110,11 @@ export class FmtPkgNode extends BaseNode {
       if (i > 0) {
         // the argument before and after the string argument will coalesce with the string argument
         if (process.heap.get_value(argAddresses[i]) instanceof StringNode
-          || (i < argCount - 1 
+          || (i < argCount - 1
             && process.heap.get_value(argAddresses[i + 1]) instanceof StringNode)
-          || (i > 0 
+          || (i > 0
             && process.heap.get_value(argAddresses[i - 1]) instanceof StringNode)) {
-            process.print('')
+          process.print('')
         } else {
           process.print(' ')
         }

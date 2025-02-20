@@ -1,7 +1,7 @@
-import { Debugger } from '../executor/debugger'
+import { Debugger } from '../runtime/debugger'
 
 import { ArrayNode, SliceNode } from './types/array'
-import { ChannelNode, ChannelReqNode, ReqInfoNode } from './types/channel'
+import { ChannelArrayNode, ChannelNode, ChannelReqNode, ReqInfoNode } from './types/channel'
 import { ContextNode } from './types/context'
 import { EnvironmentNode, FrameNode } from './types/environment'
 import { FmtPkgNode, PkgNode } from './types/fmt'
@@ -13,6 +13,7 @@ import {
   MethodNode,
 } from './types/func'
 import { LinkedListEntryNode, LinkedListNode } from './types/linkedlist'
+import { MutexNode } from './types/mutex'
 import {
   BoolNode,
   FloatNode,
@@ -25,6 +26,7 @@ import { QueueListNode, QueueNode } from './types/queue'
 import { StackListNode, StackNode } from './types/stack'
 import { WaitGroupNode } from './types/waitGroup'
 import { Memory } from './memory'
+import { StructNode } from './types/struct'
 
 export enum TAG {
   UNKNOWN = 0,
@@ -55,6 +57,10 @@ export enum TAG {
   DEFER_METHOD = 25,
   PKG = 26,
   FMT_PKG = 27,
+  MUTEX = 28,
+  DECLARED = 29,
+  STRUCT = 30,
+  CHANNEL_ARRAY = 31,
 }
 
 export const word_size = 4
@@ -155,6 +161,12 @@ export class Heap {
         return new PkgNode(this, addr)
       case TAG.FMT_PKG:
         return new FmtPkgNode(this, addr)
+      case TAG.MUTEX:
+        return new MutexNode(this, addr)
+      case TAG.STRUCT:
+        return new StructNode(this, addr)
+      case TAG.CHANNEL_ARRAY:
+        return new ChannelArrayNode(this, addr)
       default:
         // return new UnassignedNode(this, addr)
         throw Error('Unknown Data Type')
@@ -388,7 +400,7 @@ export class Heap {
     for (const root of roots) {
       this.mark(root)
     }
-    for (let cur_addr = 0; cur_addr < this.size; ) {
+    for (let cur_addr = 0; cur_addr < this.size;) {
       if (!this.is_free(cur_addr) && !this.is_marked(cur_addr)) {
         cur_addr = this.free(cur_addr)
       } else {

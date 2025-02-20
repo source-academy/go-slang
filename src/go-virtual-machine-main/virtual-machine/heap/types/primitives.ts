@@ -5,7 +5,7 @@ import {
   NumStrBinaryToBoolOp,
   NumUnaryOp,
   StrBinaryOp,
-} from '../../executor/ops'
+} from '../../runtime/ops'
 import { Heap, TAG, word_size } from '..'
 
 import { BaseNode } from './base'
@@ -22,13 +22,25 @@ export abstract class PrimitiveNode extends BaseNode {
 
 export class IntegerNode extends PrimitiveNode {
   static create(num: number, heap: Heap) {
-    const addr = heap.allocate(2)
+    const addr = heap.allocate(IntegerNode.sizeof())
     heap.set_tag(addr, TAG.NUMBER)
     heap.memory.set_number(num, addr + 1)
     return new IntegerNode(heap, addr)
   }
   static default(heap: Heap) {
     return IntegerNode.create(0, heap)
+  }
+
+  static bulkDefault(heap: Heap, length: number) {
+    const addr = heap.allocate(IntegerNode.sizeof() * length)
+    for (let i = 0; i < length; i++) {
+      heap.set_tag(addr + IntegerNode.sizeof() * i, TAG.NUMBER)
+      heap.memory.set_number(0, addr + 1 + IntegerNode.sizeof() * i)
+    }
+    return new IntegerNode(heap, addr)
+  }
+  static sizeof() {
+    return 2
   }
 
   get_value() {
@@ -64,13 +76,27 @@ export class IntegerNode extends PrimitiveNode {
 
 export class FloatNode extends PrimitiveNode {
   static create(num: number, heap: Heap) {
-    const addr = heap.allocate(2)
+    const addr = heap.allocate(FloatNode.sizeof())
     heap.set_tag(addr, TAG.FLOAT)
     heap.memory.set_float(num, addr + 1)
     return new FloatNode(heap, addr)
   }
+
+  static sizeof() {
+    return 2
+  }
+
   static default(heap: Heap) {
     return FloatNode.create(0.0, heap)
+  }
+
+  static bulkDefault(heap: Heap, length: number) {
+    const addr = heap.allocate(FloatNode.sizeof() * length)
+    for (let i = 0; i < length; i++) {
+      heap.set_tag(addr + FloatNode.sizeof() * i, TAG.FLOAT)
+      heap.memory.set_float(0.0, addr + 1 + FloatNode.sizeof() * i)
+    }
+    return new FloatNode(heap, addr)
   }
 
   get_value() {
@@ -102,13 +128,25 @@ export class FloatNode extends PrimitiveNode {
 
 export class BoolNode extends PrimitiveNode {
   static create(val: boolean, heap: Heap) {
-    const addr = heap.allocate(1)
+    const addr = heap.allocate(BoolNode.sizeof())
     heap.set_tag(addr, TAG.BOOLEAN)
     heap.memory.set_bits(val ? 1 : 0, addr, 1, 16)
     return new BoolNode(heap, addr)
   }
+  static sizeof() {
+    return 1
+  }
   static default(heap: Heap) {
     return BoolNode.create(false, heap)
+  }
+
+  static bulkDefault(heap: Heap, length: number) {
+    const addr = heap.allocate(BoolNode.sizeof() * length)
+    for (let i = 0; i < length; i++) {
+      heap.set_tag(addr + i, TAG.BOOLEAN)
+      heap.memory.set_bits(0, addr + i, 1, 16)
+    }
+    return new BoolNode(heap, addr)
   }
 
   get_value() {
@@ -133,7 +171,7 @@ export class BoolNode extends PrimitiveNode {
 
 export class StringNode extends PrimitiveNode {
   static create(str: string, heap: Heap) {
-    const addr = heap.allocate(2)
+    const addr = heap.allocate(StringNode.sizeof())
     heap.set_tag(addr, TAG.STRING)
     heap.temp_push(addr)
     heap.memory.set_number(-1, addr + 1)
@@ -154,8 +192,36 @@ export class StringNode extends PrimitiveNode {
     return new StringNode(heap, addr)
   }
 
+  static sizeof() {
+    return 2
+  }
+
   static default(heap: Heap) {
     return StringNode.create('', heap)
+  }
+
+  static bulkDefault(heap: Heap, length: number) {
+    const addr = heap.allocate(StringNode.sizeof() * length)
+    for (let i = 0; i < length; i++) {
+      heap.set_tag(addr + StringNode.sizeof() * i, TAG.STRING)
+      heap.temp_push(addr + StringNode.sizeof() * i)
+      heap.memory.set_number(-1, addr + 1 + StringNode.sizeof() * i)
+      const list_addr = heap.allocate(Math.ceil((''.length + 1) / word_size) + 1)
+      heap.set_tag(list_addr, TAG.STRING_LIST)
+      heap.memory.set_word(list_addr, addr + 1 + StringNode.sizeof() * i)
+      heap.temp_pop()
+      for (let j = 0; j <= ''.length; j++) {
+        let val = 0
+        if (j < ''.length) val = ''.charCodeAt(j)
+        heap.memory.set_bytes(
+          val,
+          Math.floor(j / word_size) + list_addr + 1,
+          1,
+          j % word_size,
+        )
+      }
+    }
+    return new StringNode(heap, addr)
   }
 
   get_list() {
@@ -202,7 +268,7 @@ export class StringNode extends PrimitiveNode {
     throw Error('Invalid Opeartion')
   }
 }
-export class StringListNode extends BaseNode {}
+export class StringListNode extends BaseNode { }
 
 export class UnassignedNode extends BaseNode {
   static create(heap: Heap) {

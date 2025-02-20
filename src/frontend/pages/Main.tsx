@@ -10,8 +10,8 @@ import {
 } from '@chakra-ui/react'
 import Cookies from 'js-cookie'
 
-import { runCode } from '../../virtual-machine'
-import { CompileError } from '../../virtual-machine/compiler'
+import { runCode } from '../../go-virtual-machine-main/tests/utility'
+import { CompileError } from '../../go-virtual-machine-main/virtual-machine/executor/index'
 import {
   CodeIDE,
   CodeIDEButtons,
@@ -145,7 +145,7 @@ export const Main = () => {
         error,
         output: newOutput,
         visualData,
-      } = runCode(code, heapsize, visualMode)
+      } = runCode(code, heapsize, true, visualMode)
       if (error) {
         const errorTitle = {
           parse: 'Syntax Error',

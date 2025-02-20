@@ -1,6 +1,8 @@
 import { Heap, TAG } from '..'
+import { Type } from '../../executor/typing'
 
 import { BaseNode } from './base'
+import { BoolNode, PrimitiveNode } from './primitives'
 
 /**
  * Each ArrayNode occupies (2 + `length`) words.
@@ -8,12 +10,15 @@ import { BaseNode } from './base'
  * Word 1: Length of array.
  * Remaining `length` words: Each word is the address of an element.
  */
+// Should bulk allocate then 
 export class ArrayNode extends BaseNode {
-  static create(length: number, heap: Heap): ArrayNode {
+  static create(length: number, heap: Heap, sizeof: number, startAddr: number): ArrayNode {
     const addr = heap.allocate(2 + length)
     heap.set_tag(addr, TAG.ARRAY)
     heap.memory.set_number(length, addr + 1)
-    for (let i = 0; i < length; i++) heap.memory.set_number(-1, addr + i + 2)
+    for (let i = 0; i < length; i++) {
+      heap.memory.set_word(startAddr + sizeof * i, addr + 2 + i)
+    }
     return new ArrayNode(heap, addr)
   }
 
@@ -23,19 +28,18 @@ export class ArrayNode extends BaseNode {
    */
   static default(
     length: number,
-    defaultCreator: (heap: Heap) => number,
+    type: Type,
     heap: Heap,
   ) {
-    const addr = heap.allocate(2 + length)
+    /*
+    const addr = heap.allocate(length * 2)
     heap.set_tag(addr, TAG.ARRAY)
     heap.memory.set_number(length, addr + 1)
     heap.temp_push(addr)
-    for (let i = 0; i < length; i++) heap.memory.set_number(-1, addr + i + 2)
-    for (let i = 0; i < length; i++) {
-      heap.memory.set_word(defaultCreator(heap), addr + 2 + i)
-    }
+    heap.memory.set_word(type.bulkDefaultNodeCreator()(heap, length), addr + 2)
     heap.temp_pop()
     return new ArrayNode(heap, addr)
+    */
   }
 
   length(): number {
@@ -50,10 +54,14 @@ export class ArrayNode extends BaseNode {
     this.heap.memory.set_word(address, this.addr + 2 + index)
   }
 
+  sizeof() {
+    return this.length() * this.heap.get_value(this.get_child(0)).sizeof()
+  }
+
   get_child(index: number): number {
     return this.heap.memory.get_word(this.addr + 2 + index)
   }
-
+ 
   override get_children(): number[] {
     return [...Array(this.length()).keys()].map((x) => this.get_child(x))
   }
