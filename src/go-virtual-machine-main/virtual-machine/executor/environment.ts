@@ -43,8 +43,12 @@ class CompileEnvironment {
       while (var_idx >= 0) {
         var x = Object.keys(this.types[frame_sz - frame_idx][var_idx])
         var y = name
-        if (Object.keys(this.types[frame_sz - frame_idx][var_idx])[0] === y)
+        var z = Object.values(this.typenames[frame_sz - frame_idx][var_idx])[0]
+        if (Object.keys(this.types[frame_sz - frame_idx][var_idx])[0] === y) {
           return Object.values(this.types[frame_sz - frame_idx][var_idx])
+        } else if (Object.values(this.typenames[frame_sz - frame_idx][var_idx])[0] === y) {
+          return Object.values(this.types[frame_sz - frame_idx][var_idx])
+        }
         var_idx--
       }
       frame_idx++

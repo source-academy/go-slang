@@ -48,6 +48,7 @@
     LiteralValueToken,
     ArrayLiteralToken,
     SliceLiteralToken,
+    StructLiteralToken,
     QualifiedIdentifierToken,
   } from './tokens'
 
@@ -249,16 +250,16 @@ TypeConstraint = TypeElem
 //! TODO (P5): Multiple declarations (optionally semicolon-separated) is not supported.
 VarDecl = "var" _ @VarSpec
 VarSpec = identifiers:IdentifierList _ rest:(
-            varType:Type expressions:(_ "=" _ @ExpressionList)? 
+            varType:Type expressions:(_ "=" _ @(ExpressionList / CompositeLit))? 
             { return {varType, expressions} }
             /
-            _ "=" _ expressions:ExpressionList
+            _ "=" _ expressions:(ExpressionList / CompositeLit)
             { return {varType: undefined, expressions} }
           )
           { return new VariableDeclarationToken(location(), identifiers, rest.varType, rest.expressions) }
 
 //* Short Variable Declarations
-ShortVarDecl = identifiers:IdentifierList _ ":=" _ expressions:(ExpressionList / StructType)
+ShortVarDecl = identifiers:IdentifierList _ ":=" _ expressions:(ExpressionList / CompositeLit)
                { return new ShortVariableDeclarationToken(location(), identifiers, undefined, expressions) }
 
 //* Function Declarations
@@ -292,6 +293,7 @@ QualifiedIdent = pkg:PackageName "." iden:identifier { return new QualifiedIdent
 //* Composite Literals
 CompositeLit = type:ArrayType _ value:LiteralValue { return new ArrayLiteralToken(location(), type, value) }
              / type:SliceType _ value:LiteralValue { return new SliceLiteralToken(location(), type, value) }
+             / type:StructType _ value:LiteralValue { return new StructLiteralToken(location(), type, value) }
 LiteralValue = "{" _ elements:(@ElementList _ ","? _)? "}" { return new LiteralValueToken(location(), elements ?? []) }
 ElementList  = head:KeyedElement rest:(_ "," _ @KeyedElement)* { return [head, ...rest] }
 // Ironically, KeyedElement will not support having a key for our implementation.

@@ -172,6 +172,7 @@ export class DeclaredTypeToken extends TypeToken {
 }
 
 export class StructTypeToken extends TypeToken {
+  
   constructor(
     sourceLocation: TokenLocation,
     public fields: Token[],

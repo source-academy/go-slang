@@ -12,6 +12,7 @@ import {
   ReturnInstruction,
   StoreArrayElementInstruction,
   StoreInstruction,
+  StoreStructFieldInstruction,
 } from '../../executor/instructions'
 import { MemoryAllocationInstruction } from '../../executor/instructions/memory'
 import {
@@ -29,7 +30,7 @@ import {
 import { Token, TokenLocation } from './base'
 import { BlockToken } from './block'
 import { ExpressionToken, PrimaryExpressionToken } from './expressions'
-import { ArrayTypeToken, FunctionTypeToken, SliceTypeToken } from './type'
+import { ArrayTypeToken, FunctionTypeToken, SliceTypeToken, StructTypeToken } from './type'
 
 export abstract class LiteralToken extends Token {
   constructor(sourceLocation: TokenLocation, public value: number | string) {
@@ -307,5 +308,35 @@ export class SliceLiteralToken extends Token {
     const type = this.sliceType.compile(compiler)
     this.body.compileWithType(compiler, type)
     return type
+  }
+}
+
+export class StructLiteralToken extends Token {
+  constructor(
+    sourceLocation: TokenLocation,
+    public override type: StructTypeToken,
+    public body: LiteralValueToken,
+  ) {
+    super('struct_literal', sourceLocation)
+  }
+
+  override compileUnchecked(compiler: Compiler): Type {
+    if (this.type instanceof StructTypeToken) {
+      for (let i = 0; i < this.type.fields.length; i++) {
+        const fieldType = this.type.fields[i].type.compile(compiler)
+        for (let j = 0; j < this.body.elements.length; j++) {
+          const valueType = this.body.elements[j].compile(compiler)
+          if (!valueType.assignableBy(fieldType)) {
+            throw new Error('Value type does not match field type.')
+          }
+          this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+          this.pushInstruction(compiler, new StoreStructFieldInstruction(j))
+        }
+      }
+    } else {
+      let a = compiler.context.env.find_type(this.type.name)
+      let b = 0
+    }
+    return this.type.compile(compiler)
   }
 }

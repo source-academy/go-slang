@@ -59,7 +59,7 @@ describe('Struct tests', () => {
     ).toEqual('{false  0}\n')
   })
 
-  test('Short variable declaration of struct works', () => {
+  test('Assignment of anonymous struct values work', () => {
     expect(
       codeRunner(`
         package main
@@ -68,10 +68,27 @@ describe('Struct tests', () => {
         func main() {
           a := struct {
             Age, Age2 int
-          }
+          }{1, 3}
           fmt.Println(a)
         }
       `).output,
-    ).toEqual('{0 0}\n')
+    ).toEqual('{1 3}\n')
+  })
+
+  test('Assignment of typed struct values work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+        type A struct {
+          Age, Age2 int
+        }
+        
+        func main() {
+          var a A = A{2, 5}
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{2 5}\n')
   })
 })
