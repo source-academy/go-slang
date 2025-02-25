@@ -30,7 +30,7 @@ import {
 import { Token, TokenLocation } from './base'
 import { BlockToken } from './block'
 import { ExpressionToken, PrimaryExpressionToken } from './expressions'
-import { ArrayTypeToken, FunctionTypeToken, SliceTypeToken, StructTypeToken } from './type'
+import { ArrayTypeToken, DeclaredTypeToken, FunctionTypeToken, SliceTypeToken, StructTypeToken, TypeToken } from './type'
 
 export abstract class LiteralToken extends Token {
   constructor(sourceLocation: TokenLocation, public value: number | string) {
@@ -321,21 +321,49 @@ export class StructLiteralToken extends Token {
   }
 
   override compileUnchecked(compiler: Compiler): Type {
+    // anonymous structs
     if (this.type instanceof StructTypeToken) {
-      for (let i = 0; i < this.type.fields.length; i++) {
-        const fieldType = this.type.fields[i].type.compile(compiler)
+      for (let i = 0; i < this.body.elements.length; i++) {
+        for (let j = 0; j < this.type.fields.length; j++) {
+          for (let k = 0; k < this.type.fields[j].list.length; k++) {
+            const valueType = this.body.elements[i].compile(compiler)
+            const fieldType = this.type.fields[j].type.compile(compiler)
+            if (!valueType.assignableBy(fieldType)) {
+              throw new Error('Value type does not match field type.')
+            }
+            this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+            this.pushInstruction(compiler, new StoreStructFieldInstruction(i))
+            i++
+          }
+        }
+      }
+    } else if (this.type instanceof DeclaredTypeToken) {
+      // explicitly type-declared structs
+      let struct = compiler.context.env.find_type(this.type.name)[0] as StructType
+      let max = Math.min(Object.entries(struct.fields).length, this.body.elements.length)
+      for (let i = 0; i < max; i++) {
+        let fieldType = Object.entries(struct.fields)[i][1] as Type
         for (let j = 0; j < this.body.elements.length; j++) {
-          const valueType = this.body.elements[j].compile(compiler)
+          const hasKey = this.body.elements[j].key !== undefined
+          const valueType = hasKey
+            ? this.body.elements[j].element.compile(compiler)
+            : this.body.elements[j].compile(compiler)
+          if (hasKey) {
+            const key = this.body.elements[j].key.identifier
+            fieldType = struct.fields[key]
+          }
           if (!valueType.assignableBy(fieldType)) {
             throw new Error('Value type does not match field type.')
           }
           this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
-          this.pushInstruction(compiler, new StoreStructFieldInstruction(j))
+          if (hasKey) {
+            const index = Object.keys(struct.fields).indexOf(this.body.elements[j].key.identifier)
+            this.pushInstruction(compiler, new StoreStructFieldInstruction(index))
+          } else {
+            this.pushInstruction(compiler, new StoreStructFieldInstruction(j))
+          }
         }
       }
-    } else {
-      let a = compiler.context.env.find_type(this.type.name)
-      let b = 0
     }
     return this.type.compile(compiler)
   }

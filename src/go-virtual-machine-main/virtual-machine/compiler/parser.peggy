@@ -104,6 +104,7 @@ comment = "//" unicode_char* newline
 //* Identifiers
 identifier = iden:$(letter (letter / unicode_digit)*) &{ return IdentifierToken.isValidIdentifier(iden) }
              { return new IdentifierToken(location(), iden) }
+// lookahead "&" for a newline, insert a semicolon
 
 //* Integer Literals
 int_lit = number:binary_lit  { return IntegerLiteralToken.fromSource(location(), number[3], 2) }  /
@@ -211,7 +212,8 @@ ChannelType = "chan" _ "<-" _ element:ElementType { return new ChannelTypeToken(
 
 
 //* =============== Blocks ===============
-Block = "{" _ statements:StatementList _ "}" { return new BlockToken(location(), statements) }
+CompositeLitContext = !"func" Type _ "{"
+Block = !CompositeLitContext "{" _ statements:StatementList _ "}" { return new BlockToken(location(), statements) }
 StatementList = (_ @Statement _ ";"?)*
 
 
@@ -250,7 +252,7 @@ TypeConstraint = TypeElem
 //! TODO (P5): Multiple declarations (optionally semicolon-separated) is not supported.
 VarDecl = "var" _ @VarSpec
 VarSpec = identifiers:IdentifierList _ rest:(
-            varType:Type expressions:(_ "=" _ @(ExpressionList / CompositeLit))? 
+            varType:Type expressions:(_ "=" _ @(ExpressionList / &CompositeLitContext CompositeLit))? 
             { return {varType, expressions} }
             /
             _ "=" _ expressions:(ExpressionList / CompositeLit)
@@ -294,10 +296,13 @@ QualifiedIdent = pkg:PackageName "." iden:identifier { return new QualifiedIdent
 CompositeLit = type:ArrayType _ value:LiteralValue { return new ArrayLiteralToken(location(), type, value) }
              / type:SliceType _ value:LiteralValue { return new SliceLiteralToken(location(), type, value) }
              / type:StructType _ value:LiteralValue { return new StructLiteralToken(location(), type, value) }
-LiteralValue = "{" _ elements:(@ElementList _ ","? _)? "}" { return new LiteralValueToken(location(), elements ?? []) }
+             / &CompositeLitContext type:Type _ value:LiteralValue { return new StructLiteralToken(location(), type, value) }
+LiteralValue = "{" _ elements:(@ElementList _ ","? _)? "}" ";"? { return new LiteralValueToken(location(), elements ?? []) }
 ElementList  = head:KeyedElement rest:(_ "," _ @KeyedElement)* { return [head, ...rest] }
 // Ironically, KeyedElement will not support having a key for our implementation.
-KeyedElement = Element
+KeyedElement = key:(@Key _ ":" _)? element:Element { return key === null ? element : {key, element} }
+Key          = FieldName / Expression / LiteralValue
+FieldName    = identifier
 Element      = Expression / LiteralValue
 
 //* Function Literals

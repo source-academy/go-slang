@@ -165,7 +165,8 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
           }
         } else {
           const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)
-          if (expressionTypes instanceof ArrayType || expressionTypes instanceof StructType) {
+          if (expressionTypes instanceof ArrayType || expressionTypes instanceof StructType
+            || (expressionTypes instanceof DeclaredType && expressionTypes.type[0] instanceof StructType)) {
             for (let j = start; j < compiler.instructions.length; j++) {
               if (compiler.instructions[j] instanceof LoadVariableInstruction
                 && (compiler.instructions[j] as LoadVariableInstruction).id === ""
@@ -180,7 +181,8 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
             )
           }
           compiler.type_environment.addType(identifier, expressionTypes)
-          if (!(expressionTypes instanceof ArrayType || expressionTypes instanceof StructType)) {
+          if (!(expressionTypes instanceof ArrayType || expressionTypes instanceof StructType)
+            && !(expressionTypes instanceof DeclaredType && expressionTypes.type[0] instanceof StructType)) {
             this.pushInstruction(
               compiler,
               new LoadVariableInstruction(frame_idx, var_idx, identifier),
@@ -297,7 +299,8 @@ export class VariableDeclarationToken extends DeclarationToken {
         }
         else {
           const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)
-          if (expressionTypes instanceof ArrayType) {
+          if (expressionTypes instanceof ArrayType
+            || (expressionTypes instanceof DeclaredType && expressionTypes.type[0] instanceof StructType)) {
             for (let j = start; j < compiler.instructions.length; j++) {
               if (compiler.instructions[j] instanceof LoadVariableInstruction
                 && (compiler.instructions[j] as LoadVariableInstruction).id === ""
@@ -329,7 +332,8 @@ export class VariableDeclarationToken extends DeclarationToken {
             )
           }
           compiler.type_environment.addType(identifier, expressionTypes)
-          if (!(expressionTypes instanceof ArrayType)) {
+          if (!(expressionTypes instanceof ArrayType)
+            && !(expressionTypes instanceof DeclaredType && expressionTypes.type[0] instanceof StructType)) {
             this.pushInstruction(
               compiler,
               new LoadVariableInstruction(frame_idx, var_idx, identifier),

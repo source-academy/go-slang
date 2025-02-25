@@ -94,6 +94,6 @@ describe('Concurrency Check', () => {
       fmt.Println("hello")
     }
     `
-    expect(codeRunner(code).output).toEqual('3\n348\nhello\n')
+    expect(codeRunner(code).output).toEqual('3\nhello\n')
   })
 })

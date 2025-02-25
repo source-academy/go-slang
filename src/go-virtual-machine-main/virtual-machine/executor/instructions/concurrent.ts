@@ -90,8 +90,31 @@ export class GoInstruction extends Instruction {
     } else {
       // create the frame for function, put arguments in frame
       // func is a methodnode
-      const receiver = func.receiver()
-      receiver.handleMethodCall(process, func.identifier(), this.args)
+      const new_context = process.context.go()
+      new_context.pushRTS(process.context.E().addr)
+      new_context.set_PC(process.context.PC() - 1)
+      //new_context.pushOS(func.receiverAddr())
+      const results = []
+      let a = process.context.OS().get_children()
+      for (let i = this.args - 1; i >= 0; i--) {
+        const src = process.context.popOS()
+        results[i] = src
+      }
+      // transfer the method call on the OS too
+      const method = process.context.popOS()
+      new_context.pushOS(method)
+      for (let i = 0; i < this.args; i++) {
+        // making it "pass by value" instead of by reference
+        const allocate = process.heap.allocate(process.heap.get_size(results[i]))
+        process.heap.copy(allocate, results[i])
+        new_context.pushOS(allocate)
+      }
+      new_context.pushOS(0)
+      new_context.pushDeferStack()
+      process.contexts.push(new_context.addr)
+      //process.context.popOS()
+      //const receiver = func.receiver()
+      //receiver.handleMethodCall(process, func.identifier(), this.args)
     }
   }
 

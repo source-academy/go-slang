@@ -40,8 +40,40 @@ const runCode = (
 ): ProgramData => {
   // Parsing.
   let tokens: SourceFileTokens
+
+  // this function is written by ChatGPT:
+  // https://chatgpt.com/share/67bdd28d-454c-800f-8213-16fd7d6fbee1
+  function insertSemicolons(input: string) {
+    let output = "";
+    let insideStructOrArray = false;
+    let insideFunction = false;
+    let lines = input.split("\n");
+
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i].trim();
+
+      // Detect function definitions (e.g., `func foo() {`)
+      if (line.match(/^func\s+[A-Za-z_][A-Za-z0-9_]*\s*\(.*\)\s*\{$/)) {
+        insideFunction = true;
+      }
+
+      // Detect struct, slice, or array literals (e.g., `Person {`, `[]int {`, `[...]int {`)
+      if (!insideFunction && line.match(/^(\.\.\.|[A-Za-z_\[\]])+[A-Za-z0-9_\[\]]*\s*\{$/)) {
+        insideStructOrArray = true;
+      }
+
+      // Add semicolon if it's a statement and not inside a struct/array/slice
+      if (!insideStructOrArray && line.match(/.*[a-zA-Z0-9_)}\-\+"]$/)) {
+        output += line + ";\n";
+      } else {
+        output += line + "\n";
+      }
+    }
+    return output;
+  }
+  let code = insertSemicolons(source_code)
   try {
-    tokens = parser.parse(source_code) as SourceFileTokens
+    tokens = parser.parse(code) as SourceFileTokens
     console.log(tokens)
   } catch (err) {
     const message = (err as Error).message

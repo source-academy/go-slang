@@ -1,6 +1,6 @@
 import * as seedrandom from 'seedrandom'
 
-import { DoneInstruction, Instruction } from '../executor/instructions'
+import { DoneInstruction, GoInstruction, Instruction } from '../executor/instructions'
 import { Heap } from '../heap'
 import { ContextNode } from '../heap/types/context'
 import { EnvironmentNode, FrameNode } from '../heap/types/environment'
@@ -79,6 +79,14 @@ export class Process {
           if (cur_time >= time_quantum) {
             // Context Switch
             this.contexts.push(this.context.addr)
+            break
+          }
+          if (this.context.OS().sz() > 0 && this.context.peekOS() === 0) {
+            this.context.popOS()
+            const instr = this.instructions[this.context.incr_PC()] as GoInstruction
+            const func = this.heap.get_value(this.context.peekOSIdx(instr.args)) as MethodNode
+            const receiver = func.receiver()
+            receiver.handleMethodCall(this, func.identifier(), instr.args)
             break
           }
           const pc = this.context.PC()
