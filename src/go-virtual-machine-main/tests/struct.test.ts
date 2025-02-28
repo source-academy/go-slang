@@ -450,6 +450,25 @@ describe('Struct tests', () => {
     ).toEqual('{34 Tom true}\n')
   })
 
+  test('Multiple (3) field lines works without key', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+        type A struct {
+          Age int
+          Name string
+          Male bool
+        }
+        
+        func main() {
+          var a A = A{56, "Jerry", true}
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{56 Jerry true}\n')
+  })
+
   test('Multiple fields in a single line works with key', () => {
     expect(
       codeRunner(`
@@ -576,5 +595,281 @@ describe('Struct tests', () => {
         }
       `).error?.type,
     ).toEqual('compile')
+  })
+
+  test('Reassignment of field values work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+        type A struct {
+          Age int
+        }
+        
+        func main() {
+          var a A = A{45}
+          a.Age = 40
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{40}\n')
+  })
+
+  test('Reassignment of field values work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+        type A struct {
+          Age int
+          Name string
+        }
+        
+        func main() {
+          var a A = A{45, "Goh"}
+          a.Name = "Sally"
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{45 Sally}\n')
+  })
+
+  test('Printing of field values after reassignment work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+        type A struct {
+          Age int
+        }
+        
+        func main() {
+          var a A = A{45}
+          a.Age = 40
+          fmt.Println(a.Age)
+        }
+      `).output,
+    ).toEqual('40\n')
+  })
+
+  test('Printing of structs after reassignment work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+        type A struct {
+          Age int
+          Name string
+        }
+        
+        func main() {
+          var a A = A{Name: "SA"}
+          a.Age = 40
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{40 SA}\n')
+  })
+
+  test('Printing of structs after reassignment work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+        type A struct {
+          Age int
+          Name string
+        }
+        
+        func main() {
+          var a A = A{}
+          a.Name = "Jess"
+          fmt.Println(a.Age)
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('0\n{0 Jess}\n')
+  })
+
+  test('Reassignment to non-existent field should throw compile error', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+        type A struct {
+          Age int
+          Name string
+        }
+        
+        func main() {
+          var a A = A{}
+          a.Ag = 0
+        }
+      `).error?.type,
+    ).toEqual('compile')
+  })
+
+  test('Reassignment of field values work with shorthand', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+        type A struct {
+          Age int
+        }
+        
+        func main() {
+          a := A{45}
+          a.Age = 40
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{40}\n')
+  })
+
+  test('Reassignment of field values work with shorthand', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+        type A struct {
+          Age int
+          Name string
+        }
+        
+        func main() {
+          a := A{45, "Goh"}
+          a.Name = "Sally"
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{45 Sally}\n')
+  })
+
+  test('Printing of field values after reassignment work with shorthand', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+        type A struct {
+          Age int
+        }
+        
+        func main() {
+          a := A{45}
+          a.Age = 40
+          fmt.Println(a.Age)
+        }
+      `).output,
+    ).toEqual('40\n')
+  })
+
+  test('Printing of structs after reassignment work with shorthand', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+        type A struct {
+          Age int
+          Name string
+        }
+        
+        func main() {
+          a := A{Name: "SA"}
+          a.Age = 40
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{40 SA}\n')
+  })
+
+  test('Printing of structs after reassignment work with shorthand', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+        type A struct {
+          Age int
+          Name string
+        }
+        
+        func main() {
+          a := A{}
+          a.Name = "Jess"
+          fmt.Println(a.Age)
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('0\n{0 Jess}\n')
+  })
+
+  test('Shorthand syntax to reassign field value should throw compile or parse error', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+        type A struct {
+          Age int
+          Name string
+        }
+        
+        func main() {
+          a := A{}
+          a.Name := "Jess"
+        }
+      `).error?.type,
+    ).toMatch(/(compile)|(parse)/)
+  })
+
+  test('Passing struct field values to functions should not change struct field values', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+        type A struct {
+          Age int
+          Name string
+        }
+
+        func help(a int, b string) {
+          a = 934
+          b = "Byebye"
+          fmt.Println(a)
+          fmt.Println(b)
+        }
+        
+        func main() {
+          a := A{}
+          a.Name = "Jess"
+          help(a.Age, a.Name)
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('934\nByebye\n{0 Jess}\n')
+  })
+
+  test('Passing structs to functions should also not change struct field values', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+        type A struct {
+          Age int
+          Name string
+        }
+
+        func help(a A) {
+          a.Age = 934
+          a.Name = "Byebye"
+        }
+        
+        func main() {
+          a := A{}
+          a.Name = "Jess"
+          help(a)
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('934\nByebye\n{0 Jess}\n')
   })
 })

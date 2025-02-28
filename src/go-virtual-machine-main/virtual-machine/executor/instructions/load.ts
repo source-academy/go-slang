@@ -10,6 +10,7 @@ import {
 import { BoolType, Float64Type, Int64Type, StringType, Type } from '../typing'
 
 import { Instruction } from './base'
+import { StructNode } from '../../heap/types/struct'
 
 export class LoadConstantInstruction extends Instruction {
   val: number | string | boolean
@@ -186,5 +187,25 @@ export class LoadPackageInstruction extends Instruction {
     if (packageName !== 'fmt') throw new Error('Unreachable')
     const packageNode = FmtPkgNode.default(process.heap)
     process.context.pushOS(packageNode.addr)
+  }
+}
+
+/** Takes the index, then struct from the heap, and loads the field at the index onto the OS.  */
+export class LoadStructFieldInstruction extends Instruction {
+  index: number
+  constructor(index: number) {
+    super('LDSF')
+    this.index = index
+  }
+
+  override toString(): string {
+    return 'LOAD STRUCT FIELD'
+  }
+
+  override execute(process: Process): void {
+    //const indexNode = new IntegerNode(process.heap, process.context.popOS())
+    const array = new StructNode(process.heap, process.context.popOS())
+    const element = array.get_child(this.index)
+    process.context.pushOS(element)
   }
 }

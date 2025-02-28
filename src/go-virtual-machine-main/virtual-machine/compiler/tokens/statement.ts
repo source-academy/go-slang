@@ -13,6 +13,7 @@ import {
   ReturnInstruction,
   SelectInstruction,
   StoreInstruction,
+  StoreStructFieldInstruction,
   TryChannelReqInstruction,
 } from '../../executor/instructions'
 import {
@@ -38,6 +39,7 @@ import {
   EmptyExpressionToken,
   ExpressionToken,
   PrimaryExpressionToken,
+  SelectorToken,
 } from './expressions'
 import { IdentifierToken } from './identifier'
 import { UnaryOperator } from './operator'

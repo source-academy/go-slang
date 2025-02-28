@@ -340,28 +340,25 @@ export class StructLiteralToken extends Token {
     } else if (this.type instanceof DeclaredTypeToken) {
       // explicitly type-declared structs
       let struct = compiler.context.env.find_type(this.type.name)[0] as StructType
-      let max = Math.min(Object.entries(struct.fields).length, this.body.elements.length)
-      for (let i = 0; i < max; i++) {
+      for (let i = 0; i < this.body.elements.length; i++) {
         let fieldType = Object.entries(struct.fields)[i][1] as Type
-        for (let j = 0; j < this.body.elements.length; j++) {
-          const hasKey = this.body.elements[j].key !== undefined
-          const valueType = hasKey
-            ? this.body.elements[j].element.compile(compiler)
-            : this.body.elements[j].compile(compiler)
-          if (hasKey) {
-            const key = this.body.elements[j].key.identifier
-            fieldType = struct.fields[key]
-          }
-          if (!valueType.assignableBy(fieldType)) {
-            throw new Error('Value type does not match field type.')
-          }
-          this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
-          if (hasKey) {
-            const index = Object.keys(struct.fields).indexOf(this.body.elements[j].key.identifier)
-            this.pushInstruction(compiler, new StoreStructFieldInstruction(index))
-          } else {
-            this.pushInstruction(compiler, new StoreStructFieldInstruction(j))
-          }
+        const hasKey = this.body.elements[i].key !== undefined
+        const valueType = hasKey
+          ? this.body.elements[i].element.compile(compiler)
+          : this.body.elements[i].compile(compiler)
+        if (hasKey) {
+          const key = this.body.elements[i].key.identifier
+          fieldType = struct.fields[key]
+        }
+        if (!valueType.assignableBy(fieldType)) {
+          throw new Error('Value type does not match field type.')
+        }
+        this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+        if (hasKey) {
+          const index = Object.keys(struct.fields).indexOf(this.body.elements[i].key.identifier)
+          this.pushInstruction(compiler, new StoreStructFieldInstruction(index))
+        } else {
+          this.pushInstruction(compiler, new StoreStructFieldInstruction(i))
         }
       }
     }

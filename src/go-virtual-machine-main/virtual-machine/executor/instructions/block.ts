@@ -133,6 +133,7 @@ export class FuncBlockInstruction extends BlockInstruction {
     super.execute(process)
     for (let i = this.args - 1; i >= 0; i--) {
       const src = process.context.popOS()
+      // need to do deepcopy
       const dst = process.context.E().get_frame().get_idx(i)
       process.heap.copy(dst, src)
     }

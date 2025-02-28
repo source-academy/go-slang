@@ -7,6 +7,7 @@ import {
   LoadChannelInstruction,
   LoadConstantInstruction,
   LoadSliceElementInstruction,
+  LoadStructFieldInstruction,
   SelectorOperationInstruction,
   SliceOperationInstruction,
 } from '../../executor/instructions'
@@ -19,10 +20,12 @@ import {
   FunctionType,
   Int64Type,
   NoType,
+  PackageType,
   ParameterType,
   ReturnType,
   SliceType,
   StringType,
+  StructType,
   Type,
   TypeUtility,
 } from '../../executor/typing'
@@ -93,13 +96,24 @@ export class SelectorToken extends PrimaryExpressionModifierToken {
   }
 
   override compile(compiler: Compiler, operandType: Type): Type {
-    const resultType = operandType.select(this.identifier)
-    this.pushInstruction(
-      compiler,
-      new LoadConstantInstruction(this.identifier, new StringType()),
-      new SelectorOperationInstruction(),
-    )
-    return resultType
+    // handle structs first since parser sees them as the same as packages
+    if (operandType instanceof DeclaredType) {
+      if (operandType.type[0].fields[this.identifier] !== undefined) {
+        const resultType = (operandType as StructType).type[0].fields[this.identifier]
+        const index = Object.keys((operandType as StructType).type[0].fields).indexOf(this.identifier)
+        compiler.instructions.push(new LoadStructFieldInstruction(index))
+        return resultType
+      }
+    } else {
+      // standard package operations
+      const resultType = operandType.select(this.identifier)
+      this.pushInstruction(
+        compiler,
+        new LoadConstantInstruction(this.identifier, new StringType()),
+        new SelectorOperationInstruction(),
+      )
+      return resultType
+    }
   }
 }
 
