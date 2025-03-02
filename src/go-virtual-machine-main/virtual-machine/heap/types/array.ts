@@ -31,15 +31,16 @@ export class ArrayNode extends BaseNode {
     type: Type,
     heap: Heap,
   ) {
-    /*
-    const addr = heap.allocate(length * 2)
-    heap.set_tag(addr, TAG.ARRAY)
+    const addr = heap.allocate(2 + length)
+    heap.set_tag(addr, TAG.CHANNEL_ARRAY)
     heap.memory.set_number(length, addr + 1)
     heap.temp_push(addr)
-    heap.memory.set_word(type.bulkDefaultNodeCreator()(heap, length), addr + 2)
+    for (let i = 0; i < length; i++) heap.memory.set_number(-1, addr + i + 2)
+    for (let i = 0; i < length; i++) {
+      heap.memory.set_word(type.defaultNodeCreator()(heap), addr + 2 + i)
+    }
     heap.temp_pop()
     return new ArrayNode(heap, addr)
-    */
   }
 
   length(): number {

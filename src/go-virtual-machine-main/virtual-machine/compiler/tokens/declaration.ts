@@ -4,6 +4,7 @@ import {
   CallInstruction,
   Instruction,
   LoadVariableInstruction,
+  StoreArrayElementInstruction,
   StoreInstruction,
 } from '../../executor/instructions'
 import { ArrayType, DeclaredType, NoType, ReturnType, StructType, Type } from '../../executor/typing'
@@ -11,7 +12,7 @@ import { ArrayType, DeclaredType, NoType, ReturnType, StructType, Type } from '.
 import { Token, TokenLocation } from './base'
 import { ExpressionToken, PrimaryExpressionModifierToken, PrimaryExpressionToken } from './expressions'
 import { IdentifierToken } from './identifier'
-import { FunctionLiteralToken } from './literals'
+import { ArrayLiteralToken, FunctionLiteralToken } from './literals'
 import { DeclaredTypeToken, PrimitiveTypeToken, StructTypeToken, TypeToken } from './type'
 
 export type TopLevelDeclarationToken =
@@ -171,7 +172,11 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
               if (compiler.instructions[j] instanceof LoadVariableInstruction
                 && (compiler.instructions[j] as LoadVariableInstruction).id === ""
               ) {
-                compiler.instructions[j] = new LoadVariableInstruction(frame_idx, var_idx, identifier)
+                if (identifier !== '') {
+                  compiler.instructions[j] = new LoadVariableInstruction(frame_idx, var_idx, identifier)
+                } else {
+                  (compiler.instructions[j] as LoadVariableInstruction).id = identifier
+                }
               }
             }
           }
@@ -181,14 +186,20 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
             )
           }
           compiler.type_environment.addType(identifier, expressionTypes)
-          if (!(expressionTypes instanceof ArrayType || expressionTypes instanceof StructType)
-            && !(expressionTypes instanceof DeclaredType && expressionTypes.type[0] instanceof StructType)) {
-            this.pushInstruction(
-              compiler,
-              new LoadVariableInstruction(frame_idx, var_idx, identifier),
-            )
-            this.pushInstruction(compiler, new StoreInstruction())
+          if (((expressionTypes instanceof ArrayType && expressions[0] instanceof PrimaryExpressionToken
+            && expressions[0].operand instanceof ArrayLiteralToken)
+            || expressionTypes instanceof StructType)
+            || (expressionTypes instanceof DeclaredType && expressionTypes.type[0] instanceof StructType)) {
+              this.pushInstruction(
+                compiler,
+                new LoadVariableInstruction(frame_idx, var_idx, identifier),
+              )
           }
+          this.pushInstruction(
+            compiler,
+            new LoadVariableInstruction(frame_idx, var_idx, identifier),
+          )
+          this.pushInstruction(compiler, new StoreInstruction())
         }
       }
       if (expressions instanceof StructTypeToken) {
@@ -305,7 +316,11 @@ export class VariableDeclarationToken extends DeclarationToken {
               if (compiler.instructions[j] instanceof LoadVariableInstruction
                 && (compiler.instructions[j] as LoadVariableInstruction).id === ""
               ) {
-                compiler.instructions[j] = new LoadVariableInstruction(frame_idx, var_idx, identifier)
+                if (identifier !== '') {
+                  compiler.instructions[j] = new LoadVariableInstruction(frame_idx, var_idx, identifier)
+                } else {
+                  (compiler.instructions[j] as LoadVariableInstruction).id = identifier
+                }
               }
             }
           }

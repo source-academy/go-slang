@@ -27,6 +27,7 @@ import { StackListNode, StackNode } from './types/stack'
 import { WaitGroupNode } from './types/waitGroup'
 import { Memory } from './memory'
 import { StructNode } from './types/struct'
+import { ArrayType, BoolType, Float64Type, Int64Type, NoType, StringType } from '../executor/typing'
 
 export enum TAG {
   UNKNOWN = 0,
@@ -170,6 +171,24 @@ export class Heap {
       default:
         // return new UnassignedNode(this, addr)
         throw Error('Unknown Data Type')
+    }
+  }
+
+  get_type(addr: number) {
+    const tag = this.get_tag(addr)
+    switch (tag) {
+      case TAG.UNKNOWN:
+        return new NoType()
+      case TAG.NUMBER:
+        return new Int64Type()
+      case TAG.FLOAT:
+        return new Float64Type()
+      case TAG.STRING:
+        return new StringType()
+      case TAG.BOOLEAN:
+        return new BoolType()
+      default:
+        return new NoType()
     }
   }
 

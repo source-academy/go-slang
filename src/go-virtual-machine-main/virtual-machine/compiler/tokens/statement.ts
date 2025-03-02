@@ -276,7 +276,20 @@ export class AssignmentStatementToken extends Token {
       } else {
         const varType = left.compile(compiler)
         if (!varType.assignableBy(assignType)) {
-          throw Error(`Cannot use ${assignType} as ${varType} in assignment`)
+          // check if assignType is primitive literal and if varType is declared
+          // if it is, primitive literal should match varType if underlying type is
+          // the same, since primitive literals are considered as untyped values
+          if (right instanceof PrimaryExpressionToken && right.operand.type === 'literal') {
+            let baseType = varType
+            while (baseType instanceof DeclaredType) {
+              baseType = baseType.type[0]
+            }
+            if (!baseType.assignableBy(assignType)) {
+              throw Error(`Cannot use ${assignType} as ${varType} in assignment`)
+            }
+          } else {
+            throw Error(`Cannot use ${assignType} as ${varType} in assignment`)
+          }
         }
         this.pushInstruction(compiler, new StoreInstruction())
       }

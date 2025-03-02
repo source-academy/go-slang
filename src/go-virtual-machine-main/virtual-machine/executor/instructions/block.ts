@@ -5,6 +5,7 @@ import { ArrayType, BoolType, DeclaredType, StructType, Type } from '../typing'
 import { Instruction } from './base'
 import { PrimitiveTypeToken } from '../../compiler/tokens'
 import { ArrayNode } from '../../heap/types/array'
+import { StructNode } from '../../heap/types/struct'
 
 export class BlockInstruction extends Instruction {
   frame: Type[] = []
@@ -133,9 +134,78 @@ export class FuncBlockInstruction extends BlockInstruction {
     super.execute(process)
     for (let i = this.args - 1; i >= 0; i--) {
       const src = process.context.popOS()
-      // need to do deepcopy
       const dst = process.context.E().get_frame().get_idx(i)
       process.heap.copy(dst, src)
+      // deepcopy if struct or array
+      let node = process.heap.get_value(src)
+      if (node instanceof ArrayNode) {
+        let dimensions = [] as number[]
+        let length = node.length()
+        let next = process.heap.get_value(node.get_child(0))
+        let arrayStart = node.get_child(0)
+        dimensions.push(length)
+        while (next instanceof ArrayNode) {
+          dimensions.push(next.length())
+          length = length * next.length()
+          arrayStart = next.get_child(0)
+          next = process.heap.get_value(next.get_child(0))
+        }
+        if (next instanceof DeclaredType) {
+          // Find underlying type to load default values into
+          let actualType = next
+          let nextType = next.type
+          // TODO: Morph to support structs
+          while (nextType[0] instanceof DeclaredType) {
+            actualType = nextType[0]
+            nextType = actualType.type
+          }
+          next = nextType[0]
+        }
+        let type = process.heap.get_type(next.addr)
+        let addr = type.bulkDefaultNodeCreator()(process.heap, length)
+        let sizeof = 2
+        if (type instanceof BoolType) sizeof = 1
+        // deepcopy each element
+        for (let i = 0; i < length; i++) {
+          process.heap.copy(addr + sizeof * i, arrayStart + sizeof * i)
+        }
+        let arrayNodes = [] as ArrayNode[]
+        if (node instanceof ArrayNode) {
+          let next2 = process.heap.get_value(node.get_child(0))
+          let length2 = node.length()
+          while (next2 instanceof ArrayNode) {
+            length2 = next2.length()
+            next2 = process.heap.get_value(next2.get_child(0))
+          }
+          let baseType = process.heap.get_type(next2.addr)
+          if (baseType instanceof BoolType) sizeof = 1
+          let addr2 = addr
+          // handle multi-dimensional arrays: inner-most layer
+          // we ensured that the memory block is contiguous earlier
+          // so we need to link ArrayNodes to the correct memory addresses
+          for (let a = 0; a < length / length2; a++) {
+            arrayNodes.push(ArrayNode.create(length2, process.heap, sizeof, addr2))
+            addr2 += sizeof * length2
+          }
+          dimensions.pop()
+          while (dimensions.length > 0) {
+            let dim = dimensions.pop()
+            let n = arrayNodes.length
+            for (let a = 0; a < n / dim; a++) {
+              let array = ArrayNode.create(dim, process.heap, sizeof, addr)
+              for (let b = 0; b < dim; b++) {
+                array.set_child(b, arrayNodes.shift().addr)
+              }
+              arrayNodes.push(array)
+            }
+          }
+          process.heap.copy(dst, arrayNodes.pop().addr)
+        } else {
+          // in the case of 1D array
+          let array = ArrayNode.create(node.length(), process.heap, sizeof, addr)
+          process.heap.copy(dst, array.addr)
+        }
+      }
     }
     // Pop function in stack
     const id = process.context.popOS()

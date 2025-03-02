@@ -246,4 +246,163 @@ describe('Array Execution', () => {
     `
     expect(codeRunner(code).output).toEqual("[66 33 110 22]\n")
   })
+
+  test('Passing arrays to functions should also not change array element values', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        func help(a [3]int) {
+          a[0] = 934
+        }
+        
+        func main() {
+          a := [3]int{3, 4, 5}
+          help(a)
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('[3 4 5]\n')
+  })
+
+  test(`Passing arrays of declared types to functions should also not change array element values`, () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A int
+
+        func help(a [3]A) {
+          a[0] = 934
+        }
+        
+        func main() {
+          a := [3]A{3, 4, 5}
+          help(a)
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('[3 4 5]\n')
+  })
+
+  test('Passing 2D arrays of declared types to functions should also not change array element values', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A int
+
+        func help(a [2][3]A) {
+          a[0][0] = 934
+          fmt.Println(a)
+        }
+        
+        func main() {
+          a := [2][3]A{{3, 0, 4}, {2, 5, 1}}
+          help(a)
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('[[934 0 4] [2 5 1]]\n[[3 0 4] [2 5 1]]\n')
+  })
+
+  test('Returning 2D arrays of declared types work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A int
+
+        func help(a [2][3]A) ([2][3]A) {
+          a[0][0] = 934
+          return a
+        }
+        
+        func main() {
+          a := [2][3]A{{3, 0, 4}, {2, 5, 1}}
+          b := help(a)
+          fmt.Println(a)
+          fmt.Println(b)
+        }
+      `).output,
+    ).toEqual('[[3 0 4] [2 5 1]]\n[[934 0 4] [2 5 1]]\n')
+  })
+
+  test('Returning 1D array of declared types work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A int
+
+        func help(a [2][3]A) ([3]A) {
+          a[1][0] = 888
+          a[1][2] = 999
+          return a[1]
+        }
+        
+        func main() {
+          a := [2][3]A{{3, 0, 4}, {2, 5, 1}}
+          b := help(a)
+          fmt.Println(a)
+          fmt.Println(b)
+        }
+      `).output,
+    ).toEqual('[[3 0 4] [2 5 1]]\n[888 5 999]\n')
+  })
+
+  test('Returning 1D array of declared types to be part of another array work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A int
+
+        func help(a [2][3]A) ([3]A) {
+          a[1][0] = 888
+          a[1][2] = 999
+          return a[1]
+        }
+        
+        func main() {
+          a := [2][3]A{{3, 0, 4}, {2, 5, 1}}
+          b := [2][3]A{}
+          b[1] = help(a)
+          fmt.Println(a)
+          fmt.Println(b)
+        }
+      `).output,
+    ).toEqual('[[3 0 4] [2 5 1]]\n[[0 0 0] [888 5 999]]\n')
+  })
+
+  test('Returning 1D array of declared types to be part of another array work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A int
+
+        func help(a [2][3]A) ([3]A) {
+          a[1][0] = 888
+          a[1][2] = 999
+          return a[1]
+        }
+        
+        func main() {
+          a := [2][3]A{{3, 0, 4}, {2, 5, 1}}
+          b := [2][3]A{{1, 2, 3}, {4, 5, 6}}
+          b[1] = help(a)
+          fmt.Println(a)
+          fmt.Println(b)
+        }
+      `).output,
+    ).toEqual('[[3 0 4] [2 5 1]]\n[[1 2 3] [888 5 999]]\n')
+  })
 })
