@@ -34,8 +34,13 @@ export abstract class Type {
    *  to ensure that the memory is contiguous.
   */
   abstract bulkDefaultNodeCreator(): (heap: Heap, length: number) => number
-  
 
+   /** Returns a function that directly manipulates already allocated memory.
+    *  Only used for structs and arrays since memory must be pre-allocated first,
+    *  to ensure that the memory is contiguous.
+  */
+   abstract defaultNodeAllocator(): (heap: Heap, addr: number) => void
+  
   /** Returns the type of selecting an identifier on the given type. */
   select(identifier: string): Type {
     throw new Error(
@@ -65,6 +70,10 @@ export class NoType extends Type {
   override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
     throw new Error('Cannot create values of type NoType')
   }
+
+  override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
+    throw new Error('Cannot create values of type NoType')
+  }
 }
 
 export class BoolType extends Type {
@@ -74,6 +83,10 @@ export class BoolType extends Type {
 
   toString(): string {
     return 'bool'
+  }
+
+  sizeof(): number {
+    return 1
   }
 
   override equals(t: Type): boolean {
@@ -87,6 +100,10 @@ export class BoolType extends Type {
   override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
     return (heap, length) => BoolNode.bulkDefault(heap, length).addr
   }
+
+  override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
+    return (heap, addr) => BoolNode.allocate(heap, addr)
+  }
 }
 
 export class Int64Type extends Type {
@@ -96,6 +113,10 @@ export class Int64Type extends Type {
 
   toString(): string {
     return 'int64'
+  }
+
+  sizeof(): number {
+    return 4
   }
 
   override equals(t: Type): boolean {
@@ -109,6 +130,10 @@ export class Int64Type extends Type {
   override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
     return (heap, length) => IntegerNode.bulkDefault(heap, length).addr
   }
+
+  override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
+    return (heap, addr) => IntegerNode.allocate(heap, addr)
+  }
 }
 
 export class Float64Type extends Type {
@@ -118,6 +143,10 @@ export class Float64Type extends Type {
 
   toString(): string {
     return 'float64'
+  }
+
+  sizeof(): number {
+    return 4
   }
 
   override equals(t: Type): boolean {
@@ -131,6 +160,10 @@ export class Float64Type extends Type {
   override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
     return (heap, length) => FloatNode.bulkDefault(heap, length).addr
   }
+
+  override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
+    return (heap, addr) => FloatNode.allocate(heap, addr)
+  }
 }
 
 export class StringType extends Type {
@@ -140,6 +173,10 @@ export class StringType extends Type {
 
   toString(): string {
     return 'string'
+  }
+
+  sizeof(): number {
+    return 2
   }
 
   override equals(t: Type): boolean {
@@ -152,6 +189,10 @@ export class StringType extends Type {
 
   override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
     return (heap, length) => StringNode.bulkDefault(heap, length).addr
+  }
+
+  override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
+    return (heap, addr) => StringNode.allocate(heap, addr)
   }
 }
 
@@ -166,6 +207,10 @@ export class ArrayType extends Type {
 
   toString(): string {
     return `[${this.length}]${this.element.toString()}`
+  }
+
+  sizeof(): number {
+    return this.length * this.element.sizeof()
   }
 
   override equals(t: Type): boolean {
@@ -183,6 +228,10 @@ export class ArrayType extends Type {
   override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
     return (heap, length) => this.element.bulkDefaultNodeCreator()(heap, length)
   }
+
+  override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
+    return (heap, addr) => ArrayNode.allocate(heap, addr)
+  }
 }
 
 export class SliceType extends Type {
@@ -198,6 +247,10 @@ export class SliceType extends Type {
     return `[]${this.element.toString()}`
   }
 
+  sizeof(): number {
+    return this.element.sizeof()
+  }
+
   override equals(t: Type): boolean {
     return t instanceof SliceType && this.element.equals(t.element)
   }
@@ -208,6 +261,10 @@ export class SliceType extends Type {
 
   override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
     return (heap) => SliceNode.default(heap).addr
+  }
+
+  override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
+    return (heap, addr) => SliceNode.allocate(heap, addr)
   }
 }
 
@@ -236,6 +293,11 @@ export class ParameterType extends Type {
   }
 
   override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
+    // Do nothing.
+    return (_) => 0
+  }
+
+  override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
     // Do nothing.
     return (_) => 0
   }
@@ -274,6 +336,10 @@ export class FunctionType extends Type {
 
   override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
     return (heap) => FuncNode.default(heap).addr
+  }
+
+  override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
+    return (heap, addr) => FuncNode.allocate(heap, addr)
   }
 }
 
@@ -326,6 +392,10 @@ export class ChannelType extends Type {
   override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
     return (heap) => ChannelNode.default(heap).addr
   }
+
+  override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
+    return (heap, addr) => ChannelNode.allocate(heap, addr)
+  }
 }
 
 export class ReturnType extends Type {
@@ -359,6 +429,10 @@ export class ReturnType extends Type {
     throw Error('Unreachable')
   }
 
+  override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
+    throw Error('Unreachable')
+  }
+
   isVoid(): boolean {
     return this.types.length === 0
   }
@@ -387,6 +461,10 @@ export class PackageType extends Type {
 
   override bulkDefaultNodeCreator(): (_heap: Heap) => number {
     return (heap) => PkgNode.default(heap).addr
+  }
+
+  override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
+    return (heap, addr) => PkgNode.allocate(heap, addr)
   }
 
   override select(identifier: string): Type {
@@ -419,6 +497,10 @@ export class DeclaredType extends Type {
     return `type ${this.name}`
   }
 
+  sizeof(): number {
+    return this.type.sizeof()
+  }
+
   override equals(t: Type): boolean {
     // TODO: Morph to support structs
     return t instanceof DeclaredType && t.name === this.name && this.type[0].equals(t.type[0])
@@ -430,6 +512,11 @@ export class DeclaredType extends Type {
   }
 
   override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
+    // Do nothing.
+    return (_) => 0
+  }
+
+  override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
     // Do nothing.
     return (_) => 0
   }
@@ -448,10 +535,18 @@ export class StructType extends Type {
     return `struct ${this.fields.toString()}`
   }
 
+  sizeof(): number {
+    let size = 0
+    for (let i = 0; i < Object.values(this.fields).length; i++) {
+      size += Object.values(this.fields)[i].sizeof()
+    }
+    return size
+  }
+
   override equals(t: Type): boolean {
     // TODO: Morph to support structs
     return t instanceof StructType
-      && t.fields === this.fields
+      && JSON.stringify(t.fields) === JSON.stringify(this.fields)
   }
 
   override defaultNodeCreator(): (heap: Heap) => number {
@@ -468,5 +563,13 @@ export class StructType extends Type {
       creators.push(this.fields[key].defaultNodeCreator())
     }
     return (heap) => StructNode.default(this.fields, creators, heap).addr
+  }
+
+  override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
+    const creators = [] as Array<(heap: Heap) => number>
+    for (let key in this.fields) {
+      creators.push(this.fields[key].defaultNodeCreator())
+    }
+    return (heap, addr) => StructNode.allocate(this.fields, creators, heap, addr)
   }
 }

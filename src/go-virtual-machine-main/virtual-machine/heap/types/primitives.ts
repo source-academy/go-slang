@@ -39,8 +39,15 @@ export class IntegerNode extends PrimitiveNode {
     }
     return new IntegerNode(heap, addr)
   }
+
+  static allocate(heap: Heap, addr: number) {
+    heap.set_tag(addr, TAG.NUMBER)
+    heap.memory.set_number(0, addr + 1)
+    return new IntegerNode(heap, addr)
+  }
+
   static sizeof() {
-    return 2
+    return 4
   }
 
   get_value() {
@@ -83,7 +90,7 @@ export class FloatNode extends PrimitiveNode {
   }
 
   static sizeof() {
-    return 2
+    return 4
   }
 
   static default(heap: Heap) {
@@ -96,6 +103,12 @@ export class FloatNode extends PrimitiveNode {
       heap.set_tag(addr + FloatNode.sizeof() * i, TAG.FLOAT)
       heap.memory.set_float(0.0, addr + 1 + FloatNode.sizeof() * i)
     }
+    return new FloatNode(heap, addr)
+  }
+
+  static allocate(heap: Heap, addr: number) {
+    heap.set_tag(addr, TAG.FLOAT)
+    heap.memory.set_float(0.0, addr + 1)
     return new FloatNode(heap, addr)
   }
 
@@ -138,6 +151,12 @@ export class BoolNode extends PrimitiveNode {
   }
   static default(heap: Heap) {
     return BoolNode.create(false, heap)
+  }
+
+  static allocate(heap: Heap, addr: number) {
+    heap.set_tag(addr, TAG.BOOLEAN)
+    heap.memory.set_bits(0, addr, 1, 16)
+    return new BoolNode(heap, addr)
   }
 
   static bulkDefault(heap: Heap, length: number) {
@@ -220,6 +239,27 @@ export class StringNode extends PrimitiveNode {
           j % word_size,
         )
       }
+    }
+    return new StringNode(heap, addr)
+  }
+
+  static allocate(heap: Heap, addr: number) {
+    heap.set_tag(addr, TAG.STRING)
+    heap.temp_push(addr)
+    heap.memory.set_number(-1, addr + 1)
+    const list_addr = heap.allocate(Math.ceil(1 / word_size) + 1)
+    heap.set_tag(list_addr, TAG.STRING_LIST)
+    heap.memory.set_word(list_addr, addr + 1)
+    heap.temp_pop()
+    for (let i = 0; i <= 0; i++) {
+      let val = 0
+      if (i < 0) val = ''.charCodeAt(i)
+      heap.memory.set_bytes(
+        val,
+        Math.floor(i / word_size) + list_addr + 1,
+        1,
+        i % word_size,
+      )
     }
     return new StringNode(heap, addr)
   }

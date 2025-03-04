@@ -1,5 +1,6 @@
 import { ArrayNode } from '../../heap/types/array'
-import { BoolNode } from '../../heap/types/primitives'
+import { BaseNode } from '../../heap/types/base'
+import { BoolNode, StringNode } from '../../heap/types/primitives'
 import { StructNode } from '../../heap/types/struct'
 import { Process } from '../../runtime/process'
 
@@ -43,8 +44,9 @@ export class StoreArrayElementInstruction extends Instruction {
     while (process.heap.get_value(element) instanceof ArrayNode) {
       element = (process.heap.get_value(element) as ArrayNode).get_child(0)
     }
-    let sizeof = 2
+    let sizeof = 4
     if (process.heap.get_value(element) instanceof BoolNode) sizeof = 1
+    if (process.heap.get_value(element) instanceof StringNode) sizeof = 2
     process.heap.copy(element + sizeof * this.index, src)
     
     if (process.debug_mode) {
@@ -60,6 +62,26 @@ export class StoreStructFieldInstruction extends Instruction {
     this.index = index
   }
 
+  peek(process: Process, struct: StructNode, target: number, count: number): number | BaseNode {
+    for (let i = 0; i < struct.get_children().length; i++) {
+      let child = process.heap.get_value(struct.get_child(i))
+      if (child instanceof StructNode) {
+        let res = this.peek(process, child, target, count)
+        if (res instanceof BaseNode) {
+          return res
+        } else {
+          count = res
+        }
+      } else {
+        if (count === target) {
+          return child
+        }
+        count++
+      }
+    }
+    return count
+  }
+
   override execute(process: Process): void {
     const dst = process.context.popOS()
     const src = process.context.popOS()
@@ -71,17 +93,19 @@ export class StoreStructFieldInstruction extends Instruction {
       )
     }
     */
-    let elements = struct.get_children()
-    let element = struct.get_child(this.index)
-    process.heap.copy(element, src)
+    let fields = struct.get_children()
+    let field = struct.get_child(0)
+    let count = this.peek(process, struct, this.index, 0).addr
+    process.heap.copy(count, src)
     /*
     let element = struct.get_child(0)
     let a = process.heap.get_value(element)
     while (process.heap.get_value(element) instanceof StructNode) {
       element = (process.heap.get_value(element) as StructNode).get_child(0)
     }
-    let sizeof = 2
+    let sizeof = 4
     if (process.heap.get_value(element) instanceof BoolNode) sizeof = 1
+    if (process.heap.get_value(element) instanceof StringNode) sizeof = 2
     process.heap.copy(element + sizeof * this.index, src)
     */
     

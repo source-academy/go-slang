@@ -95,8 +95,9 @@ export class Process {
           // console.log('ctx:', this.context.addr)
           // console.log('Instr:', instr, this.context.PC() - 1)
           instr.execute(this)
+          let b = this.context.RTS().sz()
           // this.context.printOS()
-          // this.context.printRTS()
+          // this.context.printRTS() 
           // this.context.heap.print_freelist()
           this.runtime_count += 1
           cur_time += 1

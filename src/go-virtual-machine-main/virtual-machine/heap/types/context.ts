@@ -52,6 +52,7 @@ export class ContextNode extends BaseNode {
   }
 
   RTS() {
+    let a = this.heap.get_value(new StackNode(this.heap, this.heap.memory.get_word(this.addr + 3)).get_children()[0])
     return new StackNode(this.heap, this.heap.memory.get_word(this.addr + 3))
   }
 
@@ -100,7 +101,9 @@ export class ContextNode extends BaseNode {
 
   pushRTS(addr: number) {
     this.heap.temp_push(addr)
+    let b = this.RTS().get_children()
     this.RTS().push(addr)
+    let a = this.RTS().get_children()
     this.heap.temp_pop()
   }
 

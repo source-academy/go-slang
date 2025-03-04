@@ -432,7 +432,12 @@ export class Heap {
 
   copy(dst: number, src: number) {
     if (dst === -1) return
-    const sz = this.get_size(src)
+    if (dst === src) return
+    let sz = this.get_size(src)
+    if (this.get_type(src) instanceof Int64Type) sz = 4
+    if (this.get_type(src) instanceof BoolType) sz = 1
+    if (this.get_type(src) instanceof Float64Type) sz = 4
+    if (this.get_type(src) instanceof StringType) sz = 2
     for (let i = 0; i < sz; i++) {
       this.memory.set_word(this.memory.get_word(src + i), dst + i)
     }

@@ -872,4 +872,33 @@ describe('Struct tests', () => {
       `).output,
     ).toEqual('934\nByebye\n{0 Jess}\n')
   })
+
+  test('Nested anonymous structs work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+        
+        func main() {
+          a := struct {
+            Person struct {
+              Name string
+              Age int
+            }
+            Code int
+          }{
+            struct {
+              Name string
+              Age int
+            }{
+              "Jack",
+              32,
+            },
+            1345,
+          }
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{{Jack 32} 1345}\n')
+  })
 })

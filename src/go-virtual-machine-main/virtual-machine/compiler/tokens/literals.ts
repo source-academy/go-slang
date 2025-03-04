@@ -24,6 +24,7 @@ import {
   ReturnType,
   SliceType,
   StringType,
+  StructType,
   Type,
 } from '../../executor/typing'
 
@@ -196,9 +197,6 @@ export class LiteralValueToken extends Token {
         // load element in actual array and then store element
         if (!(type.element instanceof ArrayType)) {
         this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
-        //this.pushInstruction(compiler, new LoadConstantInstruction(a, new Int64Type()))
-        //this.pushInstruction(compiler, new LoadArrayElementInstruction())
-        //this.pushInstruction(compiler, new StoreInstruction())
         this.pushInstruction(compiler, new StoreArrayElementInstruction(a))
         a++
         }
@@ -209,15 +207,10 @@ export class LiteralValueToken extends Token {
         // load element in actual array and then store element
         if (!(type.element instanceof ArrayType)) {
         this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
-        //this.pushInstruction(compiler, new LoadConstantInstruction(a, new Int64Type()))
-        //this.pushInstruction(compiler, new LoadArrayElementInstruction())
-        //this.pushInstruction(compiler, new StoreInstruction())
         this.pushInstruction(compiler, new StoreArrayElementInstruction(a))
         a++
         }
       }
-
-      //this.pushInstruction(compiler, new LoadArrayInstruction(type.length))
     } else if (type instanceof SliceType) {
       for (const element of this.elements) {
         this.compileElement(compiler, type.element, element, 'slice literal')
@@ -281,15 +274,6 @@ export class ArrayLiteralToken extends Token {
 
   override compileUnchecked(compiler: Compiler): Type {
     const type = this.arrayType.compile(compiler)
-    /* if (type instanceof ArrayType) {
-      let length = type.length
-      let next = type.element
-      while (next instanceof ArrayType) {
-        length = length * next.length
-        next = next.element
-      }
-      this.pushInstruction(compiler, new MemoryAllocationInstruction(length))
-    } */
     this.body.compileWithType(compiler, type)
     return type
   }
@@ -331,8 +315,15 @@ export class StructLiteralToken extends Token {
             if (!valueType.assignableBy(fieldType)) {
               throw new Error('Value type does not match field type.')
             }
-            this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
-            this.pushInstruction(compiler, new StoreStructFieldInstruction(i))
+            if (!(fieldType instanceof StructType)) {
+              if (compiler.instructions[compiler.instructions.length - 2] instanceof StoreStructFieldInstruction) {
+                this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+                this.pushInstruction(compiler, new StoreStructFieldInstruction(i + (compiler.instructions[compiler.instructions.length - 3] as StoreStructFieldInstruction).index))
+              } else {
+                this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+                this.pushInstruction(compiler, new StoreStructFieldInstruction(i))
+              }
+            }
             i++
           }
         }

@@ -405,4 +405,96 @@ describe('Array Execution', () => {
       `).output,
     ).toEqual('[[3 0 4] [2 5 1]]\n[[1 2 3] [888 5 999]]\n')
   })
+
+  test('Returning 1D array of declared types to be part of another array work even with reassignment', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A int
+
+        func help(a [2][3]A) ([3]A) {
+          a[1][0] = 888
+          a[1][2] = 999
+          return a[1]
+        }
+
+        func help2(a [2][3]A) ([3]A) {
+          a[0][0] = 888
+          return a[0]
+        }
+        
+        func main() {
+          a := [2][3]A{{3, 0, 4}, {2, 5, 1}}
+          b := [2][3]A{{1, 2, 3}, {4, 5, 6}}
+          b[1] = help(a) // b = [[1 2 3] [888 5 999]]
+          a[0] = help2(b) // a = [[888 2 3] [888 5 999]]
+          fmt.Println(a)
+          fmt.Println(b)
+        }
+      `).output,
+    ).toEqual('[[888 2 3] [2 5 1]]\n[[1 2 3] [888 5 999]]\n')
+  })
+
+  test('3D arrays work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A int
+
+        func help(a [2][3]A) ([3]A) {
+          a[1][0] = 888
+          a[1][2] = 999
+          return a[1]
+        }
+
+        func help2(a [2][3]A) ([3]A) {
+          a[0][0] = 888
+          return a[0]
+        }
+        
+        func main() {
+          a := [2][2][3]A{{{3, 0, 4}, {2, 5, 1}}, {{32, 13, 24}, {29, 56, 15}}} 
+          b := [2][3]A{{1, 2, 3}, {4, 5, 6}}
+          b[1] = help(a[1]) // b = [[1, 2, 3] [888, 56, 999]]
+          fmt.Println(a)
+          fmt.Println(b)
+        }
+      `).output,
+    ).toEqual('[[[3 0 4] [2 5 1]] [[32 13 24] [29 56 15]]]\n[[1 2 3] [888 56 999]]\n')
+  })
+
+  test('3D arrays work with reassignment', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A int
+
+        func help(a [2][3]A) ([3]A) {
+          a[1][0] = 888
+          a[1][2] = 999
+          return a[1]
+        }
+
+        func help2(a [2][3]A) ([2][3]A) {
+          a[0][0] = 888
+          return a
+        }
+        
+        func main() {
+          a := [2][2][3]A{{{3, 0, 4}, {2, 5, 1}}, {{32, 13, 24}, {29, 56, 15}}} 
+          b := [2][3]A{{1, 2, 3}, {4, 5, 6}}
+          a[1] = help2(a[1]) // a = [[[3 0 4] [2 5 1]] [[888 13 24] [29 56 15]]]
+          b[1] = help(a[1]) // b = [[1, 2, 3] [888, 56, 999]]
+          fmt.Println(a)
+          fmt.Println(b)
+        }
+      `).output,
+    ).toEqual('[[[3 0 4] [2 5 1]] [[888 13 24] [29 56 15]]]\n[[1 2 3] [888 56 999]]\n')
+  })
 })

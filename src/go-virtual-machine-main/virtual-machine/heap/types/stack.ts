@@ -53,6 +53,7 @@ export class StackNode extends BaseNode {
     return this.list().get_sz()
   }
   override get_children(): number[] {
+    let a = this.list().get_children()
     return [this.list().addr]
   }
 }

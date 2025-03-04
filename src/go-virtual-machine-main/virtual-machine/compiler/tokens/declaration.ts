@@ -172,11 +172,7 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
               if (compiler.instructions[j] instanceof LoadVariableInstruction
                 && (compiler.instructions[j] as LoadVariableInstruction).id === ""
               ) {
-                if (identifier !== '') {
-                  compiler.instructions[j] = new LoadVariableInstruction(frame_idx, var_idx, identifier)
-                } else {
-                  (compiler.instructions[j] as LoadVariableInstruction).id = identifier
-                }
+                compiler.instructions[j] = new LoadVariableInstruction(frame_idx, var_idx, identifier)
               }
             }
           }
@@ -316,11 +312,7 @@ export class VariableDeclarationToken extends DeclarationToken {
               if (compiler.instructions[j] instanceof LoadVariableInstruction
                 && (compiler.instructions[j] as LoadVariableInstruction).id === ""
               ) {
-                if (identifier !== '') {
-                  compiler.instructions[j] = new LoadVariableInstruction(frame_idx, var_idx, identifier)
-                } else {
-                  (compiler.instructions[j] as LoadVariableInstruction).id = identifier
-                }
+                compiler.instructions[j] = new LoadVariableInstruction(frame_idx, var_idx, identifier)
               }
             }
           }

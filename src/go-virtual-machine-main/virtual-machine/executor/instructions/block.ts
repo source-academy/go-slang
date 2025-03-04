@@ -1,6 +1,6 @@
 import { Process } from '../../runtime/process'
 import { FrameNode } from '../../heap/types/environment'
-import { ArrayType, BoolType, DeclaredType, StructType, Type } from '../typing'
+import { ArrayType, BoolType, DeclaredType, StringType, StructType, Type } from '../typing'
 
 import { Instruction } from './base'
 import { PrimitiveTypeToken } from '../../compiler/tokens'
@@ -64,8 +64,9 @@ export class BlockInstruction extends Instruction {
           next = nextType[0]
         }
         let addr = next.bulkDefaultNodeCreator()(process.heap, length)
-        let sizeof = 2
+        let sizeof = 4
         if (next instanceof BoolType) sizeof = 1
+        if (next instanceof StringType) sizeof = 2
         let arrayNodes = [] as ArrayNode[]
         if (T.element instanceof ArrayType) {
           let next2 = T.element
@@ -74,6 +75,7 @@ export class BlockInstruction extends Instruction {
           }
           let baseType = next2.element
           if (baseType instanceof BoolType) sizeof = 1
+          if (baseType instanceof StringType) sizeof = 2
           let addr2 = addr
           // handle multi-dimensional arrays: inner-most layer
           // we ensured that the memory block is contiguous earlier
@@ -100,6 +102,39 @@ export class BlockInstruction extends Instruction {
           let array = ArrayNode.create(T.length, process.heap, sizeof, addr)
           new_frame.set_idx(array.addr, i)
         }
+      } else if (T instanceof StructType) {
+        let dimensions = [] as number[]
+        let length = 0 //T.length
+        let next = Object.values(T.fields)
+        dimensions.push(length)
+        for (let i = 0; i < next.length; i++) {
+          if (next[i] instanceof DeclaredType) {
+            // Find underlying type to load default values into
+            let actualType = next[i]
+            let nextType = next[i].type
+            // TODO: Morph to support structs
+            while (nextType[0] instanceof DeclaredType) {
+              actualType = nextType[0]
+              nextType = actualType.type
+            }
+            length += nextType[0].sizeof()
+          } else {
+            length += next[i].sizeof()
+          }
+        }
+        let addr = T.bulkDefaultNodeCreator()(process.heap, length)
+        /*
+        let size = 0
+        for (let i = 0; i < Object.values(T.fields).length; i++) {
+          size += Object.values(T.fields)[i].sizeof()
+        }
+        let nextAddr = addr
+        for (let i = 0; i < Object.values(T.fields).length; i++) {
+          Object.values(T.fields)[i].defaultNodeAllocator()(process.heap, nextAddr)
+          nextAddr += Object.values(T.fields)[i].sizeof()
+        }
+          */
+        new_frame.set_idx(addr, i)
       } else {
         new_frame.set_idx(T.defaultNodeCreator()(process.heap), i)
       }
@@ -108,6 +143,7 @@ export class BlockInstruction extends Instruction {
       .E()
       .extend_env(new_frame.addr, this.for_block).addr
     process.context.pushRTS(new_env)
+    let a = process.context.RTS().sz()
     process.heap.temp_pop()
 
     if (process.debug_mode) {
@@ -116,10 +152,13 @@ export class BlockInstruction extends Instruction {
       const children = new_frame.get_children()
       for (let i = 0; i < children.length; i++) {
         process.debugger.identifier_map.set(children[i], this.identifiers[i])
+        let c = process.context.RTS().sz()
+        let d = 0
       }
     }
   }
 }
+
 export class FuncBlockInstruction extends BlockInstruction {
   constructor(public args: number) {
     super('ANONY FUNC', false)
@@ -131,11 +170,21 @@ export class FuncBlockInstruction extends BlockInstruction {
   }
 
   override execute(process: Process): void {
+    let z = process.heap.get_value(process.context.OS().peek())
     super.execute(process)
+    
+    let x = process.heap.get_value(process.context.OS().peek())
     for (let i = this.args - 1; i >= 0; i--) {
+      let z = process.heap.get_value(process.context.OS().peek())
+      let x = process.heap.get_value(process.context.OS().peek())
       const src = process.context.popOS()
       const dst = process.context.E().get_frame().get_idx(i)
+      let a = process.heap.get_value(src)
+      let b = process.heap.get_value(dst)
+      let y = process.context.RTS().sz()
       process.heap.copy(dst, src)
+      let c = process.context.RTS().sz()
+      let d = process.heap.get_value(dst)
       // deepcopy if struct or array
       let node = process.heap.get_value(src)
       if (node instanceof ArrayNode) {
@@ -163,8 +212,9 @@ export class FuncBlockInstruction extends BlockInstruction {
         }
         let type = process.heap.get_type(next.addr)
         let addr = type.bulkDefaultNodeCreator()(process.heap, length)
-        let sizeof = 2
+        let sizeof = 4
         if (type instanceof BoolType) sizeof = 1
+        if (type instanceof StringType) sizeof = 2
         // deepcopy each element
         for (let i = 0; i < length; i++) {
           process.heap.copy(addr + sizeof * i, arrayStart + sizeof * i)
@@ -179,6 +229,7 @@ export class FuncBlockInstruction extends BlockInstruction {
           }
           let baseType = process.heap.get_type(next2.addr)
           if (baseType instanceof BoolType) sizeof = 1
+          if (baseType instanceof StringType) sizeof = 2
           let addr2 = addr
           // handle multi-dimensional arrays: inner-most layer
           // we ensured that the memory block is contiguous earlier
