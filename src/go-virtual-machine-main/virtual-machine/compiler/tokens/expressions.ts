@@ -98,9 +98,16 @@ export class SelectorToken extends PrimaryExpressionModifierToken {
   override compile(compiler: Compiler, operandType: Type): Type {
     // handle structs first since parser sees them as the same as packages
     if (operandType instanceof DeclaredType) {
-      if (operandType.type[0].fields[this.identifier] !== undefined) {
-        const resultType = (operandType as StructType).type[0].fields[this.identifier]
-        const index = Object.keys((operandType as StructType).type[0].fields).indexOf(this.identifier)
+      if (operandType.type[0].fields.size >= 0) {
+        const resultType = (operandType as StructType).type[0].fields.get(this.identifier)
+        const index = [...(operandType as StructType).type[0].fields.keys()].indexOf(this.identifier)
+        compiler.instructions.push(new LoadStructFieldInstruction(index))
+        return resultType
+      }
+    } else if (operandType instanceof StructType) {
+      if (operandType.fields.size >= 0) {
+        const resultType = operandType.fields.get(this.identifier)
+        const index = [...operandType.fields.keys()].indexOf(this.identifier)
         compiler.instructions.push(new LoadStructFieldInstruction(index))
         return resultType
       }

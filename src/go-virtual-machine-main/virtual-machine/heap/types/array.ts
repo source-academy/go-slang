@@ -43,6 +43,20 @@ export class ArrayNode extends BaseNode {
     return new ArrayNode(heap, addr)
   }
 
+  static allocate(heap: Heap, addr: number, length: number, type: Type) {
+    const nodeAddr = heap.allocate(2 + length)
+    heap.set_tag(nodeAddr, TAG.ARRAY)
+    heap.memory.set_number(length, nodeAddr + 1)
+    heap.temp_push(nodeAddr)
+    for (let i = 0; i < length; i++) heap.memory.set_number(-1, nodeAddr + i + 2)
+    for (let i = 0; i < length; i++) {
+      type.defaultNodeAllocator()(heap, addr + i * type.sizeof())
+      heap.memory.set_word(addr + i * type.sizeof(), nodeAddr + 2 + i)
+    }
+    heap.temp_pop()
+    return new ArrayNode(heap, nodeAddr)
+  }
+
   length(): number {
     return this.heap.memory.get_number(this.addr + 1)
   }

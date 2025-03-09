@@ -229,8 +229,8 @@ export class ArrayType extends Type {
     return (heap, length) => this.element.bulkDefaultNodeCreator()(heap, length)
   }
 
-  override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
-    return (heap, addr) => ArrayNode.allocate(heap, addr)
+  override defaultNodeAllocator(): (heap: Heap, addr: number, length: number, type: Type) => number {
+    return (heap, addr, length, type) => ArrayNode.allocate(heap, addr, length, type)
   }
 }
 
@@ -498,7 +498,7 @@ export class DeclaredType extends Type {
   }
 
   sizeof(): number {
-    return this.type.sizeof()
+    return this.type[0].sizeof()
   }
 
   override equals(t: Type): boolean {
@@ -523,7 +523,7 @@ export class DeclaredType extends Type {
 }
 
 export class StructType extends Type {
-  constructor(public fields: Record<string, Type>) {
+  constructor(public fields: Map<string, Type>) {
     super()
   }
 
@@ -537,8 +537,8 @@ export class StructType extends Type {
 
   sizeof(): number {
     let size = 0
-    for (let i = 0; i < Object.values(this.fields).length; i++) {
-      size += Object.values(this.fields)[i].sizeof()
+    for (let i = 0; i < [...this.fields.values()].length; i++) {
+      size += [...this.fields.values()][i].sizeof()
     }
     return size
   }
@@ -546,30 +546,56 @@ export class StructType extends Type {
   override equals(t: Type): boolean {
     // TODO: Morph to support structs
     return t instanceof StructType
-      && JSON.stringify(t.fields) === JSON.stringify(this.fields)
+      && t.fields === this.fields
   }
 
   override defaultNodeCreator(): (heap: Heap) => number {
     const creators = [] as Array<(heap: Heap) => number>
-    for (let key in this.fields) {
-      creators.push(this.fields[key].defaultNodeCreator())
+    let keys = [...this.fields.values()]
+    for (let i = 0; i < keys.length; i++) {
+      creators.push(keys[i].defaultNodeCreator())
     }
     return (heap) => StructNode.default(this.fields, creators, heap).addr
   }
 
   override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
     const creators = [] as Array<(heap: Heap) => number>
-    for (let key in this.fields) {
-      creators.push(this.fields[key].defaultNodeCreator())
+    let keys = [...this.fields.values()]
+    for (let i = 0; i < keys.length; i++) {
+      creators.push(keys[i].defaultNodeCreator())
     }
     return (heap) => StructNode.default(this.fields, creators, heap).addr
   }
 
   override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
     const creators = [] as Array<(heap: Heap) => number>
-    for (let key in this.fields) {
-      creators.push(this.fields[key].defaultNodeCreator())
+    let keys = [...this.fields.values()]
+    for (let i = 0; i < keys.length; i++) {
+      creators.push(keys[i].defaultNodeCreator())
     }
     return (heap, addr) => StructNode.allocate(this.fields, creators, heap, addr)
+  }
+
+  override assignableBy(t: Type): boolean {
+    // map comparison code provided by ChatGPT
+    // https://chatgpt.com/share/67cdc0fc-6008-800f-a618-1a76c957217f
+    if (t instanceof StructType) {
+      const entries1 = Array.from(t.fields.entries());
+      const entries2 = Array.from(this.fields.entries());
+
+      return entries1.every(([key, value], index) => {
+        const [key2, value2] = entries2[index];
+        return key === key2 && value.equals(value2);
+      });
+    } else if (t instanceof DeclaredType && t.type[0] instanceof StructType) {
+      const entries1 = Array.from(t.type[0].fields.entries());
+      const entries2 = Array.from(this.fields.entries());
+
+      return entries1.every(([key, value], index) => {
+        const [key2, value2] = entries2[index];
+        return key === key2 && value.equals(value2);
+      });
+    }
+    return false
   }
 }

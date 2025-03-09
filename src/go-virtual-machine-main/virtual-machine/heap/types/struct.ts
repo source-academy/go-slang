@@ -1,5 +1,5 @@
 import { Heap, TAG } from '..'
-import { StructType, Type } from '../../executor/typing'
+import { ArrayType, DeclaredType, StructType, Type } from '../../executor/typing'
 import { ArrayNode } from './array'
 
 import { BaseNode } from './base'
@@ -11,7 +11,6 @@ import { BaseNode } from './base'
  * Remaining `length` words: Each word is the address of an element.
  */
 export class StructNode extends BaseNode {
-  /*
   static create(length: number, heap: Heap): StructNode {
     const addr = heap.allocate(2 + length)
     heap.set_tag(addr, TAG.STRUCT)
@@ -19,72 +18,74 @@ export class StructNode extends BaseNode {
     for (let i = 0; i < length; i++) heap.memory.set_number(-1, addr + i + 2)
     return new StructNode(heap, addr)
   }
-  */
 
   /**
    * `defaultCreator` is a function that allocates a default element on the heap,
    * and returns its address.
    */
   static default(
-    fields: Record<string, Type>,
+    fields: Map<string, Type>,
     defaultCreator: Array<(heap: Heap) => number>,
     heap: Heap,
   ) {
     let size = 0
-    for (let i = 0; i < Object.values(fields).length; i++) {
-      size += Object.values(fields)[i].sizeof()
+    for (let i = 0; i < [...fields.values()].length; i++) {
+      size += [...fields.values()][i].sizeof()
     }
     const addr = heap.allocate(size)
     const nodeAddr = heap.allocate(2 + defaultCreator.length)
     const struct = new StructNode(heap, nodeAddr)
     let nextAddr = addr
-    for (let i = 0; i < Object.values(fields).length; i++) {
-      if (Object.values(fields)[i] instanceof StructType) {
-        let node = Object.values(fields)[i].defaultNodeAllocator()(heap, nextAddr).addr
+    for (let i = 0; i < [...fields.values()].length; i++) {
+      let a = [...fields.values()][i]
+      if ([...fields.values()][i] instanceof StructType) {
+        let node = [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr).addr
+        struct.set_child(i, node)
+      } else if ([...fields.values()][i] instanceof DeclaredType && [...fields.values()][i].type[0] instanceof StructType) {
+        let node = [...fields.values()][i].type[0].defaultNodeAllocator()(heap, nextAddr).addr
         struct.set_child(i, node)
       } else {
-        Object.values(fields)[i].defaultNodeAllocator()(heap, nextAddr)
-        struct.set_child(i, nextAddr)
+        if ([...fields.values()][i] instanceof ArrayType) {
+          let arrayNodeAddr = [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr, [...fields.values()][i].length, [...fields.values()][i].element).addr
+          struct.set_child(i, arrayNodeAddr)
+        } else {
+          [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr)
+          struct.set_child(i, nextAddr)
+        }
       }
-      nextAddr += Object.values(fields)[i].sizeof()
+      nextAddr += [...fields.values()][i].sizeof()
     }
     heap.set_tag(nodeAddr, TAG.STRUCT)
     heap.memory.set_number(defaultCreator.length, nodeAddr + 1)
-    let a = struct.get_children()
-    for (let i = 0; i < a.length; i++) {
-      let b = heap.get_value(a[i])
-      let c = 0
-    }
     return struct
   }
 
   static allocate(
-    fields: Record<string, Type>,
+    fields: Map<string, Type>,
     defaultCreator: Array<(heap: Heap) => number>,
     heap: Heap,
     addr: number
   ) {
     let size = 0
-    for (let i = 0; i < Object.values(fields).length; i++) {
-      size += Object.values(fields)[i].sizeof()
+    for (let i = 0; i < [...fields.values()].length; i++) {
+      size += [...fields.values()][i].sizeof()
     }
     //const addr = heap.allocate(size)
     const nodeAddr = heap.allocate(2 + defaultCreator.length)
     const struct = new StructNode(heap, nodeAddr)
     let nextAddr = addr
-    for (let i = 0; i < Object.values(fields).length; i++) {
-      if (Object.values(fields)[i] instanceof StructType) {
-        let node = Object.values(fields)[i].defaultNodeAllocator()(heap, nextAddr).addr
+    for (let i = 0; i < [...fields.values()].length; i++) {
+      if ([...fields.values()][i] instanceof StructType) {
+        let node = [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr).addr
         struct.set_child(i, node)
       } else {
-        Object.values(fields)[i].defaultNodeAllocator()(heap, nextAddr)
+        [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr)
         struct.set_child(i, nextAddr)
       }
-      nextAddr += Object.values(fields)[i].sizeof()
+      nextAddr += [...fields.values()][i].sizeof()
     }
     heap.set_tag(nodeAddr, TAG.STRUCT)
     heap.memory.set_number(defaultCreator.length, nodeAddr + 1)
-    let a = struct.get_children()
     return struct
   }
 

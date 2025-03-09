@@ -46,6 +46,10 @@ export class IntegerNode extends PrimitiveNode {
     return new IntegerNode(heap, addr)
   }
 
+  sizeof() {
+    return 4
+  }
+
   static sizeof() {
     return 4
   }
@@ -87,6 +91,10 @@ export class FloatNode extends PrimitiveNode {
     heap.set_tag(addr, TAG.FLOAT)
     heap.memory.set_float(num, addr + 1)
     return new FloatNode(heap, addr)
+  }
+
+  sizeof() {
+    return 4
   }
 
   static sizeof() {
@@ -146,9 +154,15 @@ export class BoolNode extends PrimitiveNode {
     heap.memory.set_bits(val ? 1 : 0, addr, 1, 16)
     return new BoolNode(heap, addr)
   }
+  
+  sizeof() {
+    return 1
+  }
+
   static sizeof() {
     return 1
   }
+
   static default(heap: Heap) {
     return BoolNode.create(false, heap)
   }
@@ -209,6 +223,10 @@ export class StringNode extends PrimitiveNode {
       )
     }
     return new StringNode(heap, addr)
+  }
+
+  sizeof() {
+    return 2
   }
 
   static sizeof() {

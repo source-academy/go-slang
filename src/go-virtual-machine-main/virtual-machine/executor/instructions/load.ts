@@ -167,12 +167,6 @@ export class LoadVariableInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
-    let a = []
-    for (let i = 112; i < 200; i++) {
-      try {
-      a.push(process.heap.get_value(i))
-      } catch (err) {}
-    }
     process.context.pushOS(
       process.context.E().get_var(this.frame_idx, this.var_idx),
     )
@@ -212,7 +206,6 @@ export class LoadStructFieldInstruction extends Instruction {
     //const indexNode = new IntegerNode(process.heap, process.context.popOS())
     const array = new StructNode(process.heap, process.context.popOS())
     const element = array.get_child(this.index)
-    let a = process.heap.get_value(element)
     process.context.pushOS(element)
   }
 }

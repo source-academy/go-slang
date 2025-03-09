@@ -93,9 +93,7 @@ export class GoInstruction extends Instruction {
       const new_context = process.context.go()
       new_context.pushRTS(process.context.E().addr)
       new_context.set_PC(process.context.PC() - 1)
-      //new_context.pushOS(func.receiverAddr())
       const results = []
-      let a = process.context.OS().get_children()
       for (let i = this.args - 1; i >= 0; i--) {
         const src = process.context.popOS()
         results[i] = src
@@ -112,9 +110,6 @@ export class GoInstruction extends Instruction {
       new_context.pushOS(0)
       new_context.pushDeferStack()
       process.contexts.push(new_context.addr)
-      //process.context.popOS()
-      //const receiver = func.receiver()
-      //receiver.handleMethodCall(process, func.identifier(), this.args)
     }
   }
 

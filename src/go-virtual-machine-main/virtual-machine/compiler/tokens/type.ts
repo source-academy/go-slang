@@ -185,7 +185,7 @@ export class StructTypeToken extends TypeToken {
     // load the underlying types
     // need to configure to use declared type if possible
     // make sense of the fields to construct the structure of the struct
-    const struct = {} as Record<string, Type>
+    const struct = new Map<string, Type>()
     // this.fields.length represents the number of lines of code
     // used to declare the fields of the struct
     for (let i = 0; i < this.fields.length; i++) {
@@ -193,7 +193,7 @@ export class StructTypeToken extends TypeToken {
       const type = (this.fields[i].type as TypeToken).compile(compiler)
       for (let j = 0; j < this.fields[i].list.length; j++) {
         // link the identifier of each field line to the type
-        struct[this.fields[i].list[j].identifier] = type
+        struct.set(this.fields[i].list[j].identifier, type)
       }
     }
     return new StructType(struct)

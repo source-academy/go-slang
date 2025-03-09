@@ -6,6 +6,8 @@ import { Instruction } from './base'
 import { PrimitiveTypeToken } from '../../compiler/tokens'
 import { ArrayNode } from '../../heap/types/array'
 import { StructNode } from '../../heap/types/struct'
+import { a } from 'vitest/dist/suite-IbNSsUWN'
+import { BaseNode } from '../../heap/types/base'
 
 export class BlockInstruction extends Instruction {
   frame: Type[] = []
@@ -103,10 +105,8 @@ export class BlockInstruction extends Instruction {
           new_frame.set_idx(array.addr, i)
         }
       } else if (T instanceof StructType) {
-        let dimensions = [] as number[]
-        let length = 0 //T.length
-        let next = Object.values(T.fields)
-        dimensions.push(length)
+        let size = 0
+        let next = [...T.fields.values()]
         for (let i = 0; i < next.length; i++) {
           if (next[i] instanceof DeclaredType) {
             // Find underlying type to load default values into
@@ -117,21 +117,21 @@ export class BlockInstruction extends Instruction {
               actualType = nextType[0]
               nextType = actualType.type
             }
-            length += nextType[0].sizeof()
+            size += nextType[0].sizeof()
           } else {
-            length += next[i].sizeof()
+            size += next[i].sizeof()
           }
         }
-        let addr = T.bulkDefaultNodeCreator()(process.heap, length)
+        let addr = T.bulkDefaultNodeCreator()(process.heap, size)
         /*
         let size = 0
-        for (let i = 0; i < Object.values(T.fields).length; i++) {
-          size += Object.values(T.fields)[i].sizeof()
+        for (let i = 0; i < [...T.fields.values()].length; i++) {
+          size += [...T.fields.values()].sizeof()
         }
         let nextAddr = addr
-        for (let i = 0; i < Object.values(T.fields).length; i++) {
-          Object.values(T.fields)[i].defaultNodeAllocator()(process.heap, nextAddr)
-          nextAddr += Object.values(T.fields)[i].sizeof()
+        for (let i = 0; i < [...T.fields.values()].length; i++) {
+          [...T.fields.values()][i].defaultNodeAllocator()(process.heap, nextAddr)
+          nextAddr += [...T.fields.values()][i].sizeof()
         }
           */
         new_frame.set_idx(addr, i)
@@ -152,8 +152,6 @@ export class BlockInstruction extends Instruction {
       const children = new_frame.get_children()
       for (let i = 0; i < children.length; i++) {
         process.debugger.identifier_map.set(children[i], this.identifiers[i])
-        let c = process.context.RTS().sz()
-        let d = 0
       }
     }
   }
@@ -170,24 +168,15 @@ export class FuncBlockInstruction extends BlockInstruction {
   }
 
   override execute(process: Process): void {
-    let z = process.heap.get_value(process.context.OS().peek())
     super.execute(process)
-    
-    let x = process.heap.get_value(process.context.OS().peek())
     for (let i = this.args - 1; i >= 0; i--) {
-      let z = process.heap.get_value(process.context.OS().peek())
-      let x = process.heap.get_value(process.context.OS().peek())
       const src = process.context.popOS()
       const dst = process.context.E().get_frame().get_idx(i)
-      let a = process.heap.get_value(src)
-      let b = process.heap.get_value(dst)
-      let y = process.context.RTS().sz()
       process.heap.copy(dst, src)
-      let c = process.context.RTS().sz()
-      let d = process.heap.get_value(dst)
       // deepcopy if struct or array
       let node = process.heap.get_value(src)
       if (node instanceof ArrayNode) {
+        // deepcopy if array
         let dimensions = [] as number[]
         let length = node.length()
         let next = process.heap.get_value(node.get_child(0))
@@ -256,6 +245,46 @@ export class FuncBlockInstruction extends BlockInstruction {
           let array = ArrayNode.create(node.length(), process.heap, sizeof, addr)
           process.heap.copy(dst, array.addr)
         }
+      } else if (node instanceof StructNode) {
+        // deepcopy if struct
+        let size = 0
+        let baseNodes = [] as BaseNode[]
+        let structStart = -1
+        let next = process.heap.get_value(node.get_child(0))
+        while (next instanceof StructNode) {
+          next = process.heap.get_value(next.get_child(0))
+        }
+        structStart = next.addr
+
+        
+
+        function push(a: BaseNode[], node: StructNode) {
+          let children = node.get_children()
+          for (let i = 0; i < children.length; i++) {
+            let child = process.heap.get_value(node.get_child(i))
+            while (child instanceof StructNode) {
+              a.push(child)
+              push(a, child)
+            }
+            a.push(child)
+          }
+        }
+
+        push(baseNodes, node)
+        
+
+        let addr = process.heap.allocate(node.sizeof())
+        let struct = StructNode.create(node.length(), process.heap)
+        for (let i = 0, count = 0; i < node.sizeof();) {
+          let node = baseNodes.shift()
+          if (!(node instanceof StructNode)) {
+            process.heap.copy(addr + i, structStart + i)
+            struct.set_child(count, addr + i)
+            i += node.sizeof()
+            count++
+          }
+        }
+        process.heap.copy(dst, struct.addr)
       }
     }
     // Pop function in stack

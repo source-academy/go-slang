@@ -55,7 +55,6 @@ export class CallInstruction extends Instruction {
         CallRefNode.create(process.context.PC(), process.heap).addr,
       )
       process.context.pushRTS(func.E())
-      let a = process.context.RTS().sz()
       process.context.set_PC(func.PC())
     } else {
       const receiver = func.receiver()
@@ -108,8 +107,7 @@ export class ReturnInstruction extends Instruction {
   override execute(process: Process): void {
     // Clear remnant environment nodes on the RTS (e.g. from blocks).
     while (!(process.context.peekRTS() instanceof CallRefNode)) {
-      let s = process.context.RTS().sz()
-      let a = process.context.popRTS()
+      process.context.popRTS()
       if (process.context.RTS().sz() === 0) break
     }
 

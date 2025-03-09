@@ -1,3 +1,4 @@
+import { join } from 'path'
 import { Compiler } from '../../executor'
 import {
   FuncBlockInstruction,
@@ -174,6 +175,9 @@ export class LiteralValueToken extends Token {
   }
 
   override compileUnchecked(_compiler: Compiler): Type {
+    for (let i = 0; i < this.elements.length; i++) {
+
+    }
     throw new Error(
       'Do not use LiteralValueToken.compile, instead use LiteralValueToken.compileWithType',
     )
@@ -313,15 +317,29 @@ export class StructLiteralToken extends Token {
             const valueType = this.body.elements[i].compile(compiler)
             const fieldType = this.type.fields[j].type.compile(compiler)
             if (!valueType.assignableBy(fieldType)) {
-              throw new Error('Value type does not match field type.')
+              if (this.body.elements[i].operand instanceof LiteralToken) {
+                let baseType = fieldType
+                while (baseType instanceof DeclaredType) {
+                  baseType = baseType.type[0]
+                }
+                if (!(baseType.assignableBy(valueType))) {
+                  throw new Error('Value type does not match field type.')
+                }
+              } else {
+                throw new Error('Value type does not match field type.')
+              }
             }
             if (!(fieldType instanceof StructType)) {
               if (compiler.instructions[compiler.instructions.length - 2] instanceof StoreStructFieldInstruction) {
-                this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
-                this.pushInstruction(compiler, new StoreStructFieldInstruction(i + (compiler.instructions[compiler.instructions.length - 3] as StoreStructFieldInstruction).index))
+                if (!(fieldType instanceof ArrayType)) {
+                  this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+                  this.pushInstruction(compiler, new StoreStructFieldInstruction(1 + (compiler.instructions[compiler.instructions.length - 3] as StoreStructFieldInstruction).index))
+                }
               } else {
-                this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
-                this.pushInstruction(compiler, new StoreStructFieldInstruction(i))
+                if (!(fieldType instanceof ArrayType)) {
+                  this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+                  this.pushInstruction(compiler, new StoreStructFieldInstruction(i))
+                }
               }
             }
             i++
@@ -332,24 +350,133 @@ export class StructLiteralToken extends Token {
       // explicitly type-declared structs
       let struct = compiler.context.env.find_type(this.type.name)[0] as StructType
       for (let i = 0; i < this.body.elements.length; i++) {
-        let fieldType = Object.entries(struct.fields)[i][1] as Type
+        let fieldType = [...struct.fields.values()][i]
         const hasKey = this.body.elements[i].key !== undefined
-        const valueType = hasKey
-          ? this.body.elements[i].element.compile(compiler)
-          : this.body.elements[i].compile(compiler)
+        let valueType = undefined
+        // compile struct values separately if nested struct
+        if (hasKey && this.body.elements[i].element instanceof LiteralValueToken) {
+          let map = new Map<string, Type>()
+          let names = [...struct.fields.values()]
+          for (let j = 0; j < this.body.elements[i].element.elements.length; j++) {
+            map.set([...names[i].type[0].fields.keys()][j], this.body.elements[i].element.elements[j].compile(compiler))
+            if (compiler.instructions[compiler.instructions.length - 2] instanceof StoreStructFieldInstruction) {
+              if (!(fieldType instanceof ArrayType)) {
+                this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+                this.pushInstruction(compiler, new StoreStructFieldInstruction(1 + (compiler.instructions[compiler.instructions.length - 3] as StoreStructFieldInstruction).index))
+              }
+            } else {
+              if (!(fieldType instanceof ArrayType)) {
+                this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+                this.pushInstruction(compiler, new StoreStructFieldInstruction(j))
+              }
+            }
+          }
+          valueType = new StructType(map)
+        } else if (!hasKey && this.body.elements[i] instanceof LiteralValueToken) {
+          let map = new Map<string, Type>()
+          let names = [...struct.fields.values()]
+          for (let j = 0; j < this.body.elements[i].element.elements.length; j++) {
+            map.set([...names[i].type[0].fields.keys()][j], this.body.elements[i].element.elements[j].compile(compiler))
+            if (compiler.instructions[compiler.instructions.length - 2] instanceof StoreStructFieldInstruction) {
+              if (!(fieldType instanceof ArrayType)) {
+                this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+                this.pushInstruction(compiler, new StoreStructFieldInstruction(1 + (compiler.instructions[compiler.instructions.length - 3] as StoreStructFieldInstruction).index))
+              }
+            } else {
+              if (!(fieldType instanceof ArrayType)) {
+                this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+                this.pushInstruction(compiler, new StoreStructFieldInstruction(j))
+              }
+            }
+          }
+          valueType = new StructType(map)
+        } else if (hasKey) {
+          valueType = this.body.elements[i].element.compile(compiler)
+        } else {
+          valueType = this.body.elements[i].compile(compiler)
+        }
         if (hasKey) {
+          let fieldName = undefined
           const key = this.body.elements[i].key.identifier
-          fieldType = struct.fields[key]
+          for (const [k, v] of struct.fields) {
+            if (k === key) {
+              fieldType = v
+              fieldName = k
+              break
+            }
+          }
+          if (fieldName === undefined) {
+            throw new Error('Value type does not match field type.')
+          }
         }
         if (!valueType.assignableBy(fieldType)) {
           throw new Error('Value type does not match field type.')
         }
-        this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
-        if (hasKey) {
-          const index = Object.keys(struct.fields).indexOf(this.body.elements[i].key.identifier)
-          this.pushInstruction(compiler, new StoreStructFieldInstruction(index))
-        } else {
-          this.pushInstruction(compiler, new StoreStructFieldInstruction(i))
+        if (!(fieldType instanceof StructType || valueType instanceof StructType)) {
+          if (hasKey) {
+            const index = [...struct.fields.keys()].indexOf(this.body.elements[i].key.identifier)
+            if (compiler.instructions[compiler.instructions.length - 2] instanceof StoreStructFieldInstruction) {
+              function fieldCounter(x: StructLiteralToken, c: number) {
+                for (let i = 0; i < x.body.elements.length; i++) {
+                  if (x.body.elements[i].element instanceof LiteralValueToken) {
+                    c = fieldCounter2(x.body.elements[i].element, c)
+                  } else if (x.body.elements[i].element instanceof PrimaryExpressionToken
+                    && x.body.elements[i].element.operand instanceof StructLiteralToken) {
+                    c = fieldCounter(x.body.elements[i].element.operand, c)
+                  } else {
+                    c++
+                  }
+                }
+                return c
+              }
+
+              function fieldCounter2(x: LiteralValueToken, c: number) {
+                for (let i = 0; i < x.elements.length; i++) {
+                  if (x.elements[i].element instanceof LiteralValueToken) {
+                    c = fieldCounter2(x.elements[i].element, c)
+                  } else if (x.elements[i].element instanceof PrimaryExpressionToken
+                    && x.elements[i].element.operand instanceof StructLiteralToken) {
+                    c = fieldCounter(x.elements[i].element.operand, c)
+                  } else {
+                    c++
+                  }
+                }
+                return c
+              }
+
+              let place = 0
+              for (let i = 0; i < index; i++) {
+                if (this.body.elements[i].element instanceof PrimaryExpressionToken
+                  && this.body.elements[i].element.operand instanceof StructLiteralToken) {
+                  place += fieldCounter(this.body.elements[i].element.operand, 0)
+                } else if (this.body.elements[i].element instanceof LiteralValueToken) {
+                  place += fieldCounter2(this.body.elements[i].element, 0)
+                }
+              }
+              if (place > 0) place--
+              if (!(fieldType instanceof ArrayType)) {
+                this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+                this.pushInstruction(compiler, new StoreStructFieldInstruction(index + place))
+              }
+            } else {
+              if (!(fieldType instanceof ArrayType)) {
+                this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+                this.pushInstruction(compiler, new StoreStructFieldInstruction(index))
+              }
+            }
+          } else {
+            if (compiler.instructions[compiler.instructions.length - 2] instanceof StoreStructFieldInstruction) {
+              if (!(fieldType instanceof ArrayType)) {
+                this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+                this.pushInstruction(compiler, new StoreStructFieldInstruction(1 + (compiler.instructions[compiler.instructions.length - 3] as StoreStructFieldInstruction).index))
+              }
+            } else {
+              if (!(fieldType instanceof ArrayType)) {
+                this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+                this.pushInstruction(compiler, new StoreStructFieldInstruction(i))
+              }
+            }
+          }
         }
       }
     }

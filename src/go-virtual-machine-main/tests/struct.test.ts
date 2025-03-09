@@ -859,18 +859,20 @@ describe('Struct tests', () => {
         }
 
         func help(a A) {
+          fmt.Println(a)
           a.Age = 934
           a.Name = "Byebye"
+          fmt.Println(a)
         }
         
         func main() {
-          a := A{}
+          a := A{345}
           a.Name = "Jess"
           help(a)
           fmt.Println(a)
         }
       `).output,
-    ).toEqual('934\nByebye\n{0 Jess}\n')
+    ).toEqual('{345 Jess}\n{934 Byebye}\n{345 Jess}\n')
   })
 
   test('Nested anonymous structs work', () => {
@@ -900,5 +902,250 @@ describe('Struct tests', () => {
         }
       `).output,
     ).toEqual('{{Jack 32} 1345}\n')
+  })
+
+  test('Modifying inner field of an anonymous nested struct', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+        
+        func main() {
+          a := struct {
+            Person struct {
+              Name string
+              Age int
+            }
+            Code int
+          }{
+            struct {
+              Name string
+              Age int
+            }{
+              "Jack",
+              32,
+            },
+            1345,
+          }
+          a.Person.Name = "andy"
+          a.Person.Age = 55
+          a.Code = 9999
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{{andy 55} 9999}\n')
+  })
+
+  test('Nested declared structs work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A struct {
+          Person struct {
+            Name string
+            Age int
+          }
+          Code int
+        }
+        
+        func main() {
+          a := A{
+            Person: struct{
+              Name string
+              Age int
+            }{
+              "Alice",
+              25,
+            },
+            Code: 3934,
+          }
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{{Alice 25} 3934}\n')
+  })
+
+  test('Modifying inner field of an anonymous nested struct', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A struct {
+          Person struct {
+            Name string
+            Age int
+          }
+          Code int
+        }
+        
+        func main() {
+          a := A{
+            Person: struct{
+              Name string
+              Age int
+            }{
+              "Alice",
+              25,
+            },
+            Code: 3934,
+          }
+          a.Person.Name = "Sammy"
+          a.Person.Age = 35
+          a.Code = 1241
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{{Sammy 35} 1241}\n')
+  })
+
+  test('Nesting declared structs within another declared struct work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type a int
+
+        type Person struct {
+          Name string
+          Age a
+        }
+
+        type A struct {
+          Person Person
+          Code int
+        }
+        
+        func main() {
+          a := A{
+            Person: struct{
+              Name string
+              Age a
+            }{
+              "Alice",
+              25,
+            },
+            Code: 3934,
+          }
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{{Alice 25} 3934}\n')
+  })
+
+  test('Modifying inner field of an anonymous nested struct', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A struct {
+          Person struct {
+            Name string
+            Age int
+          }
+          Code int
+        }
+        
+        func main() {
+          a := A{
+            Person: struct{
+              Name string
+              Age int
+            }{
+              "Alice",
+              25,
+            },
+            Code: 3934,
+          }
+          a.Person.Name = "Sammy"
+          a.Person.Age = 35
+          a.Code = 1241
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{{Sammy 35} 1241}\n')
+  })
+
+  test('Nesting declared structs within another declared struct work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type Person struct {
+          Name string
+          Age int
+        }
+
+        type A struct {
+          Person Person
+          Code int
+        }
+        
+        func main() {
+          a := A{
+            Person: {"Alice", 25},
+            Code: 3934,
+          }
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{{Alice 25} 3934}\n')
+  })
+
+  test('Modifying inner field of an anonymous nested struct', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type Person struct {
+          Name string
+          Age int
+        }
+
+        type A struct {
+          Person Person
+          Code int
+        }
+        
+        func main() {
+          a := A{
+            Person: {"Alice", 25},
+            Code: 3934,
+          }
+          a.Person.Name = "Sammy"
+          a.Person.Age = 35
+          a.Code = 1241
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{{Sammy 35} 1241}\n')
+  })
+
+  test('Nesting arrays within another declared struct work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A struct {
+          Names [2]string
+          Code int
+        }
+        
+        func main() {
+          a := A{
+            [2]string{"H", "A"},
+            3934,
+          }
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{[H A] 3934}\n')
   })
 })
