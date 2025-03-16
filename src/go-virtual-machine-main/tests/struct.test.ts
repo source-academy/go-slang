@@ -1317,7 +1317,7 @@ describe('Struct tests', () => {
     ).toEqual('[{[dd ] 463} {[ee ff] 352}]\n')
   })
 
-  test('Array of declared structs containing arrays work', () => {
+  test('Array of declared structs containing arrays as the later field work', () => {
     expect(
       codeRunner(`
         package main
@@ -1336,7 +1336,7 @@ describe('Struct tests', () => {
     ).toEqual('[{123 [dd ]} {352 [ee ]}]\n')
   })
 
-  test('Array of declared structs containing arrays work work', () => {
+  test('Array of declared structs containing arrays as the later field work', () => {
     expect(
       codeRunner(`
         package main
@@ -1357,7 +1357,7 @@ describe('Struct tests', () => {
     ).toEqual('[{463 [dd ]} {352 [ee ff]}]\n')
   })
 
-  test('Declared structs of arrays containing declared structs work', () => {
+  test('Declared structs containing array work', () => {
     expect(
       codeRunner(`
         package main
@@ -1381,7 +1381,7 @@ describe('Struct tests', () => {
     ).toEqual('{{[A Z] 485} 39}\n')
   })
 
-  test('Array of declared structs containing arrays work work', () => {
+  test('Modifying declared structs containing array work', () => {
     expect(
       codeRunner(`
         package main
@@ -1407,4 +1407,136 @@ describe('Struct tests', () => {
       `).output,
     ).toEqual('{{[A ff] 927} 53}\n')
   })
+
+  test('Declared structs containing array as a later field work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A struct {
+          Code int
+          Names [2]string
+        }
+
+        type B struct {
+          Person A
+          Age int
+        }
+        
+        func main() {
+          var a B = B{A{485, [2]string{"A", "Z"}}, 39}
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{{485 [A Z]} 39}\n')
+  })
+
+  test('Modifying declared structs containing array as a later field work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A struct {
+          Code int
+          Names [2]string
+        }
+
+        type B struct {
+          Person A
+          Age int
+        }
+        
+        func main() {
+          var a B = B{A{485, [2]string{"A", "Z"}}, 39}
+          a.Person.Names[1] = "ff"
+          a.Person.Code = 927
+          a.Age = 53
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{{927 [A ff]} 53}\n')
+  })
+
+  test('Modifying declared structs as a later field containing array as a later field work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A struct {
+          Code int
+          Names [2]string
+        }
+
+        type B struct {
+          Age int
+          Person A
+        }
+        
+        func main() {
+          var a B = B{39, A{485, [2]string{"A", "Z"}}}
+          a.Person.Names[1] = "ff"
+          a.Person.Code = 927
+          a.Age = 53
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{53 {927 [A ff]}}\n')
+  })
+/*
+  test('Declared structs of arrays containing structs work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A struct {
+          Code int
+          Names [2]string
+        }
+
+        type B struct {
+          Person [2]A
+          Ages [2]int
+        }
+        
+        func main() {
+          var a B = B{[2]A{{485, [2]string{"A", "Z"}},
+            {989, [2]string{"Art", "Zuf"}}}, [2]int{39, 42}}
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{[{485 [A Z]} {989 [Art Zuf]}] [39 42]}\n')
+  })
+
+  test('Declared structs of arrays containing structs work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A struct {
+          Code int
+          Names [2]string
+        }
+
+        type B struct {
+          Person [2]A
+          Ages [2]int
+        }
+        
+        func main() {
+          var a B = B{[2]A{{485, [2]string{"A", "Z"}},
+            {989, [2]string{"Art", "Zuf"}}}, [2]int{39, 42}}
+          a.Person[0].Names[1] = "Hello"
+          a.Person[1].Code = 231
+          a.Ages[1] = 33
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{[{485 [A Hello]} {231 [Art Zuf]}] [39 33]}\n')
+  })
+    */
 })

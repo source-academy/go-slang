@@ -1,5 +1,5 @@
 import { Heap, TAG } from '..'
-import { Type } from '../../executor/typing'
+import { ArrayType, DeclaredType, StructType, Type } from '../../executor/typing'
 
 import { BaseNode } from './base'
 import { BoolNode, PrimitiveNode } from './primitives'
@@ -50,8 +50,12 @@ export class ArrayNode extends BaseNode {
     heap.temp_push(nodeAddr)
     for (let i = 0; i < length; i++) heap.memory.set_number(-1, nodeAddr + i + 2)
     for (let i = 0; i < length; i++) {
-      type.defaultNodeAllocator()(heap, addr + i * type.sizeof())
-      heap.memory.set_word(addr + i * type.sizeof(), nodeAddr + 2 + i)
+      let nodeAddr2 = type.defaultNodeAllocator()(heap, addr + i * type.sizeof()).addr
+      if (type instanceof ArrayType || (type instanceof DeclaredType && type.type[0] instanceof StructType)) {
+        heap.memory.set_word(nodeAddr2, nodeAddr + 2 + i)
+      } else {
+        heap.memory.set_word(addr + i * type.sizeof(), nodeAddr + 2 + i)
+      }
     }
     heap.temp_pop()
     return new ArrayNode(heap, nodeAddr)

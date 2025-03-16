@@ -508,17 +508,23 @@ export class DeclaredType extends Type {
 
   override defaultNodeCreator(): (heap: Heap) => number {
     // Do nothing.
-    return (_) => 0
+    let type = this.type[0]
+    while (type instanceof DeclaredType) type = type.type[0]
+    return type.defaultNodeCreator()
   }
 
   override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
     // Do nothing.
-    return (_) => 0
+    let type = this.type[0]
+    while (type instanceof DeclaredType) type = type.type[0]
+    return type.bulkDefaultNodeCreator()
   }
 
   override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
     // Do nothing.
-    return (_) => 0
+    let type = this.type[0]
+    while (type instanceof DeclaredType) type = type.type[0]
+    return type.defaultNodeAllocator()
   }
 }
 
