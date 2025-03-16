@@ -193,26 +193,31 @@ export class LiteralValueToken extends Token {
         )
       }
       let a = 0
+      let offset = 0
       if (a == 0 && compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction) {
         a += (compiler.instructions[compiler.instructions.length - 1] as StoreArrayElementInstruction).index + 1
+        offset = a
+      } else if (a == 0 && compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction) {
+        a += (compiler.instructions[compiler.instructions.length - 1] as StoreStructFieldInstruction).index + 1
+        offset = a
       }
       for (const element of this.elements) {
         this.compileElement(compiler, type.element, element, 'array literal')
         // load element in actual array and then store element
-        if (!(type.element instanceof ArrayType)) {
-        this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
-        this.pushInstruction(compiler, new StoreArrayElementInstruction(a))
-        a++
+        if (!(type.element instanceof ArrayType) && !(type.element instanceof DeclaredType && type.element.type[0] instanceof StructType)) {
+          this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+          this.pushInstruction(compiler, new StoreArrayElementInstruction(a, offset))
+          a++
         }
       }
       for (let i = 0; i < type.length - this.elements.length; i++) {
         // Ran out of literal values, use the default values.
         this.pushInstruction(compiler, new LoadDefaultInstruction(type.element))
         // load element in actual array and then store element
-        if (!(type.element instanceof ArrayType)) {
-        this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
-        this.pushInstruction(compiler, new StoreArrayElementInstruction(a))
-        a++
+        if (!(type.element instanceof ArrayType) && !(type.element instanceof DeclaredType && type.element.type[0] instanceof StructType)) {
+          this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+          this.pushInstruction(compiler, new StoreArrayElementInstruction(a, offset))
+          a++
         }
       }
     } else if (type instanceof SliceType) {
@@ -227,6 +232,39 @@ export class LiteralValueToken extends Token {
         new LoadConstantInstruction(sliceLength, new Int64Type()),
         new LoadSliceInstruction(),
       )
+    } else if (type instanceof DeclaredType) {
+      let actualType = type.type[0]
+      while (actualType instanceof DeclaredType) {
+        actualType = actualType.type[0]
+      }
+      let a = 0
+      let offset = 0
+      if (a == 0 && compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction) {
+        a += (compiler.instructions[compiler.instructions.length - 1] as StoreArrayElementInstruction).index + 1
+        offset = a
+      } else if (a == 0 && compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction) {
+        a += (compiler.instructions[compiler.instructions.length - 1] as StoreStructFieldInstruction).index + 1
+        offset = a
+      }
+      for (let i = 0; i < this.elements.length; i++) {
+        this.compileElement(compiler, [...actualType.fields.values()][i], this.elements[i], 'array literal')
+        // load element in actual array and then store element
+        if (!(type.element instanceof ArrayType) && !(type.element instanceof DeclaredType && type.element.type[0] instanceof StructType)) {
+          this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+          this.pushInstruction(compiler, new StoreArrayElementInstruction(a, offset))
+          a++
+        }
+      }
+      for (let i = 0; i < type.length - this.elements.length; i++) {
+        // Ran out of literal values, use the default values.
+        this.pushInstruction(compiler, new LoadDefaultInstruction(type.element))
+        // load element in actual array and then store element
+        if (!(type.element instanceof ArrayType) && !(type.element instanceof DeclaredType && type.element.type[0] instanceof StructType)) {
+          this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+          this.pushInstruction(compiler, new StoreArrayElementInstruction(a, offset))
+          a++
+        }
+      }
     } else {
       throw new Error('Parser Bug: Type of literal value is not supported.')
     }
@@ -469,6 +507,11 @@ export class StructLiteralToken extends Token {
               if (!(fieldType instanceof ArrayType)) {
                 this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
                 this.pushInstruction(compiler, new StoreStructFieldInstruction(1 + (compiler.instructions[compiler.instructions.length - 3] as StoreStructFieldInstruction).index))
+              }
+            } else if (compiler.instructions[compiler.instructions.length - 2] instanceof StoreArrayElementInstruction) {
+              if (!(fieldType instanceof ArrayType)) {
+                this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+                this.pushInstruction(compiler, new StoreStructFieldInstruction(1 + (compiler.instructions[compiler.instructions.length - 3] as StoreArrayElementInstruction).index))
               }
             } else {
               if (!(fieldType instanceof ArrayType)) {

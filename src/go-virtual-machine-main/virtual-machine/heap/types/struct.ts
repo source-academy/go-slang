@@ -60,6 +60,49 @@ export class StructNode extends BaseNode {
     return struct
   }
 
+  static bulkDefault(
+    fields: Map<string, Type>,
+    defaultCreator: Array<(heap: Heap) => number>,
+    heap: Heap,
+    length: number,
+  ) {
+    let size = 0
+    for (let i = 0; i < [...fields.values()].length; i++) {
+      size += [...fields.values()][i].sizeof()
+    }
+    size *= length
+    const addr = heap.allocate(size)
+    let nextAddr = addr
+    let structList = [] as number[]
+    for (let i = 0; i < length; i++) {
+      const nodeAddr = heap.allocate(2 + defaultCreator.length)
+      const struct = new StructNode(heap, nodeAddr)
+      for (let i = 0; i < [...fields.values()].length; i++) {
+        let a = [...fields.values()][i]
+        if ([...fields.values()][i] instanceof StructType) {
+          let node = [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr).addr
+          struct.set_child(i, node)
+        } else if ([...fields.values()][i] instanceof DeclaredType && [...fields.values()][i].type[0] instanceof StructType) {
+          let node = [...fields.values()][i].type[0].defaultNodeAllocator()(heap, nextAddr).addr
+          struct.set_child(i, node)
+        } else {
+          if ([...fields.values()][i] instanceof ArrayType) {
+            let arrayNodeAddr = [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr, [...fields.values()][i].length, [...fields.values()][i].element).addr
+            struct.set_child(i, arrayNodeAddr)
+          } else {
+            [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr)
+            struct.set_child(i, nextAddr)
+          }
+        }
+        nextAddr += [...fields.values()][i].sizeof()
+      }
+      heap.set_tag(nodeAddr, TAG.STRUCT)
+      heap.memory.set_number(defaultCreator.length, nodeAddr + 1)
+      structList.push(struct.addr)
+    }
+    return structList
+  }
+
   static allocate(
     fields: Map<string, Type>,
     defaultCreator: Array<(heap: Heap) => number>,

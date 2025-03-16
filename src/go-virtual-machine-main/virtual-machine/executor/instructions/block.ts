@@ -69,6 +69,13 @@ export class BlockInstruction extends Instruction {
         let sizeof = 4
         if (next instanceof BoolType) sizeof = 1
         if (next instanceof StringType) sizeof = 2
+        if (next instanceof StructType) {
+          sizeof = 0
+          let fields = [...next.fields.values()]
+          for (let j = 0; j < fields.length; j++) {
+            sizeof += fields[j].sizeof()
+          }
+        }
         let arrayNodes = [] as ArrayNode[]
         if (T.element instanceof ArrayType) {
           let next2 = T.element
@@ -102,6 +109,12 @@ export class BlockInstruction extends Instruction {
         } else {
           // in the case of 1D array
           let array = ArrayNode.create(T.length, process.heap, sizeof, addr)
+          if (addr instanceof Array) {
+            const length = addr.length
+            for (let k = 0; k < length; k++) {
+              array.set_child(k, addr[k])
+            }
+          }
           new_frame.set_idx(array.addr, i)
         }
       } else if (T instanceof StructType) {
@@ -122,7 +135,7 @@ export class BlockInstruction extends Instruction {
             size += next[i].sizeof()
           }
         }
-        let addr = T.bulkDefaultNodeCreator()(process.heap, size)
+        let addr = T.defaultNodeCreator()(process.heap, size)
         /*
         let size = 0
         for (let i = 0; i < [...T.fields.values()].length; i++) {
@@ -143,7 +156,6 @@ export class BlockInstruction extends Instruction {
       .E()
       .extend_env(new_frame.addr, this.for_block).addr
     process.context.pushRTS(new_env)
-    let a = process.context.RTS().sz()
     process.heap.temp_pop()
 
     if (process.debug_mode) {

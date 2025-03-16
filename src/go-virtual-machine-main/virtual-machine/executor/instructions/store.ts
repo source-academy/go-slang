@@ -24,15 +24,43 @@ export class StoreInstruction extends Instruction {
 
 export class StoreArrayElementInstruction extends Instruction {
   index: number
-  constructor(index: number) {
-    super('STORE ARRAY ELEMENT')
+  offset: number
+  constructor(index: number, offset: number) {
+    super('STORE ARRAY ELEMENT ' + index)
     this.index = index
+    this.offset = offset
+  }
+
+  peek(process: Process, struct: StructNode | ArrayNode, target: number, count: number): number | BaseNode {
+    for (let i = 0; i < struct.get_children().length; i++) {
+      let child = process.heap.get_value(struct.get_child(i))
+      if (child instanceof StructNode || child instanceof ArrayNode) {
+        let res = this.peek(process, child, target, count)
+        if (res instanceof BaseNode) {
+          return res
+        } else {
+          count = res
+        }
+      } else {
+        if (count === target) {
+          return child
+        }
+        count++
+      }
+    }
+    return count
   }
 
   override execute(process: Process): void {
     const dst = process.context.popOS()
     const src = process.context.popOS()
-    const array = new ArrayNode(process.heap, dst)
+    const node = process.heap.get_value(dst)
+
+    let elemAddr = node.get_child(0)
+    if (node instanceof StructNode || node instanceof ArrayNode) {
+      elemAddr = this.peek(process, node, this.index, 0).addr
+    }
+    //const array = new ArrayNode(process.heap, dst)
     /*
     if (this.index < 0 || this.index >= array.length()) {
       throw new Error(
@@ -40,14 +68,7 @@ export class StoreArrayElementInstruction extends Instruction {
       )
     }
     */
-    let element = array.get_child(0)
-    while (process.heap.get_value(element) instanceof ArrayNode) {
-      element = (process.heap.get_value(element) as ArrayNode).get_child(0)
-    }
-    let sizeof = 4
-    if (process.heap.get_value(element) instanceof BoolNode) sizeof = 1
-    if (process.heap.get_value(element) instanceof StringNode) sizeof = 2
-    process.heap.copy(element + sizeof * this.index, src)
+    process.heap.copy(elemAddr, src)
     
     if (process.debug_mode) {
       process.debugger.modified_buffer.add(dst)
@@ -58,14 +79,14 @@ export class StoreArrayElementInstruction extends Instruction {
 export class StoreStructFieldInstruction extends Instruction {
   index: number
   constructor(index: number) {
-    super('STORE STRUCT FIELD')
+    super('STORE STRUCT FIELD ' + index)
     this.index = index
   }
 
-  peek(process: Process, struct: StructNode, target: number, count: number): number | BaseNode {
+  peek(process: Process, struct: StructNode | ArrayNode, target: number, count: number): number | BaseNode {
     for (let i = 0; i < struct.get_children().length; i++) {
       let child = process.heap.get_value(struct.get_child(i))
-      if (child instanceof StructNode) {
+      if (child instanceof StructNode || child instanceof ArrayNode) {
         let res = this.peek(process, child, target, count)
         if (res instanceof BaseNode) {
           return res
@@ -93,10 +114,8 @@ export class StoreStructFieldInstruction extends Instruction {
       )
     }
     */
-    let fields = struct.get_children()
-    let field = struct.get_child(0)
-    let count = this.peek(process, struct, this.index, 0).addr
-    process.heap.copy(count, src)
+    let fieldAddr = this.peek(process, struct, this.index, 0).addr
+    process.heap.copy(fieldAddr, src)
     /*
     let element = struct.get_child(0)
     let a = process.heap.get_value(element)

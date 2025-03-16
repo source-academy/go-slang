@@ -107,7 +107,7 @@ export class GoInstruction extends Instruction {
         process.heap.copy(allocate, results[i])
         new_context.pushOS(allocate)
       }
-      new_context.pushOS(0)
+      new_context.pushOS(1)
       new_context.pushDeferStack()
       process.contexts.push(new_context.addr)
     }

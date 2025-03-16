@@ -1097,7 +1097,7 @@ describe('Struct tests', () => {
     ).toEqual('{{Alice 25} 3934}\n')
   })
 
-  test('Modifying inner field of an anonymous nested struct', () => {
+  test('Modifying inner field of a declared nested struct', () => {
     expect(
       codeRunner(`
         package main
@@ -1148,4 +1148,73 @@ describe('Struct tests', () => {
       `).output,
     ).toEqual('{[H A] 3934}\n')
   })
+
+  test('Modifying array elements within another declared struct work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A struct {
+          Names [3]string
+          Code int
+        }
+        
+        func main() {
+          a := A{
+            [3]string{"H", "A", "E"},
+            3934,
+          }
+          a.Names[1] = "B"
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{[H B E] 3934}\n')
+  })
+
+  test('Modifying array elements within another declared struct work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A struct {
+          Code int
+          Names [3]string
+          Phone int
+        }
+        
+        func main() {
+          a := A{
+            3934,
+            [3]string{"H", "A", "E"},
+            604935,
+          }
+          a.Names[1] = "B"
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{3934 [H B E] 604935}\n')
+  })
+
+  test('Array of structs work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A struct {
+          Name string
+          Code int
+        }
+        
+        func main() {
+          a := [2]A{{"dd", 123}, {"ee", 352}}
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('[{dd 123} {ee 352}]\n')
+  })
+
+  
 })

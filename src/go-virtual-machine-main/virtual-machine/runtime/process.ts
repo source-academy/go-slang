@@ -81,7 +81,7 @@ export class Process {
             this.contexts.push(this.context.addr)
             break
           }
-          if (this.context.OS().sz() > 0 && this.context.peekOS() === 0) {
+          if (this.context.OS().sz() > 0 && this.context.peekOS() === 1) {
             this.context.popOS()
             const instr = this.instructions[this.context.incr_PC()] as GoInstruction
             const func = this.heap.get_value(this.context.peekOSIdx(instr.args)) as MethodNode
