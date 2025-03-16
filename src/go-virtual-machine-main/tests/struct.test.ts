@@ -1197,7 +1197,7 @@ describe('Struct tests', () => {
     ).toEqual('{3934 [H B E] 604935}\n')
   })
 
-  test('Array of structs work', () => {
+  test('Array of declared structs work with shorthand', () => {
     expect(
       codeRunner(`
         package main
@@ -1216,5 +1216,195 @@ describe('Struct tests', () => {
     ).toEqual('[{dd 123} {ee 352}]\n')
   })
 
-  
+  test('Modifying structs in arrays work with shorthand', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A struct {
+          Name string
+          Code int
+        }
+        
+        func main() {
+          a := [2]A{{"dd", 123}, {"ee", 352}}
+          a[1].Name = "ff"
+          a[0].Code = 463
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('[{dd 463} {ff 352}]\n')
+  })
+
+  test('Array of declared structs work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A struct {
+          Name string
+          Code int
+        }
+        
+        func main() {
+          var a [2]A = [2]A{{"dd", 123}, {"ee", 352}}
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('[{dd 123} {ee 352}]\n')
+  })
+
+  test('Modifying structs in arrays work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A struct {
+          Name string
+          Code int
+        }
+        
+        func main() {
+          var a [2]A = [2]A{{"dd", 123}, {"ee", 352}}
+          a[1].Name = "ff"
+          a[0].Code = 463
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('[{dd 463} {ff 352}]\n')
+  })
+
+  test('Array of declared structs containing arrays work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A struct {
+          Names [2]string
+          Code int
+        }
+        
+        func main() {
+          var a [2]A = [2]A{{[2]string{"dd"}, 123}, {[2]string{"ee"}, 352}}
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('[{[dd ] 123} {[ee ] 352}]\n')
+  })
+
+  test('Array of declared structs containing arrays work work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A struct {
+          Names [2]string
+          Code int
+        }
+        
+        func main() {
+          var a [2]A = [2]A{{[2]string{"dd"}, 123}, {[2]string{"ee"}, 352}}
+          a[1].Names[1] = "ff"
+          a[0].Code = 463
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('[{[dd ] 463} {[ee ff] 352}]\n')
+  })
+
+  test('Array of declared structs containing arrays work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A struct {
+          Code int
+          Names [2]string
+        }
+        
+        func main() {
+          var a [2]A = [2]A{{123, [2]string{"dd"}}, {352, [2]string{"ee"}}}
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('[{123 [dd ]} {352 [ee ]}]\n')
+  })
+
+  test('Array of declared structs containing arrays work work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A struct {
+          Code int
+          Names [2]string
+        }
+        
+        func main() {
+          var a [2]A = [2]A{{123, [2]string{"dd"}}, {352, [2]string{"ee"}}}
+          a[1].Names[1] = "ff"
+          a[0].Code = 463
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('[{463 [dd ]} {352 [ee ff]}]\n')
+  })
+
+  test('Declared structs of arrays containing declared structs work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A struct {
+          Names [2]string
+          Code int
+        }
+
+        type B struct {
+          Person A
+          Age int
+        }
+        
+        func main() {
+          var a B = B{A{[2]string{"A", "Z"}, 485}, 39}
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{{[A Z] 485} 39}\n')
+  })
+
+  test('Array of declared structs containing arrays work work', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A struct {
+          Names [2]string
+          Code int
+        }
+
+        type B struct {
+          Person A
+          Age int
+        }
+        
+        func main() {
+          var a B = B{A{[2]string{"A", "Z"}, 485}, 39}
+          a.Person.Names[1] = "ff"
+          a.Person.Code = 927
+          a.Age = 53
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{{[A ff] 927} 53}\n')
+  })
 })

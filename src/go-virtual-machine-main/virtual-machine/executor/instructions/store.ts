@@ -24,11 +24,9 @@ export class StoreInstruction extends Instruction {
 
 export class StoreArrayElementInstruction extends Instruction {
   index: number
-  offset: number
-  constructor(index: number, offset: number) {
+  constructor(index: number) {
     super('STORE ARRAY ELEMENT ' + index)
     this.index = index
-    this.offset = offset
   }
 
   peek(process: Process, struct: StructNode | ArrayNode, target: number, count: number): number | BaseNode {

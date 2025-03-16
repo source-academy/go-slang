@@ -19,7 +19,7 @@ export const mainRunner = (code: string) => {
     ${code}
   }
   `
-  return runCode(packagedCode, 2048, true)
+  return runCode(packagedCode, 4096, true)
 }
 
 /** Runs the code in a main function with randomised context switch */
@@ -31,12 +31,12 @@ export const mainRunnerRandom = (code: string) => {
     ${code}
   }
   `
-  return runCode(packagedCode, 2048, false)
+  return runCode(packagedCode, 4096, false)
 }
 
 /** Runs the code as a whole */
 export const codeRunner = (code: string) => {
-  return runCode(code, 2048, true)
+  return runCode(code, 4096, true)
 }
 
 export const compileCode = (
@@ -94,7 +94,7 @@ export const runCodeWithHeap = (
   // Execution.
   let instructions = compiled.instructions
   let symbols = compiled.symbols
-  const process = new Process(instructions, 2048, symbols, deterministic, visualisation)
+  const process = new Process(instructions, 4096, symbols, deterministic, visualisation)
   process.instructions = instructions
   process.heap = heap
   process.contexts = process.heap.contexts
@@ -143,7 +143,7 @@ export const runCodeWithHeap = (
 
 /** Runs the code as a whole with randomised context switch */
 export const codeRunnerRandom = (code: string) => {
-  return runCode(code, 2048, false)
+  return runCode(code, 4096, false)
 }
 
 export { runCode }

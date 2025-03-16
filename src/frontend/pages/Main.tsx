@@ -44,7 +44,7 @@ export const Main = () => {
   const [speed, setSpeed] = useState<number>(1)
   const [loading, setLoading] = useState(false)
   const [code, setCode] = useState('')
-  const [heapsize, setHeapsize] = useState(2048)
+  const [heapsize, setHeapsize] = useState(4096)
   const [visualMode, setVisualMode] = useState(false)
 
   useEffect(() => {

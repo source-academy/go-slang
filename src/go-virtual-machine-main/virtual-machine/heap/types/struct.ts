@@ -121,9 +121,17 @@ export class StructNode extends BaseNode {
       if ([...fields.values()][i] instanceof StructType) {
         let node = [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr).addr
         struct.set_child(i, node)
+      } else if ([...fields.values()][i] instanceof DeclaredType && [...fields.values()][i].type[0] instanceof StructType) {
+        let node = [...fields.values()][i].type[0].defaultNodeAllocator()(heap, nextAddr).addr
+        struct.set_child(i, node)
       } else {
-        [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr)
-        struct.set_child(i, nextAddr)
+        if ([...fields.values()][i] instanceof ArrayType) {
+          let arrayNodeAddr = [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr, [...fields.values()][i].length, [...fields.values()][i].element).addr
+          struct.set_child(i, arrayNodeAddr)
+        } else {
+          [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr)
+          struct.set_child(i, nextAddr)
+        }
       }
       nextAddr += [...fields.values()][i].sizeof()
     }
