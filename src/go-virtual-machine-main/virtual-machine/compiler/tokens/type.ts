@@ -9,6 +9,7 @@ import {
   Int64Type,
   NoType,
   ParameterType,
+  PointerType,
   ReturnType,
   SliceType,
   StringType,
@@ -197,5 +198,21 @@ export class StructTypeToken extends TypeToken {
       }
     }
     return new StructType(struct)
+  }
+}
+
+export class PointerTypeToken extends TypeToken {
+  
+  constructor(
+    sourceLocation: TokenLocation,
+    public override type: Token,
+  ) {
+    super(sourceLocation)
+    this.type = type
+  }
+
+  override compileUnchecked(compiler: Compiler): Type {
+    const baseType = this.type.compile(compiler)
+    return new PointerType(baseType)
   }
 }

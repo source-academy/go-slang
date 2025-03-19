@@ -12,6 +12,7 @@ import {
 } from '../../heap/types/primitives'
 import { IdentifierToken, PrimitiveTypeToken } from '../../compiler/tokens'
 import { StructNode } from '../../heap/types/struct'
+import { ReferenceNode } from '../../heap/types/reference'
 
 export abstract class Type {
   variadic: any
@@ -503,6 +504,9 @@ export class DeclaredType extends Type {
 
   override equals(t: Type): boolean {
     // TODO: Morph to support structs
+    if (this.type instanceof PointerType) {
+      return 
+    }
     return t instanceof DeclaredType && t.name === this.name && this.type[0].equals(t.type[0])
   }
 
@@ -603,5 +607,36 @@ export class StructType extends Type {
       });
     }
     return false
+  }
+}
+
+export class PointerType extends Type {
+  constructor(public type: Type) {
+    super()
+  }
+
+  override isPrimitive(): boolean {
+    return false
+  }
+
+  override toString(): string {
+    return `pointer to ${this.type.toString()}`
+  }
+
+  sizeof(): number {
+    return 2
+  }
+
+  override equals(t: Type): boolean {
+    return t instanceof PointerType
+      && t.type.equals(this.type)
+  }
+
+  override assignableBy(t: Type): boolean {
+    return t.equals(this)
+  }
+
+  override defaultNodeCreator(): (heap: Heap) => number {
+    return (heap) => ReferenceNode.create(undefined, heap).addr
   }
 }

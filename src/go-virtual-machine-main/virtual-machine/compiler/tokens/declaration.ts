@@ -7,7 +7,7 @@ import {
   StoreArrayElementInstruction,
   StoreInstruction,
 } from '../../executor/instructions'
-import { ArrayType, DeclaredType, NoType, ReturnType, StructType, Type } from '../../executor/typing'
+import { ArrayType, DeclaredType, NoType, PointerType, ReturnType, StructType, Type } from '../../executor/typing'
 
 import { Token, TokenLocation } from './base'
 import { ExpressionToken, PrimaryExpressionModifierToken, PrimaryExpressionToken } from './expressions'
@@ -330,6 +330,8 @@ export class VariableDeclarationToken extends DeclarationToken {
               if (nextType.assignableBy(expressionTypes)) {
                 expressionTypes = expectedType as Type
               }
+            } else if (nextType instanceof PointerType) {
+              expectedType = nextType
             }
           }
 

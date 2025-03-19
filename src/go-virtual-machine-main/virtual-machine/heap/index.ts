@@ -28,6 +28,7 @@ import { WaitGroupNode } from './types/waitGroup'
 import { Memory } from './memory'
 import { StructNode } from './types/struct'
 import { ArrayType, BoolType, Float64Type, Int64Type, NoType, StringType } from '../executor/typing'
+import { ReferenceNode } from './types/reference'
 
 export enum TAG {
   UNKNOWN = 0,
@@ -62,6 +63,7 @@ export enum TAG {
   DECLARED = 29,
   STRUCT = 30,
   CHANNEL_ARRAY = 31,
+  REFERENCE = 32,
 }
 
 export const word_size = 4
@@ -168,6 +170,8 @@ export class Heap {
         return new StructNode(this, addr)
       case TAG.CHANNEL_ARRAY:
         return new ChannelArrayNode(this, addr)
+      case TAG.REFERENCE:
+        return new ReferenceNode(this, addr)
       default:
         // return new UnassignedNode(this, addr)
         throw Error('Unknown Data Type')

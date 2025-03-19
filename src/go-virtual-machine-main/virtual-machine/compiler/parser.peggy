@@ -49,6 +49,7 @@
     ArrayLiteralToken,
     SliceLiteralToken,
     StructLiteralToken,
+    PointerTypeToken,
     QualifiedIdentifierToken,
   } from './tokens'
 
@@ -146,7 +147,7 @@ interpreted_string_lit = '"' str:$[^\n"]* '"' { return StringLiteralToken.fromSo
 
 //* =============== Types ===============
 // Note: `TypeName TypeArgs?` is reduced to `TypeName` as generics are not supported.
-Type     = @TypeName / TypeLit / "(" _ Type _ ")"
+Type     = @TypeLit / TypeName / "(" _ Type _ ")"
 //! TODO (P1): Support qualified identifiers for TypeName.
 TypeName = @QualifiedIdent /
            (iden:identifier
@@ -172,7 +173,7 @@ EmbeddedField = "*"? TypeName
 Tag           = string_lit
 
 //* Pointer Types
-PointerType = "*" BaseType
+PointerType = "*" type:BaseType {return new PointerTypeToken(location(), type)}
 BaseType = Type
 
 //* Function Types

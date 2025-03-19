@@ -6,7 +6,7 @@ import {
   TryChannelReqInstruction,
   UnaryInstruction,
 } from '../../executor/instructions'
-import { BoolType, ChannelType, DeclaredType, Type } from '../../executor/typing'
+import { BoolType, ChannelType, DeclaredType, PointerType, Type } from '../../executor/typing'
 
 import { Token, TokenLocation } from './base'
 import { PrimaryExpressionToken } from './expressions'
@@ -53,7 +53,17 @@ export class UnaryOperator extends Operator {
       this.pushInstruction(compiler, new TryChannelReqInstruction())
       return recvType
     } else {
+      if (this.name === 'indirection') {
+        if (!(expressionType instanceof PointerType)) {
+          throw new Error("Cannot indirect a non-pointer")
+        }
+      } else if (this.name === 'address') {
+        if (expressionType instanceof PointerType) {
+          throw new Error("Cannot obtain address of a pointer")
+        }
+      }
       this.pushInstruction(compiler, new UnaryInstruction(this.name))
+      if (this.name === "address") return new PointerType(expressionType)
       return expressionType
     }
   }

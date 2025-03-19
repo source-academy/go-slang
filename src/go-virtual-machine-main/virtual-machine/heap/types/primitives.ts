@@ -9,10 +9,11 @@ import {
 import { Heap, TAG, word_size } from '..'
 
 import { BaseNode } from './base'
+import { ReferenceNode } from './reference'
 
 export abstract class PrimitiveNode extends BaseNode {
   abstract apply_binop(operand: PrimitiveNode, operator: string): PrimitiveNode
-  abstract apply_unary(operator: string): PrimitiveNode
+  abstract apply_unary(operator: string): PrimitiveNode | ReferenceNode
   abstract get_value(): number | boolean | string
 
   override toString(): string {
@@ -74,10 +75,15 @@ export class IntegerNode extends PrimitiveNode {
     throw Error('Invalid Operation')
   }
 
-  override apply_unary(operator: string): PrimitiveNode {
+  override apply_unary(operator: string): PrimitiveNode | ReferenceNode {
     if (NumUnaryOp[operator]) {
       return IntegerNode.create(
         NumUnaryOp[operator](this.get_value()),
+        this.heap,
+      )
+    } else if (operator === "address") {
+      return ReferenceNode.create(
+        this.addr,
         this.heap,
       )
     }
@@ -139,9 +145,14 @@ export class FloatNode extends PrimitiveNode {
     }
     throw Error('Invalid Operation')
   }
-  override apply_unary(operator: string): PrimitiveNode {
+  override apply_unary(operator: string): PrimitiveNode | ReferenceNode {
     if (NumUnaryOp[operator]) {
       return FloatNode.create(NumUnaryOp[operator](this.get_value()), this.heap)
+    } else if (operator === "address") {
+      return ReferenceNode.create(
+        this.addr,
+        this.heap,
+      )
     }
     throw Error('Invalid Operation')
   }
@@ -194,9 +205,14 @@ export class BoolNode extends PrimitiveNode {
     }
     throw Error('Invalid Operation')
   }
-  override apply_unary(operator: string): PrimitiveNode {
+  override apply_unary(operator: string): PrimitiveNode | ReferenceNode {
     if (BoolUnaryOp[operator]) {
       return BoolNode.create(BoolUnaryOp[operator](this.get_value()), this.heap)
+    } else if (operator === "address") {
+      return ReferenceNode.create(
+        this.addr,
+        this.heap,
+      )
     }
     throw Error('Invalid Operation')
   }
@@ -322,7 +338,13 @@ export class StringNode extends PrimitiveNode {
     }
     throw Error('Invalid Operation')
   }
-  override apply_unary(_operator: string): PrimitiveNode {
+  override apply_unary(_operator: string): PrimitiveNode | ReferenceNode {
+    if (_operator === "address") {
+      return ReferenceNode.create(
+        this.addr,
+        this.heap,
+      )
+    }
     throw Error('Invalid Opeartion')
   }
 }

@@ -11,6 +11,7 @@ import { BoolType, Float64Type, Int64Type, StringType, Type } from '../typing'
 
 import { Instruction } from './base'
 import { StructNode } from '../../heap/types/struct'
+import { ReferenceNode } from '../../heap/types/reference'
 
 export class LoadConstantInstruction extends Instruction {
   val: number | string | boolean
@@ -102,7 +103,11 @@ export class LoadArrayElementInstruction extends Instruction {
   override execute(process: Process): void {
     const indexNode = new IntegerNode(process.heap, process.context.popOS())
     const index = indexNode.get_value()
-    const array = new ArrayNode(process.heap, process.context.popOS())
+    let a = process.context.popOS()
+    if (process.heap.get_value(a) instanceof ReferenceNode) {
+      a = process.heap.get_value(a).get_child()
+    }
+    const array = new ArrayNode(process.heap, a)
     if (index < 0 || index >= array.length()) {
       throw new Error(
         `Index out of range [${index}] with length ${array.length()}`,
@@ -204,7 +209,11 @@ export class LoadStructFieldInstruction extends Instruction {
 
   override execute(process: Process): void {
     //const indexNode = new IntegerNode(process.heap, process.context.popOS())
-    const array = new StructNode(process.heap, process.context.popOS())
+    let a = process.context.popOS()
+    if (process.heap.get_value(a) instanceof ReferenceNode) {
+      a = process.heap.get_value(a).get_child()
+    }
+    const array = new StructNode(process.heap, a)
     const element = array.get_child(this.index)
     process.context.pushOS(element)
   }

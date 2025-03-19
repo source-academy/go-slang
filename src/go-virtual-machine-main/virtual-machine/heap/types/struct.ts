@@ -3,6 +3,7 @@ import { ArrayType, DeclaredType, StructType, Type } from '../../executor/typing
 import { ArrayNode } from './array'
 
 import { BaseNode } from './base'
+import { ReferenceNode } from './reference'
 
 /**
  * Each ArrayNode occupies (2 + `length`) words.
@@ -175,5 +176,15 @@ export class StructNode extends BaseNode {
       elements.push(this.heap.get_value(this.get_child(i)).toString())
     }
     return `{${elements.join(' ')}}`
+  }
+
+  apply_unary(operator: string) {
+    if (operator === "address") {
+      return ReferenceNode.create(
+        this.addr,
+        this.heap,
+      )
+    }
+    throw Error('Invalid Operation')
   }
 }

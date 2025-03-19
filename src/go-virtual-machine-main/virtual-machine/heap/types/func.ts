@@ -4,6 +4,7 @@ import { Heap, TAG } from '..'
 import { BaseNode } from './base'
 import { StringNode } from './primitives'
 import { StackNode } from './stack'
+import { ReferenceNode } from './reference'
 
 export class FuncNode extends BaseNode {
   static create(PC: number, env: number, heap: Heap) {
@@ -33,6 +34,16 @@ export class FuncNode extends BaseNode {
 
   override toString(): string {
     return 'CLOSURE'
+  }
+
+  apply_unary(operator: string) {
+    if (operator === "address") {
+      return ReferenceNode.create(
+        this.addr,
+        this.heap,
+      )
+    }
+    throw Error('Invalid Operation')
   }
 }
 

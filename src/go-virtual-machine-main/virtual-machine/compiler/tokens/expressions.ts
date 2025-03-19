@@ -22,6 +22,7 @@ import {
   NoType,
   PackageType,
   ParameterType,
+  PointerType,
   ReturnType,
   SliceType,
   StringType,
@@ -111,6 +112,23 @@ export class SelectorToken extends PrimaryExpressionModifierToken {
         compiler.instructions.push(new LoadStructFieldInstruction(index))
         return resultType
       }
+    } else if (operandType instanceof PointerType) {
+      let baseType = operandType.type
+      if (baseType instanceof DeclaredType) {
+        if (baseType.type[0].fields.size >= 0) {
+          const resultType = (baseType as StructType).type[0].fields.get(this.identifier)
+          const index = [...(baseType as StructType).type[0].fields.keys()].indexOf(this.identifier)
+          compiler.instructions.push(new LoadStructFieldInstruction(index))
+          return resultType
+        }
+      } else if (baseType instanceof StructType) {
+        if (baseType.fields.size >= 0) {
+          const resultType = baseType.fields.get(this.identifier)
+          const index = [...baseType.fields.keys()].indexOf(this.identifier)
+          compiler.instructions.push(new LoadStructFieldInstruction(index))
+          return resultType
+        }
+      }
     } else {
       // standard package operations
       const resultType = operandType.select(this.identifier)
@@ -141,6 +159,17 @@ export class IndexToken extends PrimaryExpressionModifierToken {
       this.compileIndex(compiler)
       this.pushInstruction(compiler, new LoadSliceElementInstruction())
       return operandType.element
+    } else if (operandType instanceof PointerType) {
+      const baseType = operandType.type
+      if (baseType instanceof ArrayType) {
+        this.compileIndex(compiler)
+        this.pushInstruction(compiler, new LoadArrayElementInstruction())
+        return baseType.element
+      } else if (baseType instanceof SliceType) {
+        this.compileIndex(compiler)
+        this.pushInstruction(compiler, new LoadSliceElementInstruction())
+        return baseType.element
+      }
     } else {
       throw Error(
         `Invalid operation: Cannot index a variable of type ${operandType}`,
