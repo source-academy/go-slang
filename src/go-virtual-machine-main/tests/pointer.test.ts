@@ -18,6 +18,40 @@ describe('Pointer Tests', () => {
     )
   })
 
+  test('Shorthand declaration for pointer works', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    func main() {
+      x := 42
+      p := &x
+      fmt.Println(p)
+    }
+    `
+    expect(codeRunner(code).output).toEqual(
+      '0x00000074\n',
+    )
+  })
+
+  test('Modifying value of dereferenced pointer works', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    func main() {
+      x := 10
+      p := &x  
+      fmt.Println(*p)
+      *p = 20
+      fmt.Println(x)
+    }
+    `
+    expect(codeRunner(code).output).toEqual(
+      '10\n20\n',
+    )
+  })
+
   test('Dereferencing a variable should throw error', () => {
     const code = `
     package main
@@ -120,6 +154,22 @@ describe('Pointer Tests', () => {
     `
     expect(codeRunner(code).error?.type).toEqual(
       'compile',
+    )
+  })
+
+  test('Getting a pointer of a pointer stored as a variable should work', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    func main() {
+      a := 1
+      b := &a
+      fmt.Println(&b)
+    }
+    `
+    expect(codeRunner(code).output).toEqual(
+      '0x00000078\n',
     )
   })
 
@@ -393,6 +443,91 @@ describe('Pointer Tests', () => {
     `
     expect(codeRunner(code).output).toEqual(
       '[4 345]\n',
+    )
+  })
+
+  test('Pointers of structs are automatically dereferenced', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    type Person struct {
+      Name string
+      Age int
+    }
+
+    func main() {
+      p := &Person{Name: "Alice", Age: 25}
+      p.Age = 30
+      fmt.Println(p)
+    }
+    ` 
+    expect(codeRunner(code).output).toEqual(
+      '&{Alice 30}\n',
+    )
+  })
+
+  test('Pointers of pointer of structs work', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    type Person struct {
+      Name string
+      Age int
+    }
+
+    func main() {
+      p := &Person{Name: "Alice", Age: 25}
+      p.Age = 30
+      fmt.Println(&p)
+    }
+    ` 
+    expect(codeRunner(code).output).toEqual(
+      '0x00000072\n',
+    )
+  })
+
+  test('Modifying fields of pointers of pointer of structs should throw error', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    type Person struct {
+      Name string
+      Age int
+    }
+
+    func main() {
+      p := &Person{Name: "Alice", Age: 25}
+      q := &p
+      q.Age = 30
+    }
+    ` 
+    expect(codeRunner(code).error?.type).toEqual(
+      'compile',
+    )
+  })
+
+  test('Modifying fields of dereferenced pointers of pointer of structs should work', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    type Person struct {
+      Name string
+      Age int
+    }
+
+    func main() {
+      p := &Person{Name: "Alice", Age: 25}
+      q := &p
+      (*q).Age = 30
+      fmt.Println(*q)
+    }
+    ` 
+    expect(codeRunner(code).output).toEqual(
+      '&{Alice 30}\n',
     )
   })
 })

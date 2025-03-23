@@ -1,6 +1,6 @@
 import { Process } from '../../runtime/process'
 import { FrameNode } from '../../heap/types/environment'
-import { ArrayType, BoolType, DeclaredType, StringType, StructType, Type } from '../typing'
+import { ArrayType, BoolType, DeclaredType, PointerType, StringType, StructType, Type } from '../typing'
 
 import { Instruction } from './base'
 import { PrimitiveTypeToken } from '../../compiler/tokens'
@@ -149,7 +149,29 @@ export class BlockInstruction extends Instruction {
           */
         new_frame.set_idx(addr, i)
       } else {
-        new_frame.set_idx(T.defaultNodeCreator()(process.heap), i)
+        const addr = T.defaultNodeCreator()(process.heap)
+        new_frame.set_idx(addr, i)
+        if (T instanceof PointerType && T.type instanceof DeclaredType && T.type.type[0] instanceof StructType) {
+          let size = 0
+          let next = [...T.type.type[0].fields.values()]
+          for (let i = 0; i < next.length; i++) {
+            if (next[i] instanceof DeclaredType) {
+              // Find underlying type to load default values into
+              let actualType = next[i]
+              let nextType = next[i].type
+              // TODO: Morph to support structs
+              while (nextType[0] instanceof DeclaredType) {
+                actualType = nextType[0]
+                nextType = actualType.type
+              }
+              size += nextType[0].sizeof()
+            } else {
+              size += next[i].sizeof()
+            }
+          }
+          const structAddr = T.type.type[0].defaultNodeCreator()(process.heap, size)
+          process.heap.get_value(addr).set_child(structAddr)
+        }
       }
     }
     const new_env = process.context

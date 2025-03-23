@@ -167,7 +167,9 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
         } else {
           const [frame_idx, var_idx] = compiler.context.env.find_var(identifier)
           if (expressionTypes instanceof ArrayType || expressionTypes instanceof StructType
-            || (expressionTypes instanceof DeclaredType && expressionTypes.type[0] instanceof StructType)) {
+            || (expressionTypes instanceof DeclaredType && expressionTypes.type[0] instanceof StructType)
+            || (expressionTypes instanceof PointerType && expressionTypes.type instanceof DeclaredType && expressionTypes.type.type[0] instanceof StructType)
+          ) {
             for (let j = start; j < compiler.instructions.length; j++) {
               if (compiler.instructions[j] instanceof LoadVariableInstruction
                 && (compiler.instructions[j] as LoadVariableInstruction).id === ""
@@ -190,6 +192,11 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
                 compiler,
                 new LoadVariableInstruction(frame_idx, var_idx, identifier),
               )
+          } else if (expressionTypes instanceof PointerType
+            && (expressionTypes.type instanceof ArrayType || (expressionTypes.type instanceof DeclaredType && expressionTypes.type.type[0] instanceof StructType))
+          ) {
+            compiler.instructions[compiler.instructions.length - 2] = new LoadVariableInstruction(frame_idx, var_idx, identifier)
+            compiler.instructions.pop()
           }
           this.pushInstruction(
             compiler,

@@ -1,6 +1,7 @@
 import { ArrayNode } from '../../heap/types/array'
 import { BaseNode } from '../../heap/types/base'
 import { BoolNode, StringNode } from '../../heap/types/primitives'
+import { ReferenceNode } from '../../heap/types/reference'
 import { StructNode } from '../../heap/types/struct'
 import { Process } from '../../runtime/process'
 
@@ -14,6 +15,8 @@ export class StoreInstruction extends Instruction {
   override execute(process: Process): void {
     const dst = process.context.popOS()
     const src = process.context.popOS()
+    let a = process.heap.get_value(dst)
+    let b = process.heap.get_value(src)
     process.heap.copy(dst, src)
 
     if (process.debug_mode) {
@@ -102,8 +105,11 @@ export class StoreStructFieldInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
-    const dst = process.context.popOS()
+    let dst = process.context.popOS()
     const src = process.context.popOS()
+    if (process.heap.get_value(dst) instanceof ReferenceNode) {
+      dst = process.heap.get_value(dst).get_child()
+    }
     const struct = new StructNode(process.heap, dst)
     /*
     if (this.index < 0 || this.index >= array.length()) {

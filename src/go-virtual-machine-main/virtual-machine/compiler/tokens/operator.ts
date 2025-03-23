@@ -3,10 +3,13 @@ import {
   BinaryInstruction,
   LoadChannelReqInstruction,
   LoadDefaultInstruction,
+  LoadVariableInstruction,
+  StoreArrayElementInstruction,
+  StoreStructFieldInstruction,
   TryChannelReqInstruction,
   UnaryInstruction,
 } from '../../executor/instructions'
-import { BoolType, ChannelType, DeclaredType, PointerType, Type } from '../../executor/typing'
+import { BoolType, ChannelType, DeclaredType, PointerType, StructType, Type } from '../../executor/typing'
 
 import { Token, TokenLocation } from './base'
 import { PrimaryExpressionToken } from './expressions'
@@ -59,11 +62,24 @@ export class UnaryOperator extends Operator {
         }
       } else if (this.name === 'address') {
         if (expressionType instanceof PointerType) {
-          throw new Error("Cannot obtain address of a pointer")
+          if (this.children[0] instanceof PrimaryExpressionToken && this.children[0].operand instanceof UnaryOperator
+            && this.children[0].operand.name instanceof "address"
+          ) {
+            throw new Error("Cannot obtain address of a pointer")
+          }
         }
       }
+      if ((compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction)
+        || (compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction)
+      ) {
+        this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
+      }
       this.pushInstruction(compiler, new UnaryInstruction(this.name))
-      if (this.name === "address") return new PointerType(expressionType)
+      if (this.name === "address") {
+        return new PointerType(expressionType)
+      } else if (expressionType instanceof PointerType && this.name === "indirection") {
+        return expressionType.type
+      }
       return expressionType
     }
   }
