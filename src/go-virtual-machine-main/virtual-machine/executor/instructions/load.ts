@@ -12,6 +12,8 @@ import { BoolType, Float64Type, Int64Type, StringType, Type } from '../typing'
 import { Instruction } from './base'
 import { StructNode } from '../../heap/types/struct'
 import { ReferenceNode } from '../../heap/types/reference'
+import { UnsafePkgNode } from '../../heap/types/unsafe'
+import { MethodNode } from '../../heap/types/func'
 
 export class LoadConstantInstruction extends Instruction {
   val: number | string | boolean
@@ -189,9 +191,14 @@ export class LoadPackageInstruction extends Instruction {
 
   override execute(process: Process): void {
     const packageName = process.context.popOSNode(StringNode).get_value()
-    if (packageName !== 'fmt') throw new Error('Unreachable')
-    const packageNode = FmtPkgNode.default(process.heap)
-    process.context.pushOS(packageNode.addr)
+    if (packageName !== 'fmt' && packageName !== 'unsafe') throw new Error('Unreachable')
+    if (packageName === 'fmt') {
+      const packageNode = FmtPkgNode.default(process.heap)
+      process.context.pushOS(packageNode.addr)
+    } else if (packageName === 'unsafe') {
+      const packageNode = UnsafePkgNode.default(process.heap)
+      process.context.pushOS(packageNode.addr)
+    }
   }
 }
 
@@ -213,8 +220,16 @@ export class LoadStructFieldInstruction extends Instruction {
     if (process.heap.get_value(a) instanceof ReferenceNode) {
       a = process.heap.get_value(a).get_child()
     }
-    const array = new StructNode(process.heap, a)
-    const element = array.get_child(this.index)
-    process.context.pushOS(element)
+    const struct = new StructNode(process.heap, a)
+    const field = struct.get_child(this.index)
+    if (process.heap.get_value(process.context.peekOS()) instanceof MethodNode
+      && process.heap.get_value(process.context.peekOS()).identifier() === "Offsetof"
+      && !(process.heap.get_value(field) instanceof StructNode)
+    ) {
+      let offset = struct.offsetof(this.index)
+      process.context.pushOS(IntegerNode.create(offset, process.heap).addr)
+    } else {
+      process.context.pushOS(field)
+    }
   }
 }

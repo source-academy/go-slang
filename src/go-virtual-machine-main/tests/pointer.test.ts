@@ -530,4 +530,155 @@ describe('Pointer Tests', () => {
       '&{Alice 30}\n',
     )
   })
+
+  test('Pointers of arrays are automatically dereferenced', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    func main() {
+      p := &[2]int{3, 5}
+      p[1] = 44
+      fmt.Println(p)
+      fmt.Println(*p)
+    }
+    ` 
+    expect(codeRunner(code).output).toEqual(
+      '&[3 44]\n[3 44]\n',
+    )
+  })
+
+  test('Pointers of pointer of arrays work', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    func main() {
+      p := &[3]int{5, 6, 7}
+      fmt.Println(&p)
+    }
+    ` 
+    expect(codeRunner(code).output).toEqual(
+      '0x00000072\n',
+    )
+  })
+
+  test('Pointers of pointer of arrays are consistent', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    func main() {
+      p := &[3]string{"sv", "vr", "r5gjri"}
+      q := &p
+      (*q)[1] = "hello"
+      fmt.Println(*q)
+      r := &q
+      fmt.Println(r)
+      fmt.Println(*r)
+      fmt.Println(**r)
+      fmt.Println(***r)
+      fmt.Println(q)
+      fmt.Println(*q)
+      fmt.Println(**q)
+      fmt.Println(p)
+      fmt.Println(*p)
+    }
+    ` 
+    expect(codeRunner(code).output).toEqual(
+      `&[sv hello r5gjri]
+0x00000084
+0x00000074
+&[sv hello r5gjri]
+[sv hello r5gjri]
+0x00000074
+&[sv hello r5gjri]
+[sv hello r5gjri]
+&[sv hello r5gjri]
+[sv hello r5gjri]
+`,
+    )
+  })
+
+  test('Modifying fields of pointers of pointer of arrays should throw error', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    func main() {
+      p := &[3]string{"e", "h", "l"}
+      q := &p
+      q[0] = "bwjcbej"
+    }
+    ` 
+    expect(codeRunner(code).error?.type).toEqual(
+      'compile',
+    )
+  })
+
+  test('Modifying elements of dereferenced pointers of pointer of arrays should work', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    func main() {
+      p := &[3]string{"sv", "vr", "r5gjri"}
+      q := &p
+      (*q)[1] = "hello"
+      fmt.Println(*q)
+    }
+    ` 
+    expect(codeRunner(code).output).toEqual(
+      '&[sv hello r5gjri]\n',
+    )
+  })
+
+  test('Pointers of 2D arrays are automatically dereferenced', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    func main() {
+      p := &[2][3]int{{3, 4}, {5}}
+      p[1][2] = 44
+      fmt.Println(p)
+      fmt.Println(*p)
+    }
+    ` 
+    expect(codeRunner(code).output).toEqual(
+      '&[[3 4 0] [5 0 44]]\n[[3 4 0] [5 0 44]]\n',
+    )
+  })
+
+  test('Pointers of pointer of 2D arrays work', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    func main() {
+      p := &[3][2]int{{5}, {6, 7}, {11, 8}}
+      fmt.Println(&p)
+    }
+    ` 
+    expect(codeRunner(code).output).toEqual(
+      '0x00000072\n',
+    )
+  })
+
+  test('Modifying elements of dereferenced pointers of pointer of 2D arrays should work', () => {
+    const code = `
+    package main
+    import "fmt"
+
+    func main() {
+      p := &[3][3]string{{"sv"}, {"vr", "he", "she"}, {"r5gjri"}}
+      q := &p
+      (*q)[1][2] = "hello"
+      fmt.Println(*q)
+    }
+    ` 
+    expect(codeRunner(code).output).toEqual(
+      '&[[sv  ] [vr he hello] [r5gjri  ]]\n',
+    )
+  })
 })

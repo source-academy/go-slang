@@ -29,6 +29,7 @@ import { Memory } from './memory'
 import { StructNode } from './types/struct'
 import { ArrayType, BoolType, Float64Type, Int64Type, NoType, StringType } from '../executor/typing'
 import { ReferenceNode } from './types/reference'
+import { UnsafePkgNode } from './types/unsafe'
 
 export enum TAG {
   UNKNOWN = 0,
@@ -64,6 +65,7 @@ export enum TAG {
   STRUCT = 30,
   CHANNEL_ARRAY = 31,
   REFERENCE = 32,
+  UNSAFE_PKG = 33,
 }
 
 export const word_size = 4
@@ -172,6 +174,8 @@ export class Heap {
         return new ChannelArrayNode(this, addr)
       case TAG.REFERENCE:
         return new ReferenceNode(this, addr)
+      case TAG.UNSAFE_PKG:
+        return new UnsafePkgNode(this, addr)
       default:
         // return new UnassignedNode(this, addr)
         throw Error('Unknown Data Type')

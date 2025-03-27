@@ -12,8 +12,10 @@ import { Compiler } from '..'
 import {
   FunctionType,
   Int64Type,
+  NoType,
   PackageType,
   ParameterType,
+  PointerType,
   ReturnType,
   StringType,
   Type,
@@ -110,6 +112,29 @@ export const builtinPackages = {
       Mutex: new MutexType(),
     })
     compiler.type_environment.addType('sync', pkg)
+    return pkg
+  },
+  unsafe: (compiler: Compiler): Type => {
+    const pkg = new PackageType('unsafe', {
+      // variadic should be false but we accept any type
+      // we will handle it separately like in fmt package functions
+      // throw an error if incorrect number of arguments
+      Alignof: new FunctionType([], new ReturnType([new Int64Type()]), true),
+      Offsetof: new FunctionType([], new ReturnType([new Int64Type()]), true),
+      Sizeof: new FunctionType([], new ReturnType([new Int64Type()]), true),
+      String: new FunctionType([], new ReturnType([new StringType()]), true),
+      StringData: new FunctionType([], new ReturnType([new PointerType(new StringType())]), true),
+      Add: new FunctionType([], new ReturnType([new PointerType(new NoType())]), true),
+    })
+    compiler.type_environment.addType('unsafe', pkg)
+    const [frame_idx, var_idx] = compiler.context.env.declare_var('unsafe')
+    compiler.instructions.push(
+      new LoadConstantInstruction('unsafe', new StringType()),
+      new LoadPackageInstruction(),
+      new LoadVariableInstruction(frame_idx, var_idx, 'unsafe'),
+      new StoreInstruction(),
+    )
+    compiler.symbols.push(...Array(4).fill(null))
     return pkg
   },
 }

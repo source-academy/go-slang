@@ -171,6 +171,81 @@ export class BlockInstruction extends Instruction {
           }
           const structAddr = T.type.type[0].defaultNodeCreator()(process.heap, size)
           process.heap.get_value(addr).set_child(structAddr)
+        } else if (T instanceof PointerType && T.type instanceof ArrayType) {
+          let dimensions = [] as number[]
+          let length = T.type.length
+          let next = T.type.element
+          dimensions.push(length)
+          while (next instanceof ArrayType) {
+            dimensions.push(next.length)
+            length = length * next.length
+            next = next.element
+          }
+          if (next instanceof DeclaredType) {
+            // Find underlying type to load default values into
+            let actualType = next
+            let nextType = next.type
+            // TODO: Morph to support structs
+            while (nextType[0] instanceof DeclaredType) {
+              actualType = nextType[0]
+              nextType = actualType.type
+            }
+            next = nextType[0]
+          }
+          let arrayAddr = next.bulkDefaultNodeCreator()(process.heap, length)
+          let sizeof = 4
+          if (next instanceof BoolType) sizeof = 1
+          if (next instanceof StringType) sizeof = 2
+          if (next instanceof StructType) {
+            sizeof = 0
+            let fields = [...next.fields.values()]
+            for (let j = 0; j < fields.length; j++) {
+              sizeof += fields[j].sizeof()
+            }
+          }
+          let arrayNodes = [] as ArrayNode[]
+          if (T.type.element instanceof ArrayType) {
+            let next2 = T.type.element
+            while (next2.element instanceof ArrayType) {
+              next2 = next2.element
+            }
+            let baseType = next2.element
+            if (baseType instanceof BoolType) sizeof = 1
+            if (baseType instanceof StringType) sizeof = 2
+            let addr2 = arrayAddr
+            // handle multi-dimensional arrays: inner-most layer
+            // we ensured that the memory block is contiguous earlier
+            // so we need to link ArrayNodes to the correct memory addresses
+            for (let a = 0; a < length / next2.length; a++) {
+              arrayNodes.push(ArrayNode.create(next2.length, process.heap, sizeof, addr2))
+              addr2 += sizeof * next2.length
+            }
+            dimensions.pop()
+            while (dimensions.length > 0) {
+              let dim = dimensions.pop()
+              let n = arrayNodes.length
+              for (let a = 0; a < n / dim; a++) {
+                let array = ArrayNode.create(dim, process.heap, sizeof, arrayAddr)
+                for (let b = 0; b < dim; b++) {
+                  array.set_child(b, arrayNodes.shift().addr)
+                }
+                arrayNodes.push(array)
+              }
+            }
+            const pointer = process.heap.get_value(addr)
+            pointer.set_child(arrayNodes.pop().addr)
+          } else {
+            // in the case of 1D array
+            let array = ArrayNode.create(T.type.length, process.heap, sizeof, arrayAddr)
+            if (arrayAddr instanceof Array) {
+              const length = arrayAddr.length
+              for (let k = 0; k < length; k++) {
+                array.set_child(k, arrayAddr[k])
+              }
+            }
+            const pointer = process.heap.get_value(addr)
+            pointer.set_child(array.addr)
+          }
         }
       }
     }

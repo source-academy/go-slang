@@ -53,10 +53,13 @@ export class StoreArrayElementInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
-    const dst = process.context.popOS()
+    let dst = process.context.popOS()
     const src = process.context.popOS()
-    const node = process.heap.get_value(dst)
+    if (process.heap.get_value(dst) instanceof ReferenceNode) {
+      dst = process.heap.get_value(dst).get_child()
+    }
 
+    const node = process.heap.get_value(dst)
     let elemAddr = node.get_child(0)
     if (node instanceof StructNode || node instanceof ArrayNode) {
       elemAddr = this.peek(process, node, this.index, 0).addr

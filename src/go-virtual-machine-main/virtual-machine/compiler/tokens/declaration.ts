@@ -169,6 +169,7 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
           if (expressionTypes instanceof ArrayType || expressionTypes instanceof StructType
             || (expressionTypes instanceof DeclaredType && expressionTypes.type[0] instanceof StructType)
             || (expressionTypes instanceof PointerType && expressionTypes.type instanceof DeclaredType && expressionTypes.type.type[0] instanceof StructType)
+            || (expressionTypes instanceof PointerType && expressionTypes.type instanceof ArrayType)
           ) {
             for (let j = start; j < compiler.instructions.length; j++) {
               if (compiler.instructions[j] instanceof LoadVariableInstruction
@@ -187,7 +188,8 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
           if (((expressionTypes instanceof ArrayType && expressions[0] instanceof PrimaryExpressionToken
             && expressions[0].operand instanceof ArrayLiteralToken)
             || expressionTypes instanceof StructType)
-            || (expressionTypes instanceof DeclaredType && expressionTypes.type[0] instanceof StructType)) {
+            || (expressionTypes instanceof DeclaredType && expressionTypes.type[0] instanceof StructType)
+          ) {
               this.pushInstruction(
                 compiler,
                 new LoadVariableInstruction(frame_idx, var_idx, identifier),

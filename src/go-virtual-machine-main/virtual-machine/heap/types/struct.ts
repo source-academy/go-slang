@@ -157,6 +157,14 @@ export class StructNode extends BaseNode {
     return size
   }
 
+  offsetof(index: number) {
+    let offset = 0
+    for (let i = 0; i < index; i++) {
+      offset += this.heap.get_value(this.get_child(i)).sizeof()
+    }
+    return offset
+  }
+
   set_child(index: number, address: number) {
     this.heap.memory.set_word(address, this.addr + 2 + index)
   }

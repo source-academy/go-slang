@@ -710,7 +710,7 @@ export class SelectStatementToken extends Token {
           clause.compile(compiler)
           const jump_instr = new JumpInstruction()
           this.pushInstruction(compiler, jump_instr)
-          end_jumps.push(jump_instr)
+          end_jumps.push(jump_instr) 
           break
         }
       }
