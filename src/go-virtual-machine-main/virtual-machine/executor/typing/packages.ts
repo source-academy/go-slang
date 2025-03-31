@@ -10,6 +10,8 @@ import {
 import { Compiler } from '..'
 
 import {
+  ArbitraryType,
+  ByteType,
   FunctionType,
   Int64Type,
   NoType,
@@ -119,12 +121,23 @@ export const builtinPackages = {
       // variadic should be false but we accept any type
       // we will handle it separately like in fmt package functions
       // throw an error if incorrect number of arguments
-      Alignof: new FunctionType([], new ReturnType([new Int64Type()]), true),
-      Offsetof: new FunctionType([], new ReturnType([new Int64Type()]), true),
-      Sizeof: new FunctionType([], new ReturnType([new Int64Type()]), true),
-      String: new FunctionType([], new ReturnType([new StringType()]), true),
-      StringData: new FunctionType([], new ReturnType([new PointerType(new StringType())]), true),
-      Add: new FunctionType([], new ReturnType([new PointerType(new NoType())]), true),
+      Alignof: new FunctionType([new ParameterType("x", new ArbitraryType())], new ReturnType([new Int64Type()]), false),
+      Offsetof: new FunctionType([new ParameterType("x", new ArbitraryType())], new ReturnType([new Int64Type()]), false),
+      Sizeof: new FunctionType([new ParameterType("x", new ArbitraryType())], new ReturnType([new Int64Type()]), false),
+      String: new FunctionType([
+        new ParameterType("ptr", new PointerType(new ByteType())),
+        new ParameterType("len", new Int64Type()),
+      ], new ReturnType([new StringType()]), false),
+      StringData: new FunctionType([
+        new ParameterType("str", new StringType()),
+      ], new ReturnType([new PointerType(new ByteType())]), false),
+      Add: new FunctionType([
+        new ParameterType("ptr", new PointerType(new ArbitraryType())),
+        new ParameterType("len", new Int64Type()),
+      ], new ReturnType([new PointerType(new ArbitraryType())]), false),
+      Pointer: new FunctionType([
+        new ParameterType("ptr", new PointerType(new ArbitraryType())),
+      ], new ReturnType([new Int64Type()]), false),
     })
     compiler.type_environment.addType('unsafe', pkg)
     const [frame_idx, var_idx] = compiler.context.env.declare_var('unsafe')

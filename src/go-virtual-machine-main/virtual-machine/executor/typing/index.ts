@@ -24,7 +24,7 @@ export abstract class Type {
 
   /** Returns true if `t` can be assigned to this type. */
   assignableBy(t: Type): boolean {
-    return this.equals(t)
+    return t instanceof ArbitraryType || this.equals(t)
   }
 
   /** Returns a function that creates a default node of this type on the heap, and returns its address. */
@@ -62,6 +62,60 @@ export class NoType extends Type {
 
   override equals(t: Type): boolean {
     return t instanceof NoType
+  }
+
+  override defaultNodeCreator(): (heap: Heap) => number {
+    throw new Error('Cannot create values of type NoType')
+  }
+
+  override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
+    throw new Error('Cannot create values of type NoType')
+  }
+
+  override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
+    throw new Error('Cannot create values of type NoType')
+  }
+}
+
+/** This type represents arguments that don't have a fixed type. */
+export class ArbitraryType extends Type {
+  isPrimitive(): boolean {
+    return false
+  }
+
+  toString(): string {
+    return ''
+  }
+
+  override equals(t: Type): boolean {
+    return t instanceof ArbitraryType
+  }
+
+  override defaultNodeCreator(): (heap: Heap) => number {
+    throw new Error('Cannot create values of type NoType')
+  }
+
+  override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
+    throw new Error('Cannot create values of type NoType')
+  }
+
+  override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
+    throw new Error('Cannot create values of type NoType')
+  }
+}
+
+/** This type represents the byte itself. */
+export class ByteType extends Type {
+  isPrimitive(): boolean {
+    return false
+  }
+
+  toString(): string {
+    return ''
+  }
+
+  override equals(t: Type): boolean {
+    return t instanceof ByteType
   }
 
   override defaultNodeCreator(): (heap: Heap) => number {
@@ -633,7 +687,7 @@ export class PointerType extends Type {
   }
 
   override assignableBy(t: Type): boolean {
-    return t.equals(this)
+    return t.equals(this) || (t instanceof PointerType && t.type instanceof ArbitraryType)
   }
 
   override defaultNodeCreator(): (heap: Heap) => number {

@@ -4,6 +4,8 @@ import { Heap, TAG } from '..'
 import { BaseNode } from './base'
 import { MethodNode } from './func'
 import { IntegerNode, StringNode } from './primitives'
+import { ReferenceNode } from './reference'
+import { word_size } from '..'
 
 /**
  * This node represents the `fmt` package. It only occupies one word, its tag.
@@ -84,8 +86,19 @@ export class UnsafePkgNode extends BaseNode {
       const addr = process.context.popOS() // argument "len IntegerType"
       const addr2 = process.context.popOS() // argument "ptr *byte"
       const node = process.heap.get_value(addr)
+      const node2 = process.heap.get_value(addr2)
+      const len = node.get_value()
+      const bytes = process.heap.get_value(node2.get_child())
       process.context.popOS() // "String" method node
-      process.context.pushOS(IntegerNode.create(node.sizeof(), process.heap).addr)
+      let str = ''
+      for (let i = 0; i < len; i++) {
+        str += String.fromCharCode(this.heap.memory.get_bytes(
+          Math.floor(i / word_size) + bytes.addr + 1,
+          1,
+          i % word_size,
+        ))
+      }
+      process.context.pushOS(StringNode.create(str, process.heap).addr)
     } else {
       throw new Error("String requires 2 arguments but got " + argCount)
     }
@@ -94,9 +107,9 @@ export class UnsafePkgNode extends BaseNode {
   handleStringData(process: Process, argCount: number): void {
     if (argCount === 1) {
       const addr = process.context.popOS() // argument
-      const node = process.heap.get_value(addr)
+      const node = process.heap.get_value(addr) as StringNode
       process.context.popOS() // "StringData" method node
-      process.context.pushOS(IntegerNode.create(node.sizeof(), process.heap).addr)
+      process.context.pushOS(ReferenceNode.create(node.get_list(), process.heap).addr)
     } else {
       throw new Error("StringData requires 1 argument but got " + argCount)
     }
@@ -106,9 +119,10 @@ export class UnsafePkgNode extends BaseNode {
     if (argCount === 2) {
       const addr = process.context.popOS() // argument "len IntegerType"
       const addr2 = process.context.popOS() // argument "ptr Pointer"
-      const node = process.heap.get_value(addr)
+      const node = process.heap.get_value(addr) as IntegerNode
+      const node2 = process.heap.get_value(addr2) as ReferenceNode
       process.context.popOS() // "Add" method node
-      process.context.pushOS(IntegerNode.create(node.sizeof(), process.heap).addr)
+      process.context.pushOS(ReferenceNode.create(node.get_value() + node2.get_child(), process.heap).addr)
     } else {
       throw new Error("Add requires 2 arguments but got " + argCount)
     }

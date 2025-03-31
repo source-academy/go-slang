@@ -1,8 +1,10 @@
 
 
 import { Heap, TAG } from '..'
+import { ArrayNode, SliceNode } from './array'
 import { BaseNode } from './base'
 import { PrimitiveNode } from './primitives'
+import { StructNode } from './struct'
 
 export class ReferenceNode extends BaseNode {
 
@@ -23,10 +25,10 @@ export class ReferenceNode extends BaseNode {
 
   override toString(): string {
     const node = this.heap.get_value(this.get_child())
-    if (node instanceof PrimitiveNode || node instanceof ReferenceNode) {
-      return `0x${this.get_child().toString(16).padStart(8, '0')}`
-    } else {
+    if (node instanceof ArrayNode || node instanceof StructNode || node instanceof SliceNode) {
       return `&${node.toString()}`
+    } else {
+      return `0x${this.get_child().toString(16).padStart(8, '0')}`
     }
   }
 

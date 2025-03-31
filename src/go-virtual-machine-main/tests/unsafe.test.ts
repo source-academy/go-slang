@@ -46,7 +46,7 @@ describe('Unsafe Package Checking', () => {
     }
     ` 
     expect(codeRunner(code).error?.type).toEqual(
-      'runtime',
+      'compile',
     )
   })
 
@@ -110,7 +110,23 @@ describe('Unsafe Package Checking', () => {
     }
     `
     expect(codeRunner(code).error?.type).toEqual(
-      'runtime',
+      'compile',
+    )
+  })
+
+  test('Offsetof throws error if argument supplied is not a struct field', () => {
+    const code = `
+    package main
+    import "fmt"
+    import "unsafe"
+
+    func main() {
+      p := 10
+      fmt.Println(unsafe.Offsetof(p))
+    }
+    `
+    expect(codeRunner(code).error?.type).toEqual(
+      'compile',
     )
   })
 
@@ -176,7 +192,114 @@ describe('Unsafe Package Checking', () => {
     }
     `
     expect(codeRunner(code).error?.type).toEqual(
-      'runtime',
+      'compile',
+    )
+  })
+
+  test('Add works correctly', () => {
+    const code = `
+    package main
+    import "fmt"
+    import "unsafe"
+
+    type A struct {
+      Name string
+      Age int
+    }
+
+    func main() {
+      p := A{"E", 21}
+      q := &p
+      fmt.Println(&q)
+      fmt.Println(unsafe.Add(&q, 2))
+    }
+    `
+    expect(codeRunner(code).output).toEqual(
+      '0x0000008c\n0x0000008e\n',
+    )
+  })
+
+  test('Add throws error if arguments are of the wrong types', () => {
+    const code = `
+    package main
+    import "fmt"
+    import "unsafe"
+
+    func main() {
+      p := 1
+      fmt.Println(unsafe.Add(p, 3)) // p is not a pointer
+    }
+    `
+    expect(codeRunner(code).error?.type).toEqual(
+      'compile',
+    )
+  })
+
+  test('StringData works correctly', () => {
+    const code = `
+    package main
+    import "fmt"
+    import "unsafe"
+
+    func main() {
+      p := "abc" // StringNode tied to variable p
+      q := unsafe.StringData(p) // Pointer to StringListNode tied to the bytes itself
+      fmt.Println(&p) // Pointer to StringNode / variable p
+      fmt.Println(q) // Pointer to StringListNode tied to the bytes itself
+    }
+    `
+    expect(codeRunner(code).output).toEqual(
+      '0x00000072\n0x0000008a\n',
+    )
+  })
+
+  test('StringData throws error if not string', () => {
+    const code = `
+    package main
+    import "fmt"
+    import "unsafe"
+
+    func main() {
+      p := 3
+      q := unsafe.StringData(p)
+    }
+    `
+    expect(codeRunner(code).error?.type).toEqual(
+      'compile',
+    )
+  })
+
+  test('String works correctly', () => {
+    const code = `
+    package main
+    import "fmt"
+    import "unsafe"
+
+    func main() {
+      p := "abcevrfbvr" // StringNode tied to variable p
+      q := unsafe.StringData(p) // Pointer to StringListNode tied to the bytes itself
+      fmt.Println(unsafe.String(q, 4))
+    }
+    `
+    expect(codeRunner(code).output).toEqual(
+      'abce\n',
+    )
+  })
+
+  test('String throws error if wrong arguments are supplied', () => {
+    const code = `
+    package main
+    import "fmt"
+    import "unsafe"
+
+    func main() {
+      p := "abcevrfbvr" // StringNode tied to variable p
+      q := unsafe.StringData(p) // Pointer to StringListNode tied to the bytes itself
+      fmt.Println(unsafe.String(p, 4))
+    }
+    `
+    expect(codeRunner(code).error?.type).toEqual(
+      'compile',
     )
   })
 })

@@ -70,9 +70,21 @@ export class PrimaryExpressionToken extends Token {
   override compileUnchecked(compiler: Compiler): Type {
     // TODO: Figure what this does for non-trivial ops like array access and selector
     let operandType = this.operand.compile(compiler)
+    // special handling for unsafe.Offsetof since it needs to be a struct field
+    let offsetof = false
     for (const modifier of this.rest ?? []) {
+      if (this.operand instanceof IdentifierToken && this.operand.identifier === "unsafe"
+        && modifier instanceof SelectorToken && modifier.identifier === "Offsetof"
+      ) {
+        offsetof = true
+      } else if (offsetof && modifier instanceof CallToken && modifier.expressions[0] instanceof PrimaryExpressionToken
+        && modifier.expressions[0].rest.length > 0 && modifier.expressions[0].rest[0] instanceof SelectorToken
+      ) {
+        offsetof = false
+      }
       operandType = modifier.compile(compiler, operandType)
     }
+    if (offsetof) throw new Error("Offsetof needs a struct field value.")
     return operandType
   }
 }
