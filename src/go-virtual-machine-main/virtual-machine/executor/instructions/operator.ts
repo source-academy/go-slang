@@ -1,15 +1,13 @@
-import { Process } from '../../runtime/process'
 import { ArrayNode, SliceNode } from '../../heap/types/array'
+import { ChannelArrayNode } from '../../heap/types/channel'
 import {
   IntegerNode,
   PrimitiveNode,
   StringNode,
 } from '../../heap/types/primitives'
+import { Process } from '../../runtime/process'
 
 import { Instruction } from './base'
-import { ChannelArrayNode } from '../../heap/types/channel'
-import { ReferenceNode } from '../../heap/types/reference'
-import { StructNode } from '../../heap/types/struct'
 
 export abstract class OpInstruction extends Instruction {
   op: string
@@ -33,16 +31,7 @@ export class UnaryInstruction extends OpInstruction {
     const arg1 = process.heap.get_value(
       process.context.popOS(),
     ) as PrimitiveNode
-    if (arg1 instanceof ReferenceNode) {
-      const variable = process.heap.get_value(arg1.get_child())
-      //if (this.op === "address" && (variable instanceof StructNode) || (variable instanceof ArrayNode)) {
-      //  process.context.pushOS(variable.apply_unary(this.op).addr)
-      //} else {
-        process.context.pushOS(arg1.apply_unary(this.op).addr)
-      //}
-    } else {
-      process.context.pushOS(arg1.apply_unary(this.op).addr)
-    }
+    process.context.pushOS(arg1.apply_unary(this.op).addr)
   }
 }
 

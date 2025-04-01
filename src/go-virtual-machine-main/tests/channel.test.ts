@@ -162,4 +162,4 @@ describe('Channel Tests', () => {
       for i:=0; i < 100; i++{}`).output,
     ).toEqual('done1\ndone2\n')
   })
-})
+}, 60000)

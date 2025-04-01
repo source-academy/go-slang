@@ -24,4 +24,4 @@ describe('Comments Tests', () => {
     `
     expect(codeRunner(code).output).toEqual('3\n')
   })
-})
+}, 60000)

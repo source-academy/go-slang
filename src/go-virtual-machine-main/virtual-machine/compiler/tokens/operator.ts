@@ -9,7 +9,7 @@ import {
   TryChannelReqInstruction,
   UnaryInstruction,
 } from '../../executor/instructions'
-import { BoolType, ChannelType, DeclaredType, PointerType, StructType, Type } from '../../executor/typing'
+import { BoolType, ChannelType, DeclaredType, PointerType, Type } from '../../executor/typing'
 
 import { Token, TokenLocation } from './base'
 import { PrimaryExpressionToken } from './expressions'

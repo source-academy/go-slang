@@ -2,11 +2,11 @@ import { Process } from '../../runtime/process'
 import { Heap, TAG } from '..'
 
 import { BaseNode } from './base'
+import { ChannelArrayNode } from './channel'
 import { ContextNode } from './context'
 import { MethodNode } from './func'
 import { LinkedListEntryNode } from './linkedlist'
 import { QueueNode } from './queue'
-import { ChannelArrayNode } from './channel'
 
 /**
  * Each MutexNode occupies 3 words.

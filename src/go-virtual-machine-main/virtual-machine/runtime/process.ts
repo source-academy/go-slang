@@ -1,11 +1,11 @@
 import * as seedrandom from 'seedrandom'
 
+import { TokenLocation } from '../compiler/tokens'
 import { DoneInstruction, GoInstruction, Instruction } from '../executor/instructions'
 import { Heap } from '../heap'
 import { ContextNode } from '../heap/types/context'
 import { EnvironmentNode, FrameNode } from '../heap/types/environment'
 import { QueueNode } from '../heap/types/queue'
-import { TokenLocation } from '../compiler/tokens'
 
 import { Debugger, StateInfo } from './debugger'
 
@@ -82,6 +82,7 @@ export class Process {
             break
           }
           if (this.context.OS().sz() > 0 && this.context.peekOS() === 1) {
+            // a hacky way of handling goroutines when the callee is a MethodNode instead of FuncNode
             this.context.popOS()
             const instr = this.instructions[this.context.incr_PC()] as GoInstruction
             const func = this.heap.get_value(this.context.peekOSIdx(instr.args)) as MethodNode

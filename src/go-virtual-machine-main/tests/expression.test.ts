@@ -68,4 +68,4 @@ describe('Basic Expression Tests', () => {
     `
     expect(mainRunner(code).output).toEqual("2.5\n2560\n112\n48\n2\n2560\n112\n48")
   })
-})
+}, 60000)

@@ -20,7 +20,6 @@ import {
   FunctionType,
   Int64Type,
   NoType,
-  PackageType,
   ParameterType,
   PointerType,
   ReturnType,
@@ -111,6 +110,7 @@ export class SelectorToken extends PrimaryExpressionModifierToken {
   override compile(compiler: Compiler, operandType: Type): Type {
     // handle structs first since parser sees them as the same as packages
     if (operandType instanceof DeclaredType) {
+      // declared type structs
       if (operandType.type[0].fields.size >= 0) {
         const resultType = (operandType as StructType).type[0].fields.get(this.identifier)
         const index = [...(operandType as StructType).type[0].fields.keys()].indexOf(this.identifier)
@@ -118,6 +118,7 @@ export class SelectorToken extends PrimaryExpressionModifierToken {
         return resultType
       }
     } else if (operandType instanceof StructType) {
+      // anonymous structs
       if (operandType.fields.size >= 0) {
         const resultType = operandType.fields.get(this.identifier)
         const index = [...operandType.fields.keys()].indexOf(this.identifier)
@@ -125,8 +126,10 @@ export class SelectorToken extends PrimaryExpressionModifierToken {
         return resultType
       }
     } else if (operandType instanceof PointerType) {
-      let baseType = operandType.type
+      // pointers
+      const baseType = operandType.type
       if (baseType instanceof DeclaredType) {
+        // pointers to declared type structs
         if (baseType.type[0].fields.size >= 0) {
           const resultType = (baseType as StructType).type[0].fields.get(this.identifier)
           const index = [...(baseType as StructType).type[0].fields.keys()].indexOf(this.identifier)
@@ -134,6 +137,7 @@ export class SelectorToken extends PrimaryExpressionModifierToken {
           return resultType
         }
       } else if (baseType instanceof StructType) {
+        // pointers to anonymous structs
         if (baseType.fields.size >= 0) {
           const resultType = baseType.fields.get(this.identifier)
           const index = [...baseType.fields.keys()].indexOf(this.identifier)

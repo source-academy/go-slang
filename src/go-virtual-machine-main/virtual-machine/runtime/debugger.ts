@@ -1,8 +1,8 @@
+import { TokenLocation } from '../compiler/tokens'
 import { Instruction } from '../executor/instructions'
 import { Heap } from '../heap'
 import { ContextNode } from '../heap/types/context'
 import { EnvironmentNode } from '../heap/types/environment'
-import { TokenLocation } from '../compiler/tokens'
 
 export type OSInfo = {
   val: string
@@ -137,15 +137,11 @@ export class Debugger {
       /**
        * Generate OS Info
        */
-      const a = context.OS()
-      const b = a.list()
-      const c = b.get_children()
       const OS = context
         .OS()
         .list()
         .get_children()
         .map((x) => {
-          const y = this.identifier_map
           const var_name = this.identifier_map.get(x)
           return {
             val:

@@ -1,4 +1,3 @@
-import { compiler } from 'peggy'
 import { Heap } from '../../heap'
 import { ArrayNode, SliceNode } from '../../heap/types/array'
 import { ChannelNode } from '../../heap/types/channel'
@@ -10,9 +9,8 @@ import {
   IntegerNode,
   StringNode,
 } from '../../heap/types/primitives'
-import { IdentifierToken, PrimitiveTypeToken } from '../../compiler/tokens'
-import { StructNode } from '../../heap/types/struct'
 import { ReferenceNode } from '../../heap/types/reference'
+import { StructNode } from '../../heap/types/struct'
 
 export abstract class Type {
   variadic: any
@@ -557,10 +555,6 @@ export class DeclaredType extends Type {
   }
 
   override equals(t: Type): boolean {
-    // TODO: Morph to support structs
-    if (this.type instanceof PointerType) {
-      return 
-    }
     return t instanceof DeclaredType && t.name === this.name && this.type[0].equals(t.type[0])
   }
 
@@ -608,14 +602,13 @@ export class StructType extends Type {
   }
 
   override equals(t: Type): boolean {
-    // TODO: Morph to support structs
     return t instanceof StructType
       && t.fields === this.fields
   }
 
   override defaultNodeCreator(): (heap: Heap) => number {
     const creators = [] as Array<(heap: Heap) => number>
-    let keys = [...this.fields.values()]
+    const keys = [...this.fields.values()]
     for (let i = 0; i < keys.length; i++) {
       creators.push(keys[i].defaultNodeCreator())
     }
@@ -624,7 +617,7 @@ export class StructType extends Type {
 
   override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number[] {
     const creators = [] as Array<(heap: Heap) => number>
-    let keys = [...this.fields.values()]
+    const keys = [...this.fields.values()]
     for (let i = 0; i < keys.length; i++) {
       creators.push(keys[i].defaultNodeCreator())
     }
@@ -633,7 +626,7 @@ export class StructType extends Type {
 
   override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
     const creators = [] as Array<(heap: Heap) => number>
-    let keys = [...this.fields.values()]
+    const keys = [...this.fields.values()]
     for (let i = 0; i < keys.length; i++) {
       creators.push(keys[i].defaultNodeCreator())
     }

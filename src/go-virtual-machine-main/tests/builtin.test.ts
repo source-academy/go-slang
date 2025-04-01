@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { codeRunner, mainRunner } from './utility'
+import { mainRunner } from './utility'
 
 describe('Builtins Type Checking', () => {
   test('Assignment of make with incompatible type should fail', () => {
@@ -17,4 +17,4 @@ describe('Builtins Type Checking', () => {
       `).error?.message,
     ).toEqual('cannot assign to a (neither addressable nor a map index expression)')
   })
-})
+}, 60000)

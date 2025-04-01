@@ -1,4 +1,5 @@
 import * as seedrandom from 'seedrandom'
+
 import { CompileData, runCode } from '../virtual-machine'
 import parser from '../virtual-machine/compiler/parser'
 import { SourceFileTokens, TokenLocation } from '../virtual-machine/compiler/tokens'
@@ -45,7 +46,7 @@ export const compileCode = (
   let instructions: Instruction[] = []
   let symbols: (TokenLocation | null)[] = []
   let message = ""
-  let err = ""
+  const err = ""
   let tokens = null
   try {
     tokens = parser.parse(source_code) as SourceFileTokens
@@ -92,8 +93,8 @@ export const runCodeWithHeap = (
   visualisation = true,
 ) => {
   // Execution.
-  let instructions = compiled.instructions
-  let symbols = compiled.symbols
+  const instructions = compiled.instructions
+  const symbols = compiled.symbols
   const process = new Process(instructions, 4096, symbols, deterministic, visualisation)
   process.instructions = instructions
   process.heap = heap

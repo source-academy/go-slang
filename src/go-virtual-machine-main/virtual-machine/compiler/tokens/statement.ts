@@ -13,7 +13,6 @@ import {
   ReturnInstruction,
   SelectInstruction,
   StoreInstruction,
-  StoreStructFieldInstruction,
   TryChannelReqInstruction,
 } from '../../executor/instructions'
 import {
@@ -39,7 +38,6 @@ import {
   EmptyExpressionToken,
   ExpressionToken,
   PrimaryExpressionToken,
-  SelectorToken,
 } from './expressions'
 import { IdentifierToken } from './identifier'
 import { UnaryOperator } from './operator'
@@ -79,160 +77,20 @@ export class AssignmentStatementToken extends Token {
   override compileUnchecked(compiler: Compiler): Type {
     // TODO: Custom Instructions to avoid recalculation?
     for (let i = 0; i < this.right.length; i++) {
-      let left = this.left[i]
-      let right = this.right[i]
       let assignType: Type
+      let left = this.left[i]
+      const right = this.right[i]
       if (this.operation === '+=') {
-        let leftType = left.compile(compiler)
-        let rightType = right.compile(compiler)
-        // literals have unnamed types, so it can match a declared type
-        if (this.left[i] instanceof PrimaryExpressionToken
-          && (this.left[i] as PrimaryExpressionToken).operand.type === "literal"
-          && rightType instanceof DeclaredType) {
-          // LHS of the binop is a literal, make it match type of RHS
-          let actualType = rightType
-          let nextType = compiler.context.env.find_type(actualType.name)[0]
-          while (nextType instanceof DeclaredType) {
-            actualType = nextType
-            nextType = compiler.context.env.find_type(actualType.name)[0]
-          }
-          if (nextType.assignableBy(leftType)) {
-            leftType = rightType
-          }
-        } else if (this.right[i] instanceof PrimaryExpressionToken
-          && (this.right[i] as PrimaryExpressionToken).operand.type === "literal"
-          && leftType instanceof DeclaredType) {
-          // RHS of the binop is a literal, make it match type of LHS
-          let actualType = leftType
-          let nextType = compiler.context.env.find_type(actualType.name)[0]
-          while (nextType instanceof DeclaredType) {
-            actualType = nextType
-            nextType = compiler.context.env.find_type(actualType.name)[0]
-          }
-          if (nextType.assignableBy(rightType)) {
-            rightType = leftType
-          }
-        }
-        if (!leftType.equals(rightType)) {
-          throw Error(
-            `Invalid operation (mismatched types ${leftType} and ${rightType})`,
-          )
-        }
-        assignType = leftType
+        assignType = handleAssignment(compiler, left, right)
         this.pushInstruction(compiler, new BinaryInstruction('sum'))
       } else if (this.operation === '*=') {
-        let leftType = left.compile(compiler)
-        let rightType = right.compile(compiler)
-        // literals have unnamed types, so it can match a declared type
-        if (this.left[i] instanceof PrimaryExpressionToken
-          && (this.left[i] as PrimaryExpressionToken).operand.type === "literal"
-          && rightType instanceof DeclaredType) {
-          // LHS of the binop is a literal, make it match type of RHS
-          let actualType = rightType
-          let nextType = compiler.context.env.find_type(actualType.name)[0]
-          while (nextType instanceof DeclaredType) {
-            actualType = nextType
-            nextType = compiler.context.env.find_type(actualType.name)[0]
-          }
-          if (nextType.assignableBy(leftType)) {
-            leftType = rightType
-          }
-        } else if (this.right[i] instanceof PrimaryExpressionToken
-          && (this.right[i] as PrimaryExpressionToken).operand.type === "literal"
-          && leftType instanceof DeclaredType) {
-          // RHS of the binop is a literal, make it match type of LHS
-          let actualType = leftType
-          let nextType = compiler.context.env.find_type(actualType.name)[0]
-          while (nextType instanceof DeclaredType) {
-            actualType = nextType
-            nextType = compiler.context.env.find_type(actualType.name)[0]
-          }
-          if (nextType.assignableBy(rightType)) {
-            rightType = leftType
-          }
-        }
-        if (!leftType.equals(rightType)) {
-          throw Error(
-            `Invalid operation (mismatched types ${leftType} and ${rightType})`,
-          )
-        }
-        assignType = leftType
+        assignType = handleAssignment(compiler, left, right)
         this.pushInstruction(compiler, new BinaryInstruction('product'))
       } else if (this.operation === '-=') {
-        let leftType = left.compile(compiler)
-        let rightType = right.compile(compiler)
-        // literals have unnamed types, so it can match a declared type
-        if (this.left[i] instanceof PrimaryExpressionToken
-          && (this.left[i] as PrimaryExpressionToken).operand.type === "literal"
-          && rightType instanceof DeclaredType) {
-          // LHS of the binop is a literal, make it match type of RHS
-          let actualType = rightType
-          let nextType = compiler.context.env.find_type(actualType.name)[0]
-          while (nextType instanceof DeclaredType) {
-            actualType = nextType
-            nextType = compiler.context.env.find_type(actualType.name)[0]
-          }
-          if (nextType.assignableBy(leftType)) {
-            leftType = rightType
-          }
-        } else if (this.right[i] instanceof PrimaryExpressionToken
-          && (this.right[i] as PrimaryExpressionToken).operand.type === "literal"
-          && leftType instanceof DeclaredType) {
-          // RHS of the binop is a literal, make it match type of LHS
-          let actualType = leftType
-          let nextType = compiler.context.env.find_type(actualType.name)[0]
-          while (nextType instanceof DeclaredType) {
-            actualType = nextType
-            nextType = compiler.context.env.find_type(actualType.name)[0]
-          }
-          if (nextType.assignableBy(rightType)) {
-            rightType = leftType
-          }
-        }
-        if (!leftType.equals(rightType)) {
-          throw Error(
-            `Invalid operation (mismatched types ${leftType} and ${rightType})`,
-          )
-        }
-        assignType = leftType
+        assignType = handleAssignment(compiler, left, right)
         this.pushInstruction(compiler, new BinaryInstruction('difference'))
       } else if (this.operation === '/=') {
-        let leftType = left.compile(compiler)
-        let rightType = right.compile(compiler)
-        // literals have unnamed types, so it can match a declared type
-        if (this.left[i] instanceof PrimaryExpressionToken
-          && (this.left[i] as PrimaryExpressionToken).operand.type === "literal"
-          && rightType instanceof DeclaredType) {
-          // LHS of the binop is a literal, make it match type of RHS
-          let actualType = rightType
-          let nextType = compiler.context.env.find_type(actualType.name)[0]
-          while (nextType instanceof DeclaredType) {
-            actualType = nextType
-            nextType = compiler.context.env.find_type(actualType.name)[0]
-          }
-          if (nextType.assignableBy(leftType)) {
-            leftType = rightType
-          }
-        } else if (this.right[i] instanceof PrimaryExpressionToken
-          && (this.right[i] as PrimaryExpressionToken).operand.type === "literal"
-          && leftType instanceof DeclaredType) {
-          // RHS of the binop is a literal, make it match type of LHS
-          let actualType = leftType
-          let nextType = compiler.context.env.find_type(actualType.name)[0]
-          while (nextType instanceof DeclaredType) {
-            actualType = nextType
-            nextType = compiler.context.env.find_type(actualType.name)[0]
-          }
-          if (nextType.assignableBy(rightType)) {
-            rightType = leftType
-          }
-        }
-        if (!leftType.equals(rightType)) {
-          throw Error(
-            `Invalid operation (mismatched types ${leftType} and ${rightType})`,
-          )
-        }
-        assignType = leftType
+        assignType = handleAssignment(compiler, left, right)
         this.pushInstruction(compiler, new BinaryInstruction('quotient'))
       } else if (this.operation === '=') {
         assignType = right.compile(compiler)
@@ -253,10 +111,10 @@ export class AssignmentStatementToken extends Token {
         // storing them into variables should be in reverse order
         // it is impossible to change how return values are loaded onto OS
         // as it will conflict with other instructions such as binops.
-        let reverse_instructions = []
+        const reverse_instructions = []
         for (let j = 0; j < assignType.types.length; j++) {
           compiler.instructions.pop() // store instruction gets popped
-          let instructionSet = []
+          const instructionSet = []
           let a = 0
           let next = compiler.instructions.pop()
           while (!(next instanceof StoreInstruction || next instanceof CallInstruction)) {
@@ -814,4 +672,43 @@ export class ExpressionStatementToken extends Token {
     this.pushInstruction(compiler, new PopInstruction())
     return new NoType()
   }
+}
+
+function handleAssignment(compiler: Compiler, left: ExpressionToken, right: ExpressionToken): Type {
+  let leftType = left.compile(compiler)
+  let rightType = right.compile(compiler)
+  // literals have unnamed types, so it can match a declared type
+  if (left instanceof PrimaryExpressionToken
+    && (left as PrimaryExpressionToken).operand.type === "literal"
+    && rightType instanceof DeclaredType) {
+    // LHS of the binop is a literal, make it match type of RHS
+    let actualType = rightType
+    let nextType = compiler.context.env.find_type(actualType.name)[0]
+    while (nextType instanceof DeclaredType) {
+      actualType = nextType
+      nextType = compiler.context.env.find_type(actualType.name)[0]
+    }
+    if (nextType.assignableBy(leftType)) {
+      leftType = rightType
+    }
+  } else if (right instanceof PrimaryExpressionToken
+    && (right as PrimaryExpressionToken).operand.type === "literal"
+    && leftType instanceof DeclaredType) {
+    // RHS of the binop is a literal, make it match type of LHS
+    let actualType = leftType
+    let nextType = compiler.context.env.find_type(actualType.name)[0]
+    while (nextType instanceof DeclaredType) {
+      actualType = nextType
+      nextType = compiler.context.env.find_type(actualType.name)[0]
+    }
+    if (nextType.assignableBy(rightType)) {
+      rightType = leftType
+    }
+  }
+  if (!leftType.equals(rightType)) {
+    throw Error(
+      `Invalid operation (mismatched types ${leftType} and ${rightType})`,
+    )
+  }
+  return leftType
 }

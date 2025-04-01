@@ -1,14 +1,13 @@
 import { Process } from '../../runtime/process'
 import { Heap, TAG } from '..'
 
-import { ArrayNode } from './array'
 import { BaseNode } from './base'
+import { ChannelArrayNode } from './channel'
 import { ContextNode } from './context'
 import { MethodNode } from './func'
 import { LinkedListEntryNode } from './linkedlist'
 import { IntegerNode } from './primitives'
 import { QueueNode } from './queue'
-import { ChannelArrayNode } from './channel'
 
 /**
  * Each WaitGroupNode occupies 3 words.

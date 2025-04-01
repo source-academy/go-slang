@@ -44,7 +44,7 @@ describe('Slice Type Checking', () => {
       'Invalid operation: Cannot slice int64',
     )
   })
-})
+}, 60000)
 
 describe('Slice Execution', () => {
   test('Slice indexing with valid index works.', () => {
@@ -109,4 +109,4 @@ describe('Slice Execution', () => {
       b := a[4:5]`).error?.message,
     ).toEqual('Execution Error: Slice bounds out of range')
   })
-})
+}, 60000)

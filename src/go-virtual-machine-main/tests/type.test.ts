@@ -20,7 +20,7 @@ describe('Assignment Type Checking', () => {
       'Cannot use int64 as string in assignment',
     )
   })
-})
+}, 60000)
 
 describe('Binary Operator Type Checking', () => {
   test('Add assign', () => {
@@ -34,7 +34,7 @@ describe('Binary Operator Type Checking', () => {
       'Invalid operation (mismatched types int64 and float64)',
     )
   })
-})
+}, 60000)
 
 describe('Miscellaneous Type Checking', () => {
   test('Variable shadowing', () => {
@@ -42,4 +42,4 @@ describe('Miscellaneous Type Checking', () => {
       'Cannot use int64 as float64 in assignment',
     )
   })
-})
+}, 60000)

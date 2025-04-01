@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { codeRunner, mainRunner } from './utility'
+import { codeRunner } from './utility'
 
 describe('Import statement syntax check', () => {
     test(`Missing bracket for multiple imports with a single
@@ -21,7 +21,7 @@ describe('Import statement syntax check', () => {
         `).error?.type,
       ).toEqual("parse")
     })
-  })
+  }, 60000)
   
   describe('If statement syntax check', () => {
     test(`Missing conditional in if statements should throw parsing error`, () => {

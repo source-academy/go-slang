@@ -1,5 +1,5 @@
-import { Instruction } from '../executor/instructions'
 import { TokenLocation } from '../compiler/tokens'
+import { Instruction } from '../executor/instructions'
 
 import { Process } from './process'
 

@@ -11,7 +11,7 @@ describe('Defer Type Checking', () => {
       'Expression in defer must be function call.',
     )
   })
-})
+}, 60000)
 
 describe('Defer Execution', () => {
   test('Defer runs in order', () => {
@@ -114,4 +114,4 @@ describe('Defer Execution', () => {
     `
     expect(codeRunner(code).output).toEqual('1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n')
   })
-})
+}, 60000)

@@ -1,9 +1,7 @@
-import { join } from 'path'
 import { Compiler } from '../../executor'
 import {
   FuncBlockInstruction,
   JumpInstruction,
-  LoadArrayElementInstruction,
   LoadArrayInstruction,
   LoadConstantInstruction,
   LoadDefaultInstruction,
@@ -12,10 +10,8 @@ import {
   LoadVariableInstruction,
   ReturnInstruction,
   StoreArrayElementInstruction,
-  StoreInstruction,
   StoreStructFieldInstruction,
 } from '../../executor/instructions'
-import { MemoryAllocationInstruction } from '../../executor/instructions/memory'
 import {
   ArrayType,
   DeclaredType,
@@ -175,9 +171,6 @@ export class LiteralValueToken extends Token {
   }
 
   override compileUnchecked(_compiler: Compiler): Type {
-    for (let i = 0; i < this.elements.length; i++) {
-
-    }
     throw new Error(
       'Do not use LiteralValueToken.compile, instead use LiteralValueToken.compileWithType',
     )
@@ -192,53 +185,24 @@ export class LiteralValueToken extends Token {
           `Array literal has ${this.elements.length} elements but only expected ${type.length}, in type ${type}.`,
         )
       }
-      let a = 0
       let offset = 0
-      if (a == 0 && compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction) {
-        a += (compiler.instructions[compiler.instructions.length - 1] as StoreArrayElementInstruction).index + 1
-        offset = a
-      } else if (a == 0 && compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction) {
-        a += (compiler.instructions[compiler.instructions.length - 1] as StoreStructFieldInstruction).index + 1
-        offset = a
+      // we want the array to be contiguous in memory, so we count them in sequence, even if the array is
+      // multi-dimensional
+      if (offset == 0 && compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction) {
+        offset += (compiler.instructions[compiler.instructions.length - 1] as StoreArrayElementInstruction).index + 1
+      } else if (offset == 0 && compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction) {
+        offset += (compiler.instructions[compiler.instructions.length - 1] as StoreStructFieldInstruction).index + 1
       }
       for (const element of this.elements) {
         this.compileElement(compiler, type.element, element, 'array literal')
         // load element in actual array and then store element
-        if (!(type.element instanceof ArrayType) && !(type.element instanceof DeclaredType && type.element.type[0] instanceof StructType)
-          && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction)
-          && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction)) {
-          if (compiler.instructions[compiler.instructions.length - 2] instanceof StoreStructFieldInstruction
-            || compiler.instructions[compiler.instructions.length - 2] instanceof StoreArrayElementInstruction
-          ) {
-            this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
-            this.pushInstruction(compiler, new StoreArrayElementInstruction(1 + compiler.instructions[compiler.instructions.length - 3].index))
-            a++
-          } else {
-            this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
-            this.pushInstruction(compiler, new StoreArrayElementInstruction(a))
-            a++
-          }
-        }
+        offset = handleInstructions(compiler, type, offset)
       }
       for (let i = 0; i < type.length - this.elements.length; i++) {
         // Ran out of literal values, use the default values.
         this.pushInstruction(compiler, new LoadDefaultInstruction(type.element))
         // load element in actual array and then store element
-        if (!(type.element instanceof ArrayType) && !(type.element instanceof DeclaredType && type.element.type[0] instanceof StructType)
-          && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction)
-          && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction)) {
-          if (compiler.instructions[compiler.instructions.length - 2] instanceof StoreStructFieldInstruction
-            || compiler.instructions[compiler.instructions.length - 2] instanceof StoreArrayElementInstruction
-          ) {
-            this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
-            this.pushInstruction(compiler, new StoreArrayElementInstruction(1 + compiler.instructions[compiler.instructions.length - 3].index))
-            a++
-          } else {
-            this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
-            this.pushInstruction(compiler, new StoreArrayElementInstruction(a))
-            a++
-          }
-        }
+        offset = handleInstructions(compiler, type, offset)
       }
     } else if (type instanceof SliceType) {
       for (const element of this.elements) {
@@ -257,53 +221,22 @@ export class LiteralValueToken extends Token {
       while (actualType instanceof DeclaredType) {
         actualType = actualType.type[0]
       }
-      let a = 0
       let offset = 0
-      if (a == 0 && compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction) {
-        a += (compiler.instructions[compiler.instructions.length - 1] as StoreArrayElementInstruction).index + 1
-        offset = a
-      } else if (a == 0 && compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction) {
-        a += (compiler.instructions[compiler.instructions.length - 1] as StoreStructFieldInstruction).index + 1
-        offset = a
+      if (offset == 0 && compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction) {
+        offset += (compiler.instructions[compiler.instructions.length - 1] as StoreArrayElementInstruction).index + 1
+      } else if (offset == 0 && compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction) {
+        offset += (compiler.instructions[compiler.instructions.length - 1] as StoreStructFieldInstruction).index + 1
       }
       for (let i = 0; i < this.elements.length; i++) {
         this.compileElement(compiler, [...actualType.fields.values()][i], this.elements[i], 'array literal')
         // load element in actual array and then store element
-        if (!(type.element instanceof ArrayType) && !(type.element instanceof DeclaredType && type.element.type[0] instanceof StructType)
-          && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction)
-          && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction)) {
-          if (compiler.instructions[compiler.instructions.length - 2] instanceof StoreStructFieldInstruction
-            || compiler.instructions[compiler.instructions.length - 2] instanceof StoreArrayElementInstruction
-          ) {
-            this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
-            this.pushInstruction(compiler, new StoreArrayElementInstruction(1 + compiler.instructions[compiler.instructions.length - 3].index))
-            a++
-          } else {
-            this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
-            this.pushInstruction(compiler, new StoreArrayElementInstruction(a))
-            a++
-          }
-        }
+        offset = handleInstructions(compiler, type, offset)
       }
       for (let i = 0; i < type.length - this.elements.length; i++) {
         // Ran out of literal values, use the default values.
         this.pushInstruction(compiler, new LoadDefaultInstruction(type.element))
         // load element in actual array and then store element
-        if (!(type.element instanceof ArrayType) && !(type.element instanceof DeclaredType && type.element.type[0] instanceof StructType)
-          && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction)
-          && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction)) {
-          if (compiler.instructions[compiler.instructions.length - 2] instanceof StoreStructFieldInstruction
-            || compiler.instructions[compiler.instructions.length - 2] instanceof StoreArrayElementInstruction
-          ) {
-            this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
-            this.pushInstruction(compiler, new StoreArrayElementInstruction(1 + compiler.instructions[compiler.instructions.length - 3].index))
-            a++
-          } else {
-            this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
-            this.pushInstruction(compiler, new StoreArrayElementInstruction(a))
-            a++
-          }
-        }
+        offset = handleInstructions(compiler, type, offset)
       }
     } else {
       throw new Error('Parser Bug: Type of literal value is not supported.')
@@ -413,6 +346,7 @@ export class StructLiteralToken extends Token {
                   && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction)
                   && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction) 
                 ) {
+                  // instruction correction to ensure that struct fields are stored correctly
                   this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
                   this.pushInstruction(compiler, new StoreStructFieldInstruction(1 + (compiler.instructions[compiler.instructions.length - 3] as StoreStructFieldInstruction).index))
                 }
@@ -421,6 +355,7 @@ export class StructLiteralToken extends Token {
                   && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction)
                   && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction) 
                 ) {
+                  // instruction correction to ensure that struct fields are stored correctly
                   this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
                   this.pushInstruction(compiler, new StoreStructFieldInstruction(i))
                 }
@@ -432,15 +367,15 @@ export class StructLiteralToken extends Token {
       }
     } else if (this.type instanceof DeclaredTypeToken) {
       // explicitly type-declared structs
-      let struct = compiler.context.env.find_type(this.type.name)[0] as StructType
+      const struct = compiler.context.env.find_type(this.type.name)[0] as StructType
       for (let i = 0; i < this.body.elements.length; i++) {
         let fieldType = [...struct.fields.values()][i]
         const hasKey = this.body.elements[i].key !== undefined
         let valueType = undefined
         // compile struct values separately if nested struct
         if (hasKey && this.body.elements[i].element instanceof LiteralValueToken) {
-          let map = new Map<string, Type>()
-          let names = [...struct.fields.values()]
+          const map = new Map<string, Type>()
+          const names = [...struct.fields.values()]
           for (let j = 0; j < this.body.elements[i].element.elements.length; j++) {
             map.set([...names[i].type[0].fields.keys()][j], this.body.elements[i].element.elements[j].compile(compiler))
             if (compiler.instructions[compiler.instructions.length - 2] instanceof StoreStructFieldInstruction) {
@@ -448,6 +383,7 @@ export class StructLiteralToken extends Token {
                 && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction)
                 && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction) 
               ) {
+                // instruction correction to ensure that struct fields are stored correctly
                 this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
                 this.pushInstruction(compiler, new StoreStructFieldInstruction(1 + (compiler.instructions[compiler.instructions.length - 3] as StoreStructFieldInstruction).index))
               }
@@ -456,6 +392,7 @@ export class StructLiteralToken extends Token {
                 && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction)
                 && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction) 
               ) {
+                // instruction correction to ensure that struct fields are stored correctly
                 this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
                 this.pushInstruction(compiler, new StoreStructFieldInstruction(j))
               }
@@ -463,8 +400,8 @@ export class StructLiteralToken extends Token {
           }
           valueType = new StructType(map)
         } else if (!hasKey && this.body.elements[i] instanceof LiteralValueToken) {
-          let map = new Map<string, Type>()
-          let names = [...struct.fields.values()]
+          const map = new Map<string, Type>()
+          const names = [...struct.fields.values()]
           for (let j = 0; j < this.body.elements[i].element.elements.length; j++) {
             map.set([...names[i].type[0].fields.keys()][j], this.body.elements[i].element.elements[j].compile(compiler))
             if (compiler.instructions[compiler.instructions.length - 2] instanceof StoreStructFieldInstruction) {
@@ -472,6 +409,7 @@ export class StructLiteralToken extends Token {
                 && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction)
                 && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction) 
               ) {
+                // instruction correction to ensure that struct fields are stored correctly
                 this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
                 this.pushInstruction(compiler, new StoreStructFieldInstruction(1 + (compiler.instructions[compiler.instructions.length - 3] as StoreStructFieldInstruction).index))
               }
@@ -480,6 +418,7 @@ export class StructLiteralToken extends Token {
                 && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction)
                 && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction) 
               ) {
+                // instruction correction to ensure that struct fields are stored correctly
                 this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
                 this.pushInstruction(compiler, new StoreStructFieldInstruction(j))
               }
@@ -512,41 +451,13 @@ export class StructLiteralToken extends Token {
           if (hasKey) {
             const index = [...struct.fields.keys()].indexOf(this.body.elements[i].key.identifier)
             if (compiler.instructions[compiler.instructions.length - 2] instanceof StoreStructFieldInstruction) {
-              function fieldCounter(x: StructLiteralToken, c: number) {
-                for (let i = 0; i < x.body.elements.length; i++) {
-                  if (x.body.elements[i].element instanceof LiteralValueToken) {
-                    c = fieldCounter2(x.body.elements[i].element, c)
-                  } else if (x.body.elements[i].element instanceof PrimaryExpressionToken
-                    && x.body.elements[i].element.operand instanceof StructLiteralToken) {
-                    c = fieldCounter(x.body.elements[i].element.operand, c)
-                  } else {
-                    c++
-                  }
-                }
-                return c
-              }
-
-              function fieldCounter2(x: LiteralValueToken, c: number) {
-                for (let i = 0; i < x.elements.length; i++) {
-                  if (x.elements[i].element instanceof LiteralValueToken) {
-                    c = fieldCounter2(x.elements[i].element, c)
-                  } else if (x.elements[i].element instanceof PrimaryExpressionToken
-                    && x.elements[i].element.operand instanceof StructLiteralToken) {
-                    c = fieldCounter(x.elements[i].element.operand, c)
-                  } else {
-                    c++
-                  }
-                }
-                return c
-              }
-
               let place = 0
               for (let i = 0; i < index; i++) {
                 if (this.body.elements[i].element instanceof PrimaryExpressionToken
                   && this.body.elements[i].element.operand instanceof StructLiteralToken) {
-                  place += fieldCounter(this.body.elements[i].element.operand, 0)
+                  place += fieldCounterStruct(this.body.elements[i].element.operand, 0)
                 } else if (this.body.elements[i].element instanceof LiteralValueToken) {
-                  place += fieldCounter2(this.body.elements[i].element, 0)
+                  place += fieldCounterLiteral(this.body.elements[i].element, 0)
                 }
               }
               if (place > 0) place--
@@ -554,6 +465,7 @@ export class StructLiteralToken extends Token {
                 && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction)
                 && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction) 
               ) {
+                // instruction correction to ensure that struct fields are stored correctly
                 this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
                 this.pushInstruction(compiler, new StoreStructFieldInstruction(index + place))
               }
@@ -562,6 +474,7 @@ export class StructLiteralToken extends Token {
                 && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction)
                 && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction) 
               ) {
+                // instruction correction to ensure that struct fields are stored correctly
                 this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
                 this.pushInstruction(compiler, new StoreStructFieldInstruction(index))
               }
@@ -572,6 +485,7 @@ export class StructLiteralToken extends Token {
                 && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction)
                 && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction) 
               ) {
+                // instruction correction to ensure that struct fields are stored correctly
                 this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
                 this.pushInstruction(compiler, new StoreStructFieldInstruction(1 + (compiler.instructions[compiler.instructions.length - 3] as StoreStructFieldInstruction).index))
               }
@@ -580,6 +494,7 @@ export class StructLiteralToken extends Token {
                 && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction)
                 && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction) 
               ) {
+                // instruction correction to ensure that struct fields are stored correctly
                 this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
                 this.pushInstruction(compiler, new StoreStructFieldInstruction(1 + (compiler.instructions[compiler.instructions.length - 3] as StoreArrayElementInstruction).index))
               }
@@ -588,6 +503,7 @@ export class StructLiteralToken extends Token {
                 && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction)
                 && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction) 
               ) {
+                // instruction correction to ensure that struct fields are stored correctly
                 this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ""))
                 this.pushInstruction(compiler, new StoreStructFieldInstruction(i))
               }
@@ -598,4 +514,51 @@ export class StructLiteralToken extends Token {
     }
     return this.type.compile(compiler)
   }
+}
+
+function fieldCounterStruct(x: StructLiteralToken, c: number) {
+  for (let i = 0; i < x.body.elements.length; i++) {
+    if (x.body.elements[i].element instanceof LiteralValueToken) {
+      c = fieldCounterLiteral(x.body.elements[i].element, c)
+    } else if (x.body.elements[i].element instanceof PrimaryExpressionToken
+      && x.body.elements[i].element.operand instanceof StructLiteralToken) {
+      c = fieldCounterStruct(x.body.elements[i].element.operand, c)
+    } else {
+      c++
+    }
+  }
+  return c
+}
+
+function fieldCounterLiteral(x: LiteralValueToken, c: number) {
+  for (let i = 0; i < x.elements.length; i++) {
+    if (x.elements[i].element instanceof LiteralValueToken) {
+      c = fieldCounterLiteral(x.elements[i].element, c)
+    } else if (x.elements[i].element instanceof PrimaryExpressionToken
+      && x.elements[i].element.operand instanceof StructLiteralToken) {
+      c = fieldCounterStruct(x.elements[i].element.operand, c)
+    } else {
+      c++
+    }
+  }
+  return c
+}
+
+function handleInstructions(compiler: Compiler, type: Type, offset: number): number {
+  if (!(type.element instanceof ArrayType) && !(type.element instanceof DeclaredType && type.element.type[0] instanceof StructType)
+    && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreArrayElementInstruction)
+    && !(compiler.instructions[compiler.instructions.length - 1] instanceof StoreStructFieldInstruction)) {
+    if (compiler.instructions[compiler.instructions.length - 2] instanceof StoreStructFieldInstruction
+      || compiler.instructions[compiler.instructions.length - 2] instanceof StoreArrayElementInstruction
+    ) {
+      // instruction correction to ensure the storing of array elements are in the correct place
+      compiler.instructions.push(new LoadVariableInstruction(0, 0, ""))
+      compiler.instructions.push(new StoreArrayElementInstruction(1 + compiler.instructions[compiler.instructions.length - 3].index))
+    } else {
+      compiler.instructions.push(new LoadVariableInstruction(0, 0, ""))
+      compiler.instructions.push(new StoreArrayElementInstruction(offset))
+    }
+    return offset + 1
+  }
+  return offset
 }

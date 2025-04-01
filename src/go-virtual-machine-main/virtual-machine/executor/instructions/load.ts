@@ -1,19 +1,19 @@
-import { Process } from '../../runtime/process'
 import { ArrayNode, SliceNode } from '../../heap/types/array'
 import { FmtPkgNode } from '../../heap/types/fmt'
+import { MethodNode } from '../../heap/types/func'
 import {
   BoolNode,
   FloatNode,
   IntegerNode,
   StringNode,
 } from '../../heap/types/primitives'
+import { ReferenceNode } from '../../heap/types/reference'
+import { StructNode } from '../../heap/types/struct'
+import { UnsafePkgNode } from '../../heap/types/unsafe'
+import { Process } from '../../runtime/process'
 import { BoolType, Float64Type, Int64Type, StringType, Type } from '../typing'
 
 import { Instruction } from './base'
-import { StructNode } from '../../heap/types/struct'
-import { ReferenceNode } from '../../heap/types/reference'
-import { UnsafePkgNode } from '../../heap/types/unsafe'
-import { MethodNode } from '../../heap/types/func'
 
 export class LoadConstantInstruction extends Instruction {
   val: number | string | boolean
@@ -226,7 +226,7 @@ export class LoadStructFieldInstruction extends Instruction {
       && process.heap.get_value(process.context.peekOS()).identifier() === "Offsetof"
       && !(process.heap.get_value(field) instanceof StructNode)
     ) {
-      let offset = struct.offsetof(this.index)
+      const offset = struct.offsetof(this.index)
       process.context.pushOS(IntegerNode.create(offset, process.heap).addr)
     } else {
       process.context.pushOS(field)

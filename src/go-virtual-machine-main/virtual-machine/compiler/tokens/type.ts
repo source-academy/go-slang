@@ -16,7 +16,6 @@ import {
   StructType,
   Type,
 } from '../../executor/typing'
-import { IdentifierToken } from './identifier'
 
 import { Token, TokenLocation } from './base'
 import { IntegerLiteralToken } from './literals'

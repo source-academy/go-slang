@@ -1,9 +1,9 @@
-import { Process } from '../../runtime/process'
 import { ArrayNode, SliceNode } from '../../heap/types/array'
+import { ChannelArrayNode } from '../../heap/types/channel'
 import { IntegerNode } from '../../heap/types/primitives'
+import { Process } from '../../runtime/process'
 
 import { Instruction } from './base'
-import { ChannelArrayNode } from '../../heap/types/channel'
 
 /** Takes an object address from the OS, and returns the length of that object. */
 export class BuiltinLenInstruction extends Instruction {

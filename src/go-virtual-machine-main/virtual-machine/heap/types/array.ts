@@ -1,8 +1,7 @@
-import { Heap, TAG } from '..'
 import { ArrayType, DeclaredType, StructType, Type } from '../../executor/typing'
+import { Heap, TAG } from '..'
 
 import { BaseNode } from './base'
-import { BoolNode, PrimitiveNode } from './primitives'
 import { ReferenceNode } from './reference'
 
 /**
@@ -11,7 +10,6 @@ import { ReferenceNode } from './reference'
  * Word 1: Length of array.
  * Remaining `length` words: Each word is the address of an element.
  */
-// Should bulk allocate then 
 export class ArrayNode extends BaseNode {
   static create(length: number, heap: Heap, sizeof: number, startAddr: number): ArrayNode {
     const addr = heap.allocate(2 + length)
@@ -51,7 +49,7 @@ export class ArrayNode extends BaseNode {
     heap.temp_push(nodeAddr)
     for (let i = 0; i < length; i++) heap.memory.set_number(-1, nodeAddr + i + 2)
     for (let i = 0; i < length; i++) {
-      let nodeAddr2 = type.defaultNodeAllocator()(heap, addr + i * type.sizeof()).addr
+      const nodeAddr2 = type.defaultNodeAllocator()(heap, addr + i * type.sizeof()).addr
       if (type instanceof ArrayType || (type instanceof DeclaredType && type.type[0] instanceof StructType)) {
         heap.memory.set_word(nodeAddr2, nodeAddr + 2 + i)
       } else {

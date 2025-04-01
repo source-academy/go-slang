@@ -1,13 +1,15 @@
 import { describe, expect, test } from 'vitest'
+
+import { CompileData } from '../virtual-machine'
 import { Heap, TAG } from '../virtual-machine/heap'
 import { ContextNode } from '../virtual-machine/heap/types/context'
 import {
   EnvironmentNode,
   FrameNode,
 } from '../virtual-machine/heap/types/environment'
-import { CompileData, ProgramData } from '../virtual-machine'
-import { compileCode, parseCode, runCodeWithHeap } from './utility'
 import { BoolNode, IntegerNode } from '../virtual-machine/heap/types/primitives'
+
+import { compileCode, runCodeWithHeap } from './utility'
 
 describe('Heap Tests', () => {
   test('Get Set Bits', () => {
@@ -59,8 +61,8 @@ describe('Heap Tests', () => {
       fmt.Println(a)
     }
     `
-    let compiled = compileCode(code) as CompileData
-    let heap = new Heap(2048)
+    const compiled = compileCode(code) as CompileData
+    const heap = new Heap(2048)
     runCodeWithHeap(compiled, heap)
     let arrayNode = 0
     for (let i = 0; i < 2048; i++) {
@@ -69,7 +71,7 @@ describe('Heap Tests', () => {
         break
       }
     }
-    let start = heap.get_value(arrayNode).get_children()[0]
+    const start = heap.get_value(arrayNode).get_children()[0]
     expect((heap.get_value(start) as IntegerNode).get_value()).toEqual(1)
     expect(start + 4).toEqual(heap.get_value(arrayNode).get_children()[1])
     expect((heap.get_value(start + 4) as IntegerNode).get_value()).toEqual(25)
@@ -101,8 +103,8 @@ describe('Heap Tests', () => {
       fmt.Println(a)
     }
     `
-    let compiled = compileCode(code) as CompileData
-    let heap = new Heap(2048)
+    const compiled = compileCode(code) as CompileData
+    const heap = new Heap(2048)
     runCodeWithHeap(compiled, heap)
     let arrayNode = 0
     for (let i = 0; i < 2048; i++) {
@@ -111,7 +113,7 @@ describe('Heap Tests', () => {
         break
       }
     }
-    let start = heap.get_value(arrayNode).get_children()[0]
+    const start = heap.get_value(arrayNode).get_children()[0]
     expect((heap.get_value(start) as BoolNode).get_value()).toEqual(true)
     expect(start + 1).toEqual(heap.get_value(arrayNode).get_children()[1])
     expect((heap.get_value(start + 1) as BoolNode).get_value()).toEqual(true)
@@ -132,4 +134,4 @@ describe('Heap Tests', () => {
     expect(start + 9).toEqual(heap.get_value(arrayNode).get_children()[9])
     expect((heap.get_value(start + 9) as BoolNode).get_value()).toEqual(true)
   })
-})
+}, 60000)

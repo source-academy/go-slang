@@ -1,6 +1,5 @@
 import { Heap, TAG } from '..'
 
-import { ArrayNode } from './array'
 import { BaseNode } from './base'
 import { ChannelArrayNode } from './channel'
 import { EnvironmentNode } from './environment'

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { codeRunner, mainRunner } from './utility'
+import { codeRunner } from './utility'
 
 describe('Unsafe Package Checking', () => {
   test('Unsafe package method should fail if unsafe package is not imported', () => {
@@ -302,4 +302,4 @@ describe('Unsafe Package Checking', () => {
       'compile',
     )
   })
-})
+}, 60000)

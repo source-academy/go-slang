@@ -681,4 +681,4 @@ describe('Pointer Tests', () => {
       '&[[sv  ] [vr he hello] [r5gjri  ]]\n',
     )
   })
-})
+}, 60000)

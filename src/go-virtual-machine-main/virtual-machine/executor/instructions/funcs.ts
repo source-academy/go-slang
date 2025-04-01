@@ -1,4 +1,3 @@
-import { Process } from '../../runtime/process'
 import {
   CallRefNode,
   DeferFuncNode,
@@ -6,6 +5,7 @@ import {
   FuncNode,
   MethodNode,
 } from '../../heap/types/func'
+import { Process } from '../../runtime/process'
 
 import { Instruction } from './base'
 

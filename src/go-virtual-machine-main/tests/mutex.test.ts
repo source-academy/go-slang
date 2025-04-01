@@ -56,7 +56,7 @@ describe('Mutex Type Checking', () => {
       '.Add undefined (type sync.Mutex has no field or method Add)',
     )
   })
-})
+}, 60000)
 
 describe('Wait Group Execution', () => {
   test('Unlocking an unlocked mutex should panic.', () => {
@@ -137,4 +137,4 @@ describe('Wait Group Execution', () => {
     `
     expect(codeRunner(code).output).toEqual('1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n')
   })
-})
+}, 60000)

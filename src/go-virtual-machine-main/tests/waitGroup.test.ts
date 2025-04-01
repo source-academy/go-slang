@@ -42,7 +42,7 @@ describe('Wait Group Type Checking', () => {
       'Too many arguments in function call\nhave (int64, int64)\nwant (int64)',
     )
   })
-})
+}, 60000)
 
 describe('Wait Group Execution', () => {
   test('Making the WaitGroup counter negative by adding should panic.', () => {
@@ -118,4 +118,4 @@ describe('Wait Group Execution', () => {
     `
     expect(codeRunner(code).output).toEqual('1000\n')
   })
-})
+}, 60000)

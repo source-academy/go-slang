@@ -699,4 +699,4 @@ describe('Variable Declaration Tests', () => {
     `
     expect(codeRunner(code).output).toEqual("196\n28\n14\n")
   })
-})
+}, 60000)

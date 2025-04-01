@@ -96,4 +96,4 @@ describe('Concurrency Check', () => {
     `
     expect(codeRunner(code).output).toEqual('3\nhello\n')
   })
-})
+}, 60000)

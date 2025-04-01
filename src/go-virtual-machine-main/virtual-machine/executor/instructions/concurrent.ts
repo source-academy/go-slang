@@ -1,12 +1,12 @@
-import { Process } from '../../runtime/process'
-import { ChannelArrayNode } from '../../heap/types/channel'
 import {
+  ChannelArrayNode,
   ChannelNode,
   ChannelReqNode,
   ReqInfoNode,
 } from '../../heap/types/channel'
 import { FuncNode, MethodNode } from '../../heap/types/func'
 import { IntegerNode } from '../../heap/types/primitives'
+import { Process } from '../../runtime/process'
 
 import { Instruction } from './base'
 import { CallInstruction } from './funcs'
@@ -107,6 +107,7 @@ export class GoInstruction extends Instruction {
         process.heap.copy(allocate, results[i])
         new_context.pushOS(allocate)
       }
+      // a hacky way to create a "mark" to start the new goroutine after context switching
       new_context.pushOS(1)
       new_context.pushDeferStack()
       process.contexts.push(new_context.addr)

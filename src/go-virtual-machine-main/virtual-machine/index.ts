@@ -1,7 +1,7 @@
-import { Instruction } from './executor/instructions'
-import { StateInfo } from './runtime/debugger'
 import parser from './compiler/parser'
 import { SourceFileTokens, TokenLocation } from './compiler/tokens'
+import { Instruction } from './executor/instructions'
+import { StateInfo } from './runtime/debugger'
 import { compile_tokens, CompileError } from './executor'
 import { execute_instructions } from './runtime'
 
@@ -47,10 +47,10 @@ const runCode = (
     let output = "";
     let insideStructOrArray = false;
     let insideFunction = false;
-    let lines = input.split("\n");
+    const lines = input.split("\n");
 
     for (let i = 0; i < lines.length; i++) {
-      let line = lines[i].trim();
+      const line = lines[i].trim();
 
       // Detect function definitions (e.g., `func foo() {`)
       if (line.match(/^func\s+[A-Za-z_][A-Za-z0-9_]*\s*\(.*\)\s*\{$/)) {
@@ -71,7 +71,7 @@ const runCode = (
     }
     return output;
   }
-  let code = insertSemicolons(source_code)
+  const code = insertSemicolons(source_code)
   try {
     tokens = parser.parse(code) as SourceFileTokens
     console.log(tokens)
@@ -141,4 +141,4 @@ const runCode = (
   }
 }
 
-export { type InstructionData, type ProgramData, runCode, type CompileData }
+export { type CompileData,type InstructionData, type ProgramData, runCode }

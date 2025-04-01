@@ -1,9 +1,7 @@
-
-
 import { Heap, TAG } from '..'
+
 import { ArrayNode, SliceNode } from './array'
 import { BaseNode } from './base'
-import { PrimitiveNode } from './primitives'
 import { StructNode } from './struct'
 
 export class ReferenceNode extends BaseNode {

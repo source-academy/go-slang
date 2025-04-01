@@ -1,3 +1,4 @@
+import { BoolType, Float64Type, Int64Type, NoType, StringType } from '../executor/typing'
 import { Debugger } from '../runtime/debugger'
 
 import { ArrayNode, SliceNode } from './types/array'
@@ -23,13 +24,12 @@ import {
   UnassignedNode,
 } from './types/primitives'
 import { QueueListNode, QueueNode } from './types/queue'
+import { ReferenceNode } from './types/reference'
 import { StackListNode, StackNode } from './types/stack'
+import { StructNode } from './types/struct'
+import { UnsafePkgNode } from './types/unsafe'
 import { WaitGroupNode } from './types/waitGroup'
 import { Memory } from './memory'
-import { StructNode } from './types/struct'
-import { ArrayType, BoolType, Float64Type, Int64Type, NoType, StringType } from '../executor/typing'
-import { ReferenceNode } from './types/reference'
-import { UnsafePkgNode } from './types/unsafe'
 
 export enum TAG {
   UNKNOWN = 0,

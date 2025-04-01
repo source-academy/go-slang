@@ -14,7 +14,6 @@ import {
   ByteType,
   FunctionType,
   Int64Type,
-  NoType,
   PackageType,
   ParameterType,
   PointerType,
