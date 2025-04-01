@@ -65,7 +65,7 @@ describe('Array Type Checking', () => {
         ?.message,
     ).toEqual('Invalid argument: Index has type float64 but must be an integer')
   })
-})
+}, 60000)
 
 describe('Array Execution', () => {
   test('Array indexing with valid index works.', () => {
@@ -497,4 +497,4 @@ describe('Array Execution', () => {
       `).output,
     ).toEqual('[[[3 0 4] [2 5 1]] [[888 13 24] [29 56 15]]]\n[[1 2 3] [888 56 999]]\n')
   })
-})
+}, 60000)

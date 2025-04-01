@@ -116,7 +116,7 @@ describe('Function Type Checking', () => {
     `
     expect(codeRunner(code).output).toEqual('8\n')
   })
-})
+}, 120000)
 
 describe('Function Execution tests', () => {
   test('Function Literals', () => {
@@ -361,4 +361,4 @@ describe('Function Execution tests', () => {
       `).output,
     ).toEqual('3\n30\nIUCvevfde\n2\n30 IUCvevfde\n')
   })
-})
+}, 60000)

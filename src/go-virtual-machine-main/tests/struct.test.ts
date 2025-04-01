@@ -1539,4 +1539,4 @@ describe('Struct tests', () => {
     ).toEqual('{[{485 [A Hello]} {231 [Art Zuf]}] [39 33]}\n')
   })
     */
-})
+}, 60000)

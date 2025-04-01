@@ -3,10 +3,8 @@ import { FrameNode } from '../../heap/types/environment'
 import { ArrayType, BoolType, DeclaredType, PointerType, StringType, StructType, Type } from '../typing'
 
 import { Instruction } from './base'
-import { PrimitiveTypeToken } from '../../compiler/tokens'
 import { ArrayNode } from '../../heap/types/array'
 import { StructNode } from '../../heap/types/struct'
-import { a } from 'vitest/dist/suite-IbNSsUWN'
 import { BaseNode } from '../../heap/types/base'
 
 export class BlockInstruction extends Instruction {

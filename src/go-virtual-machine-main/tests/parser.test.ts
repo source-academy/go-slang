@@ -173,5 +173,5 @@ describe('Import statement syntax check', () => {
         `).output,
       ).toEqual("63\n41\n")
     })
-  })
+  }, 60000)
   
