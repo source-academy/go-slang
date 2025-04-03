@@ -52,6 +52,7 @@
     "seedrandom": "^3.0.5",
     "util": "^0.12.5",
     "uuid": "^9.0.0",
+    "yarn": "^1.22.22",
     "zustand": "^4.5.2"
   },
   "devDependencies": {

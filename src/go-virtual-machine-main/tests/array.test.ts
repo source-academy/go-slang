@@ -266,6 +266,28 @@ describe('Array Execution', () => {
     ).toEqual('[3 4 5]\n')
   })
 
+  test('Passing arrays to goroutines should also not change array element values', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+        
+        func main() {
+          a := [3]int{3, 4, 5}
+          go func(a [3]int) {
+            a[0] = 934
+            fmt.Println(a)
+          }(a)
+          fmt.Println(a)
+          a[2] = 66
+          for i := 0; i < 99; i++ {
+          }
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('[3 4 5]\n[934 4 5]\n[3 4 66]\n')
+  })
+
   test(`Passing arrays of declared types to functions should also not change array element values`, () => {
     expect(
       codeRunner(`
@@ -285,6 +307,32 @@ describe('Array Execution', () => {
         }
       `).output,
     ).toEqual('[3 4 5]\n')
+  })
+
+  test(`Passing arrays of declared types to goroutines should also not change array element values`, () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A int
+
+        func help(a [3]A) {
+          a[0] = 930
+          fmt.Println(a)
+        }
+        
+        func main() {
+          a := [3]A{3, 4, 5}
+          fmt.Println(a)
+          go help(a)
+          a[2] = 77
+          for i := 0; i < 99; i++ {
+          }
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('[3 4 5]\n[930 4 5]\n[3 4 77]\n')
   })
 
   test('Passing 2D arrays of declared types to functions should also not change array element values', () => {

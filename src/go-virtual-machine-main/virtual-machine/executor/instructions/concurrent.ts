@@ -1,3 +1,5 @@
+import { ArrayNode } from '../../heap/types/array'
+import { BaseNode } from '../../heap/types/base'
 import {
   ChannelArrayNode,
   ChannelNode,
@@ -6,7 +8,9 @@ import {
 } from '../../heap/types/channel'
 import { FuncNode, MethodNode } from '../../heap/types/func'
 import { IntegerNode } from '../../heap/types/primitives'
+import { StructNode } from '../../heap/types/struct'
 import { Process } from '../../runtime/process'
+import { BoolType, DeclaredType, StringType } from '../typing'
 
 import { Instruction } from './base'
 import { CallInstruction } from './funcs'
@@ -75,6 +79,100 @@ export class GoInstruction extends Instruction {
         // making it "pass by value" instead of by reference
         const allocate = process.heap.allocate(process.heap.get_size(results[i]))
         process.heap.copy(allocate, results[i])
+        // deepcopy if struct or array
+        const node = process.heap.get_value(results[i])
+        if (node instanceof ArrayNode) {
+          // deepcopy if array
+          const dimensions = [] as number[]
+          let length = node.length()
+          let next = process.heap.get_value(node.get_child(0))
+          let arrayStart = node.get_child(0)
+          dimensions.push(length)
+          while (next instanceof ArrayNode) {
+            dimensions.push(next.length())
+            length = length * next.length()
+            arrayStart = next.get_child(0)
+            next = process.heap.get_value(next.get_child(0))
+          }
+          if (next instanceof DeclaredType) {
+            // Find underlying type to load default values into
+            let actualType = next
+            let nextType = next.type
+            while (nextType[0] instanceof DeclaredType) {
+              actualType = nextType[0]
+              nextType = actualType.type
+            }
+            next = nextType[0]
+          }
+          const type = process.heap.get_type(next.addr)
+          const addr = type.bulkDefaultNodeCreator()(process.heap, length)
+          let sizeof = 4
+          if (type instanceof BoolType) sizeof = 1
+          if (type instanceof StringType) sizeof = 2
+          // deepcopy each element
+          for (let i = 0; i < length; i++) {
+            process.heap.copy(addr + sizeof * i, arrayStart + sizeof * i)
+          }
+          const arrayNodes = [] as ArrayNode[]
+          if (node instanceof ArrayNode) {
+            let next2 = process.heap.get_value(node.get_child(0))
+            let length2 = node.length()
+            while (next2 instanceof ArrayNode) {
+              length2 = next2.length()
+              next2 = process.heap.get_value(next2.get_child(0))
+            }
+            const baseType = process.heap.get_type(next2.addr)
+            if (baseType instanceof BoolType) sizeof = 1
+            if (baseType instanceof StringType) sizeof = 2
+            let addr2 = addr
+            // handle multi-dimensional arrays: inner-most layer
+            // we ensured that the memory block is contiguous earlier
+            // so we need to link ArrayNodes to the correct memory addresses
+            for (let a = 0; a < length / length2; a++) {
+              arrayNodes.push(ArrayNode.create(length2, process.heap, sizeof, addr2))
+              addr2 += sizeof * length2
+            }
+            dimensions.pop()
+            while (dimensions.length > 0) {
+              const dim = dimensions.pop()
+              const n = arrayNodes.length
+              for (let a = 0; a < n / dim; a++) {
+                const array = ArrayNode.create(dim, process.heap, sizeof, addr)
+                for (let b = 0; b < dim; b++) {
+                  array.set_child(b, arrayNodes.shift().addr)
+                }
+                arrayNodes.push(array)
+              }
+            }
+            process.heap.copy(allocate, arrayNodes.pop().addr)
+          } else {
+            // in the case of 1D array
+            const array = ArrayNode.create(node.length(), process.heap, sizeof, addr)
+            process.heap.copy(allocate, array.addr)
+          }
+        } else if (node instanceof StructNode) {
+          // deepcopy if struct
+          const baseNodes = [] as BaseNode[]
+          let structStart = -1
+          let next = process.heap.get_value(node.get_child(0))
+          while (next instanceof StructNode) {
+            next = process.heap.get_value(next.get_child(0))
+          }
+          structStart = next.addr
+          push(process, baseNodes, node)
+          const addr = process.heap.allocate(node.sizeof())
+          const struct = StructNode.create(node.length(), process.heap)
+          for (let i = 0, count = 0; i < node.sizeof();) {
+            const node = baseNodes.shift()
+            if (!(node instanceof StructNode)) {
+              process.heap.copy(addr + i, structStart + i)
+              struct.set_child(count, addr + i)
+              i += node.sizeof()
+              count++
+            }
+          }
+          process.heap.copy(allocate, struct.addr)
+        }
         new_context.pushOS(allocate)
       }
       new_context.pushDeferStack()
@@ -105,6 +203,100 @@ export class GoInstruction extends Instruction {
         // making it "pass by value" instead of by reference
         const allocate = process.heap.allocate(process.heap.get_size(results[i]))
         process.heap.copy(allocate, results[i])
+        // deepcopy if struct or array
+        const node = process.heap.get_value(results[i])
+        if (node instanceof ArrayNode) {
+          // deepcopy if array
+          const dimensions = [] as number[]
+          let length = node.length()
+          let next = process.heap.get_value(node.get_child(0))
+          let arrayStart = node.get_child(0)
+          dimensions.push(length)
+          while (next instanceof ArrayNode) {
+            dimensions.push(next.length())
+            length = length * next.length()
+            arrayStart = next.get_child(0)
+            next = process.heap.get_value(next.get_child(0))
+          }
+          if (next instanceof DeclaredType) {
+            // Find underlying type to load default values into
+            let actualType = next
+            let nextType = next.type
+            while (nextType[0] instanceof DeclaredType) {
+              actualType = nextType[0]
+              nextType = actualType.type
+            }
+            next = nextType[0]
+          }
+          const type = process.heap.get_type(next.addr)
+          const addr = type.bulkDefaultNodeCreator()(process.heap, length)
+          let sizeof = 4
+          if (type instanceof BoolType) sizeof = 1
+          if (type instanceof StringType) sizeof = 2
+          // deepcopy each element
+          for (let i = 0; i < length; i++) {
+            process.heap.copy(addr + sizeof * i, arrayStart + sizeof * i)
+          }
+          const arrayNodes = [] as ArrayNode[]
+          if (node instanceof ArrayNode) {
+            let next2 = process.heap.get_value(node.get_child(0))
+            let length2 = node.length()
+            while (next2 instanceof ArrayNode) {
+              length2 = next2.length()
+              next2 = process.heap.get_value(next2.get_child(0))
+            }
+            const baseType = process.heap.get_type(next2.addr)
+            if (baseType instanceof BoolType) sizeof = 1
+            if (baseType instanceof StringType) sizeof = 2
+            let addr2 = addr
+            // handle multi-dimensional arrays: inner-most layer
+            // we ensured that the memory block is contiguous earlier
+            // so we need to link ArrayNodes to the correct memory addresses
+            for (let a = 0; a < length / length2; a++) {
+              arrayNodes.push(ArrayNode.create(length2, process.heap, sizeof, addr2))
+              addr2 += sizeof * length2
+            }
+            dimensions.pop()
+            while (dimensions.length > 0) {
+              const dim = dimensions.pop()
+              const n = arrayNodes.length
+              for (let a = 0; a < n / dim; a++) {
+                const array = ArrayNode.create(dim, process.heap, sizeof, addr)
+                for (let b = 0; b < dim; b++) {
+                  array.set_child(b, arrayNodes.shift().addr)
+                }
+                arrayNodes.push(array)
+              }
+            }
+            process.heap.copy(allocate, arrayNodes.pop().addr)
+          } else {
+            // in the case of 1D array
+            const array = ArrayNode.create(node.length(), process.heap, sizeof, addr)
+            process.heap.copy(allocate, array.addr)
+          }
+        } else if (node instanceof StructNode) {
+          // deepcopy if struct
+          const baseNodes = [] as BaseNode[]
+          let structStart = -1
+          let next = process.heap.get_value(node.get_child(0))
+          while (next instanceof StructNode) {
+            next = process.heap.get_value(next.get_child(0))
+          }
+          structStart = next.addr
+          push(process, baseNodes, node)
+          const addr = process.heap.allocate(node.sizeof())
+          const struct = StructNode.create(node.length(), process.heap)
+          for (let i = 0, count = 0; i < node.sizeof();) {
+            const node = baseNodes.shift()
+            if (!(node instanceof StructNode)) {
+              process.heap.copy(addr + i, structStart + i)
+              struct.set_child(count, addr + i)
+              i += node.sizeof()
+              count++
+            }
+          }
+          process.heap.copy(allocate, struct.addr)
+        }
         new_context.pushOS(allocate)
       }
       // a hacky way to create a "mark" to start the new goroutine after context switching
@@ -116,6 +308,18 @@ export class GoInstruction extends Instruction {
 
   static fromCallInstruction(call: CallInstruction): GoInstruction {
     return new GoInstruction(call.args)
+  }
+}
+
+function push(process: Process, a: BaseNode[], node: StructNode) {
+  const children = node.get_children()
+  for (let i = 0; i < children.length; i++) {
+    const child = process.heap.get_value(node.get_child(i))
+    while (child instanceof StructNode) {
+      a.push(child)
+      push(process, a, child)
+    }
+    a.push(child)
   }
 }
 
