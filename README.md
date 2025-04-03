@@ -26,9 +26,9 @@ yarn test unsafe
 ```
 To run tests with coverage, we use `yarn coverage`. This will display the test coverage (statement coverage, line coverage, branch coverage and function coverage) after running all tests.
 
-For visualisation, we can use `yarn run local` to run the program locally. This lets us visualise the program that is to be written in Go to let us see how the program is executed. However, this only works when the program does not run into any errors.
+For visualisation, we can use `yarn local` to run the program locally. This lets us visualise the program that is to be written in Go to let us see how the program is executed. However, this only works when the program does not run into any errors.
 ```sh
-yarn run local
+yarn local
 ```
 
 Lastly, to build the project, we use `yarn build`.
