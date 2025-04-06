@@ -83,8 +83,6 @@
     "concurrently": "^8.2.2",
     "eslint": "^8.41.0",
     "eslint-config-prettier": "^8.8.0",
-    "eslint-import-resolver-alias": "^1.1.2",
-    "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-simple-import-sort": "^10.0.0",
     "eslint-plugin-storybook": "^0.6.12",
