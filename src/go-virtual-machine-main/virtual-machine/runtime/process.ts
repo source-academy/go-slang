@@ -1,10 +1,15 @@
 import * as seedrandom from 'seedrandom'
 
 import { TokenLocation } from '../compiler/tokens'
-import { DoneInstruction, GoInstruction, Instruction } from '../executor/instructions'
+import {
+  DoneInstruction,
+  GoInstruction,
+  Instruction,
+} from '../executor/instructions'
 import { Heap } from '../heap'
 import { ContextNode } from '../heap/types/context'
 import { EnvironmentNode, FrameNode } from '../heap/types/environment'
+import { MethodNode } from '../heap/types/func'
 import { QueueNode } from '../heap/types/queue'
 
 import { Debugger, StateInfo } from './debugger'
@@ -84,8 +89,12 @@ export class Process {
           if (this.context.OS().sz() > 0 && this.context.peekOS() === 1) {
             // a hacky way of handling goroutines when the callee is a MethodNode instead of FuncNode
             this.context.popOS()
-            const instr = this.instructions[this.context.incr_PC()] as GoInstruction
-            const func = this.heap.get_value(this.context.peekOSIdx(instr.args)) as MethodNode
+            const instr = this.instructions[
+              this.context.incr_PC()
+            ] as GoInstruction
+            const func = this.heap.get_value(
+              this.context.peekOSIdx(instr.args),
+            ) as MethodNode
             const receiver = func.receiver()
             receiver.handleMethodCall(this, func.identifier(), instr.args)
             break
@@ -101,7 +110,10 @@ export class Process {
           // this.context.heap.print_freelist()
           this.runtime_count += 1
           cur_time += 1
-          if (this.context.addr !== main_context && this.context.RTS().sz() === 0) {
+          if (
+            this.context.addr !== main_context &&
+            this.context.RTS().sz() === 0
+          ) {
             // thread has completed
             break
           }
@@ -124,6 +136,10 @@ export class Process {
       }
       if (!completed && !this.heap.blocked_contexts.is_empty())
         throw Error('all goroutines are asleep - deadlock!')
+
+      if (a != 0) {
+        a = a
+      }
 
       return {
         stdout: this.stdout,

@@ -1,8 +1,20 @@
-import { BoolType, Float64Type, Int64Type, NoType, StringType } from '../executor/typing'
+import {
+  BoolType,
+  Float64Type,
+  Int64Type,
+  NoType,
+  StringType,
+} from '../executor/typing'
 import { Debugger } from '../runtime/debugger'
 
 import { ArrayNode, SliceNode } from './types/array'
-import { ChannelArrayNode, ChannelNode, ChannelReqNode, ReqInfoNode } from './types/channel'
+import { BaseNode } from './types/base'
+import {
+  ChannelArrayNode,
+  ChannelNode,
+  ChannelReqNode,
+  ReqInfoNode,
+} from './types/channel'
 import { ContextNode } from './types/context'
 import { EnvironmentNode, FrameNode } from './types/environment'
 import { FmtPkgNode, PkgNode } from './types/fmt'
@@ -107,7 +119,7 @@ export class Heap {
     this.contexts.push(context.addr)
   }
 
-  get_value(addr: number) {
+  get_value(addr: number): BaseNode {
     const tag = this.get_tag(addr)
     switch (tag) {
       case TAG.UNKNOWN:
@@ -427,7 +439,7 @@ export class Heap {
     for (const root of roots) {
       this.mark(root)
     }
-    for (let cur_addr = 0; cur_addr < this.size;) {
+    for (let cur_addr = 0; cur_addr < this.size; ) {
       if (!this.is_free(cur_addr) && !this.is_marked(cur_addr)) {
         cur_addr = this.free(cur_addr)
       } else {

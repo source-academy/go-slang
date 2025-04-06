@@ -1,5 +1,4 @@
 import { ArrayNode, SliceNode } from '../../heap/types/array'
-import { ChannelArrayNode } from '../../heap/types/channel'
 import {
   IntegerNode,
   PrimitiveNode,
@@ -74,7 +73,7 @@ export class SliceOperationInstruction extends Instruction {
     // If high is not provided, its default value will be resolved later on in the code.
     const high = highNode instanceof IntegerNode ? highNode.get_value() : null
 
-    if (node instanceof ArrayNode || node instanceof ChannelArrayNode) {
+    if (node instanceof ArrayNode) {
       process.context.pushOS(this.sliceArray(process, node, low, high))
     } else if (node instanceof SliceNode) {
       process.context.pushOS(this.sliceSlice(process, node, low, high))

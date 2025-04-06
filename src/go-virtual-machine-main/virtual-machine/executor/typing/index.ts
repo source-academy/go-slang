@@ -13,7 +13,7 @@ import { ReferenceNode } from '../../heap/types/reference'
 import { StructNode } from '../../heap/types/struct'
 
 export abstract class Type {
-  variadic: any
+  variadic = false
   parameters: any
   results: any
   abstract isPrimitive(): boolean
@@ -31,15 +31,20 @@ export abstract class Type {
   /** Returns a function that sets a default node on already allocated memory, and returns its address.
    *  It is mainly used for arrays and structs as memory must be pre-allocated first
    *  to ensure that the memory is contiguous.
-  */
+   */
   abstract bulkDefaultNodeCreator(): (heap: Heap, length: number) => number
 
-   /** Returns a function that directly manipulates already allocated memory.
-    *  Only used for structs and arrays since memory must be pre-allocated first,
-    *  to ensure that the memory is contiguous.
-  */
-   abstract defaultNodeAllocator(): (heap: Heap, addr: number) => void
-  
+  /** Returns a function that directly manipulates already allocated memory.
+   *  Only used for structs and arrays since memory must be pre-allocated first,
+   *  to ensure that the memory is contiguous.
+   */
+  abstract defaultNodeAllocator(): (heap: Heap, addr: number) => void
+
+  /**
+   * Returns the size of the memory required by the node.
+   */
+  abstract sizeof(): number
+
   /** Returns the type of selecting an identifier on the given type. */
   select(identifier: string): Type {
     throw new Error(
@@ -73,6 +78,10 @@ export class NoType extends Type {
   override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
     throw new Error('Cannot create values of type NoType')
   }
+
+  override sizeof(): number {
+    return 0
+  }
 }
 
 /** This type represents arguments that don't have a fixed type. */
@@ -99,6 +108,10 @@ export class ArbitraryType extends Type {
 
   override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
     throw new Error('Cannot create values of type NoType')
+  }
+
+  override sizeof(): number {
+    return 0
   }
 }
 
@@ -127,6 +140,10 @@ export class ByteType extends Type {
   override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
     throw new Error('Cannot create values of type NoType')
   }
+
+  override sizeof(): number {
+    return 0
+  }
 }
 
 export class BoolType extends Type {
@@ -138,7 +155,7 @@ export class BoolType extends Type {
     return 'bool'
   }
 
-  sizeof(): number {
+  override sizeof(): number {
     return 1
   }
 
@@ -282,8 +299,14 @@ export class ArrayType extends Type {
     return (heap, length) => this.element.bulkDefaultNodeCreator()(heap, length)
   }
 
-  override defaultNodeAllocator(): (heap: Heap, addr: number, length: number, type: Type) => number {
-    return (heap, addr, length, type) => ArrayNode.allocate(heap, addr, length, type)
+  override defaultNodeAllocator(): (
+    heap: Heap,
+    addr: number,
+    length: number,
+    type: Type,
+  ) => number {
+    return (heap, addr, length, type) =>
+      ArrayNode.allocate(heap, addr, length, type)
   }
 }
 
@@ -354,6 +377,10 @@ export class ParameterType extends Type {
     // Do nothing.
     return (_) => 0
   }
+
+  override sizeof(): number {
+    return 0
+  }
 }
 
 export class FunctionType extends Type {
@@ -393,6 +420,10 @@ export class FunctionType extends Type {
 
   override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
     return (heap, addr) => FuncNode.allocate(heap, addr)
+  }
+
+  override sizeof(): number {
+    return 0
   }
 }
 
@@ -449,6 +480,10 @@ export class ChannelType extends Type {
   override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
     return (heap, addr) => ChannelNode.allocate(heap, addr)
   }
+
+  override sizeof(): number {
+    return 0
+  }
 }
 
 export class ReturnType extends Type {
@@ -489,6 +524,10 @@ export class ReturnType extends Type {
   isVoid(): boolean {
     return this.types.length === 0
   }
+
+  override sizeof(): number {
+    return 0
+  }
 }
 
 export class PackageType extends Type {
@@ -526,6 +565,10 @@ export class PackageType extends Type {
     }
     return this.types[identifier]
   }
+
+  override sizeof(): number {
+    return 0
+  }
 }
 
 export const TypeUtility = {
@@ -536,7 +579,7 @@ export const TypeUtility = {
 }
 
 export class DeclaredType extends Type {
-  constructor(public name: string, public type: Type) {
+  constructor(public name: string, public type: Type[]) {
     super()
     this.name = name
     this.type = type
@@ -550,12 +593,16 @@ export class DeclaredType extends Type {
     return `type ${this.name}`
   }
 
-  sizeof(): number {
+  override sizeof(): number {
     return this.type[0].sizeof()
   }
 
   override equals(t: Type): boolean {
-    return t instanceof DeclaredType && t.name === this.name && this.type[0].equals(t.type[0])
+    return (
+      t instanceof DeclaredType &&
+      t.name === this.name &&
+      this.type[0].equals(t.type[0])
+    )
   }
 
   override defaultNodeCreator(): (heap: Heap) => number {
@@ -593,7 +640,7 @@ export class StructType extends Type {
     return `struct ${this.fields.toString()}`
   }
 
-  sizeof(): number {
+  override sizeof(): number {
     let size = 0
     for (let i = 0; i < [...this.fields.values()].length; i++) {
       size += [...this.fields.values()][i].sizeof()
@@ -602,8 +649,7 @@ export class StructType extends Type {
   }
 
   override equals(t: Type): boolean {
-    return t instanceof StructType
-      && t.fields === this.fields
+    return t instanceof StructType && t.fields === this.fields
   }
 
   override defaultNodeCreator(): (heap: Heap) => number {
@@ -621,7 +667,8 @@ export class StructType extends Type {
     for (let i = 0; i < keys.length; i++) {
       creators.push(keys[i].defaultNodeCreator())
     }
-    return (heap, length) => StructNode.bulkDefault(this.fields, creators, heap, length)
+    return (heap, length) =>
+      StructNode.bulkDefault(this.fields, creators, heap, length)
   }
 
   override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
@@ -630,34 +677,41 @@ export class StructType extends Type {
     for (let i = 0; i < keys.length; i++) {
       creators.push(keys[i].defaultNodeCreator())
     }
-    return (heap, addr) => StructNode.allocate(this.fields, creators, heap, addr)
+    return (heap, addr) =>
+      StructNode.allocate(this.fields, creators, heap, addr)
   }
 
   override assignableBy(t: Type): boolean {
     // map comparison code provided by ChatGPT
     // https://chatgpt.com/share/67cdc0fc-6008-800f-a618-1a76c957217f
     if (t instanceof StructType) {
-      const entries1 = Array.from(t.fields.entries());
-      const entries2 = Array.from(this.fields.entries());
+      const entries1 = Array.from(t.fields.entries())
+      const entries2 = Array.from(this.fields.entries())
 
       return entries1.every(([key, value], index) => {
-        const [key2, value2] = entries2[index];
-        return key === key2 && value.equals(value2);
-      });
+        const [key2, value2] = entries2[index]
+        return key === key2 && value.equals(value2)
+      })
     } else if (t instanceof DeclaredType && t.type[0] instanceof StructType) {
-      const entries1 = Array.from(t.type[0].fields.entries());
-      const entries2 = Array.from(this.fields.entries());
+      const entries1 = Array.from(t.type[0].fields.entries())
+      const entries2 = Array.from(this.fields.entries())
 
       return entries1.every(([key, value], index) => {
-        const [key2, value2] = entries2[index];
-        return key === key2 && value.equals(value2);
-      });
+        const [key2, value2] = entries2[index]
+        return key === key2 && value.equals(value2)
+      })
     }
     return false
   }
 }
 
 export class PointerType extends Type {
+  override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
+    throw new Error('Method not implemented.')
+  }
+  override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
+    throw new Error('Method not implemented.')
+  }
   constructor(public type: Type) {
     super()
   }
@@ -670,20 +724,22 @@ export class PointerType extends Type {
     return `pointer to ${this.type.toString()}`
   }
 
-  sizeof(): number {
+  override sizeof(): number {
     return 2
   }
 
   override equals(t: Type): boolean {
-    return t instanceof PointerType
-      && t.type.equals(this.type)
+    return t instanceof PointerType && t.type.equals(this.type)
   }
 
   override assignableBy(t: Type): boolean {
-    return t.equals(this) || (t instanceof PointerType && t.type instanceof ArbitraryType)
+    return (
+      t.equals(this) ||
+      (t instanceof PointerType && t.type instanceof ArbitraryType)
+    )
   }
 
   override defaultNodeCreator(): (heap: Heap) => number {
-    return (heap) => ReferenceNode.create(undefined, heap).addr
+    return (heap) => ReferenceNode.create(NaN, heap).addr
   }
 }

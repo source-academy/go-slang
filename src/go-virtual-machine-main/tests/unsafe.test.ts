@@ -12,10 +12,8 @@ describe('Unsafe Package Checking', () => {
       p := 1
       fmt.Println(unsafe.Alignof(p))
     }
-    ` 
-    expect(codeRunner(code).error?.type).toEqual(
-      'compile',
-    )
+    `
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 
   test('Alignof works correctly', () => {
@@ -28,10 +26,8 @@ describe('Unsafe Package Checking', () => {
       p := 1
       fmt.Println(unsafe.Alignof(p))
     }
-    ` 
-    expect(codeRunner(code).output).toEqual(
-      '4\n',
-    )
+    `
+    expect(codeRunner(code).output).toEqual('4\n')
   })
 
   test('Alignof throws error if not 1 argument is supplied', () => {
@@ -44,10 +40,8 @@ describe('Unsafe Package Checking', () => {
       p := 1
       fmt.Println(unsafe.Alignof(p, p))
     }
-    ` 
-    expect(codeRunner(code).error?.type).toEqual(
-      'compile',
-    )
+    `
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 
   test('Offsetof works correctly', () => {
@@ -65,10 +59,8 @@ describe('Unsafe Package Checking', () => {
       p := A{"E", 21}
       fmt.Println(unsafe.Offsetof(p.Age))
     }
-    ` 
-    expect(codeRunner(code).output).toEqual(
-      '2\n',
-    )
+    `
+    expect(codeRunner(code).output).toEqual('2\n')
   })
 
   test('Offsetof works correctly on nested structs', () => {
@@ -93,9 +85,7 @@ describe('Unsafe Package Checking', () => {
       fmt.Println(unsafe.Offsetof(p.Person.Age))
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      '2\n',
-    )
+    expect(codeRunner(code).output).toEqual('2\n')
   })
 
   test('Offsetof throws error if not 1 argument is supplied', () => {
@@ -109,9 +99,7 @@ describe('Unsafe Package Checking', () => {
       fmt.Println(unsafe.Offsetof(p, p))
     }
     `
-    expect(codeRunner(code).error?.type).toEqual(
-      'compile',
-    )
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 
   test('Offsetof throws error if argument supplied is not a struct field', () => {
@@ -125,9 +113,7 @@ describe('Unsafe Package Checking', () => {
       fmt.Println(unsafe.Offsetof(p))
     }
     `
-    expect(codeRunner(code).error?.type).toEqual(
-      'compile',
-    )
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 
   test('Sizeof works correctly', () => {
@@ -145,10 +131,8 @@ describe('Unsafe Package Checking', () => {
       p := A{"E", 21}
       fmt.Println(unsafe.Sizeof(p.Age))
     }
-    ` 
-    expect(codeRunner(code).output).toEqual(
-      '4\n',
-    )
+    `
+    expect(codeRunner(code).output).toEqual('4\n')
   })
 
   test('Sizeof works correctly on nested structs', () => {
@@ -175,9 +159,7 @@ describe('Unsafe Package Checking', () => {
       fmt.Println(unsafe.Sizeof(p))
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      '4\n6\n11\n',
-    )
+    expect(codeRunner(code).output).toEqual('4\n6\n11\n')
   })
 
   test('Sizeof throws error if not 1 argument is supplied', () => {
@@ -191,9 +173,7 @@ describe('Unsafe Package Checking', () => {
       fmt.Println(unsafe.Sizeof(p, p))
     }
     `
-    expect(codeRunner(code).error?.type).toEqual(
-      'compile',
-    )
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 
   test('Add works correctly', () => {
@@ -214,9 +194,7 @@ describe('Unsafe Package Checking', () => {
       fmt.Println(unsafe.Add(&q, 2))
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      '0x0000008c\n0x0000008e\n',
-    )
+    expect(codeRunner(code).output).toEqual('0x0000008c\n0x0000008e\n')
   })
 
   test('Add throws error if arguments are of the wrong types', () => {
@@ -230,9 +208,7 @@ describe('Unsafe Package Checking', () => {
       fmt.Println(unsafe.Add(p, 3)) // p is not a pointer
     }
     `
-    expect(codeRunner(code).error?.type).toEqual(
-      'compile',
-    )
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 
   test('StringData works correctly', () => {
@@ -248,9 +224,7 @@ describe('Unsafe Package Checking', () => {
       fmt.Println(q) // Pointer to StringListNode tied to the bytes itself
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      '0x00000072\n0x0000008a\n',
-    )
+    expect(codeRunner(code).output).toEqual('0x00000072\n0x0000008a\n')
   })
 
   test('StringData throws error if not string', () => {
@@ -264,9 +238,7 @@ describe('Unsafe Package Checking', () => {
       q := unsafe.StringData(p)
     }
     `
-    expect(codeRunner(code).error?.type).toEqual(
-      'compile',
-    )
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 
   test('String works correctly', () => {
@@ -281,9 +253,7 @@ describe('Unsafe Package Checking', () => {
       fmt.Println(unsafe.String(q, 4))
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      'abce\n',
-    )
+    expect(codeRunner(code).output).toEqual('abce\n')
   })
 
   test('String throws error if wrong arguments are supplied', () => {
@@ -298,8 +268,6 @@ describe('Unsafe Package Checking', () => {
       fmt.Println(unsafe.String(p, 4))
     }
     `
-    expect(codeRunner(code).error?.type).toEqual(
-      'compile',
-    )
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 }, 60000)

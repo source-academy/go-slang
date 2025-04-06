@@ -29,7 +29,12 @@ export class StoreArrayElementInstruction extends Instruction {
     this.index = index
   }
 
-  peek(process: Process, struct: StructNode | ArrayNode, target: number, count: number): number | BaseNode {
+  peek(
+    process: Process,
+    struct: StructNode | ArrayNode,
+    target: number,
+    count: number,
+  ): number | BaseNode {
     for (let i = 0; i < struct.get_children().length; i++) {
       const child = process.heap.get_value(struct.get_child(i))
       if (child instanceof StructNode || child instanceof ArrayNode) {
@@ -53,13 +58,14 @@ export class StoreArrayElementInstruction extends Instruction {
     let dst = process.context.popOS()
     const src = process.context.popOS()
     if (process.heap.get_value(dst) instanceof ReferenceNode) {
-      dst = process.heap.get_value(dst).get_child()
+      dst = (process.heap.get_value(dst) as ReferenceNode).get_child()
     }
 
     const node = process.heap.get_value(dst)
-    let elemAddr = node.get_child(0)
     if (node instanceof StructNode || node instanceof ArrayNode) {
-      elemAddr = this.peek(process, node, this.index, 0).addr
+      let elemAddr = this.peek(process, node, this.index, 0)
+      if (elemAddr instanceof BaseNode) elemAddr = elemAddr.addr
+      process.heap.copy(elemAddr, src)
     }
     //const array = new ArrayNode(process.heap, dst)
     /*
@@ -69,8 +75,7 @@ export class StoreArrayElementInstruction extends Instruction {
       )
     }
     */
-    process.heap.copy(elemAddr, src)
-    
+
     if (process.debug_mode) {
       process.debugger.modified_buffer.add(dst)
     }
@@ -84,7 +89,12 @@ export class StoreStructFieldInstruction extends Instruction {
     this.index = index
   }
 
-  peek(process: Process, struct: StructNode | ArrayNode, target: number, count: number): number | BaseNode {
+  peek(
+    process: Process,
+    struct: StructNode | ArrayNode,
+    target: number,
+    count: number,
+  ): number | BaseNode {
     for (let i = 0; i < struct.get_children().length; i++) {
       const child = process.heap.get_value(struct.get_child(i))
       if (child instanceof StructNode || child instanceof ArrayNode) {
@@ -108,12 +118,13 @@ export class StoreStructFieldInstruction extends Instruction {
     let dst = process.context.popOS()
     const src = process.context.popOS()
     if (process.heap.get_value(dst) instanceof ReferenceNode) {
-      dst = process.heap.get_value(dst).get_child()
+      dst = (process.heap.get_value(dst) as ReferenceNode).get_child()
     }
     const struct = new StructNode(process.heap, dst)
-    const fieldAddr = this.peek(process, struct, this.index, 0).addr
+    let fieldAddr = this.peek(process, struct, this.index, 0)
+    if (fieldAddr instanceof BaseNode) fieldAddr = fieldAddr.addr
     process.heap.copy(fieldAddr, src)
-    
+
     if (process.debug_mode) {
       process.debugger.modified_buffer.add(dst)
     }

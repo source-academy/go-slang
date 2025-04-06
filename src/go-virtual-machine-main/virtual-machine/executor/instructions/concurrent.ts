@@ -77,7 +77,9 @@ export class GoInstruction extends Instruction {
       }
       for (let i = 0; i < this.args; i++) {
         // making it "pass by value" instead of by reference
-        const allocate = process.heap.allocate(process.heap.get_size(results[i]))
+        const allocate = process.heap.allocate(
+          process.heap.get_size(results[i]),
+        )
         process.heap.copy(allocate, results[i])
         // deepcopy if struct or array
         const node = process.heap.get_value(results[i])
@@ -129,25 +131,40 @@ export class GoInstruction extends Instruction {
             // we ensured that the memory block is contiguous earlier
             // so we need to link ArrayNodes to the correct memory addresses
             for (let a = 0; a < length / length2; a++) {
-              arrayNodes.push(ArrayNode.create(length2, process.heap, sizeof, addr2))
+              arrayNodes.push(
+                ArrayNode.create(length2, process.heap, sizeof, addr2),
+              )
               addr2 += sizeof * length2
             }
             dimensions.pop()
             while (dimensions.length > 0) {
               const dim = dimensions.pop()
               const n = arrayNodes.length
-              for (let a = 0; a < n / dim; a++) {
-                const array = ArrayNode.create(dim, process.heap, sizeof, addr)
-                for (let b = 0; b < dim; b++) {
-                  array.set_child(b, arrayNodes.shift().addr)
+              if (dim !== undefined) {
+                for (let a = 0; a < n / dim; a++) {
+                  const array = ArrayNode.create(dim, process.heap, sizeof, addr)
+                  for (let b = 0; b < dim; b++) {
+                    const arrayNode = arrayNodes.shift()
+                    if (arrayNode !== undefined) {
+                      array.set_child(b, arrayNode.addr)
+                    }
+                  }
+                  arrayNodes.push(array)
                 }
-                arrayNodes.push(array)
               }
             }
-            process.heap.copy(allocate, arrayNodes.pop().addr)
+            const arrayNode = arrayNodes.pop()
+            if (arrayNode !== undefined) {
+              process.heap.copy(allocate, arrayNode.addr)
+            }
           } else {
             // in the case of 1D array
-            const array = ArrayNode.create(node.length(), process.heap, sizeof, addr)
+            const array = ArrayNode.create(
+              node.length(),
+              process.heap,
+              sizeof,
+              addr,
+            )
             process.heap.copy(allocate, array.addr)
           }
         } else if (node instanceof StructNode) {
@@ -162,7 +179,7 @@ export class GoInstruction extends Instruction {
           push(process, baseNodes, node)
           const addr = process.heap.allocate(node.sizeof())
           const struct = StructNode.create(node.length(), process.heap)
-          for (let i = 0, count = 0; i < node.sizeof();) {
+          for (let i = 0, count = 0; i < node.sizeof(); ) {
             const node = baseNodes.shift()
             if (!(node instanceof StructNode)) {
               process.heap.copy(addr + i, structStart + i)
@@ -201,7 +218,9 @@ export class GoInstruction extends Instruction {
       new_context.pushOS(method)
       for (let i = 0; i < this.args; i++) {
         // making it "pass by value" instead of by reference
-        const allocate = process.heap.allocate(process.heap.get_size(results[i]))
+        const allocate = process.heap.allocate(
+          process.heap.get_size(results[i]),
+        )
         process.heap.copy(allocate, results[i])
         // deepcopy if struct or array
         const node = process.heap.get_value(results[i])
@@ -253,25 +272,40 @@ export class GoInstruction extends Instruction {
             // we ensured that the memory block is contiguous earlier
             // so we need to link ArrayNodes to the correct memory addresses
             for (let a = 0; a < length / length2; a++) {
-              arrayNodes.push(ArrayNode.create(length2, process.heap, sizeof, addr2))
+              arrayNodes.push(
+                ArrayNode.create(length2, process.heap, sizeof, addr2),
+              )
               addr2 += sizeof * length2
             }
             dimensions.pop()
             while (dimensions.length > 0) {
               const dim = dimensions.pop()
               const n = arrayNodes.length
-              for (let a = 0; a < n / dim; a++) {
-                const array = ArrayNode.create(dim, process.heap, sizeof, addr)
-                for (let b = 0; b < dim; b++) {
-                  array.set_child(b, arrayNodes.shift().addr)
+              if (dim !== undefined) {
+                for (let a = 0; a < n / dim; a++) {
+                  const array = ArrayNode.create(dim, process.heap, sizeof, addr)
+                  for (let b = 0; b < dim; b++) {
+                    const arrayNode = arrayNodes.shift()
+                    if (arrayNode !== undefined) {
+                      array.set_child(b, arrayNode.addr)
+                    }
+                  }
+                  arrayNodes.push(array)
                 }
-                arrayNodes.push(array)
               }
             }
-            process.heap.copy(allocate, arrayNodes.pop().addr)
+            const arrayNode = arrayNodes.pop()
+            if (arrayNode !== undefined) {
+              process.heap.copy(allocate, arrayNode.addr)
+            }
           } else {
             // in the case of 1D array
-            const array = ArrayNode.create(node.length(), process.heap, sizeof, addr)
+            const array = ArrayNode.create(
+              node.length(),
+              process.heap,
+              sizeof,
+              addr,
+            )
             process.heap.copy(allocate, array.addr)
           }
         } else if (node instanceof StructNode) {
@@ -286,9 +320,9 @@ export class GoInstruction extends Instruction {
           push(process, baseNodes, node)
           const addr = process.heap.allocate(node.sizeof())
           const struct = StructNode.create(node.length(), process.heap)
-          for (let i = 0, count = 0; i < node.sizeof();) {
+          for (let i = 0, count = 0; i < node.sizeof(); ) {
             const node = baseNodes.shift()
-            if (!(node instanceof StructNode)) {
+            if (!(node instanceof StructNode) && node !== undefined) {
               process.heap.copy(addr + i, structStart + i)
               struct.set_child(count, addr + i)
               i += node.sizeof()
@@ -302,6 +336,12 @@ export class GoInstruction extends Instruction {
       // a hacky way to create a "mark" to start the new goroutine after context switching
       new_context.pushOS(1)
       new_context.pushDeferStack()
+      if (process.debug_mode) {
+        process.debugger.context_id_map.set(
+          new_context.addr,
+          process.debugger.context_id++,
+        )
+      }
       process.contexts.push(new_context.addr)
     }
   }
@@ -380,7 +420,9 @@ export class TryChannelReqInstruction extends Instruction {
     const chan = chan_req.channel()
     const req = chan_req.req()
     if (!chan.try(req)) {
-      process.context.set_waitlist(ChannelArrayNode.create(2, process.heap).addr)
+      process.context.set_waitlist(
+        ChannelArrayNode.create(2, process.heap).addr,
+      )
       process.context.waitlist().set_child(0, chan.wait(req))
       process.context
         .waitlist()

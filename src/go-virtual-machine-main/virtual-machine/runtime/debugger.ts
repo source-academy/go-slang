@@ -62,7 +62,7 @@ export class Debugger {
     public heap: Heap,
     public instructions: Instruction[],
     public symbols: (TokenLocation | null)[],
-  ) { }
+  ) {}
 
   /**
    * Finds all environments that can be reached from a given addr

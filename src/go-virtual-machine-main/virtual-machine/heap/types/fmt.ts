@@ -83,11 +83,14 @@ export class FmtPkgNode extends BaseNode {
       process.print(string)
       if (i > 0) {
         // the argument before and after the string argument will coalesce with the string argument
-        if (process.heap.get_value(argAddresses[i]) instanceof StringNode
-          || (i < argCount - 1
-            && process.heap.get_value(argAddresses[i + 1]) instanceof StringNode)
-          || (i > 0
-            && process.heap.get_value(argAddresses[i - 1]) instanceof StringNode)) {
+        if (
+          process.heap.get_value(argAddresses[i]) instanceof StringNode ||
+          (i < argCount - 1 &&
+            process.heap.get_value(argAddresses[i + 1]) instanceof
+              StringNode) ||
+          (i > 0 &&
+            process.heap.get_value(argAddresses[i - 1]) instanceof StringNode)
+        ) {
           process.print('')
         } else {
           process.print(' ')
@@ -109,11 +112,14 @@ export class FmtPkgNode extends BaseNode {
       process.print(string)
       if (i > 0) {
         // the argument before and after the string argument will coalesce with the string argument
-        if (process.heap.get_value(argAddresses[i]) instanceof StringNode
-          || (i < argCount - 1
-            && process.heap.get_value(argAddresses[i + 1]) instanceof StringNode)
-          || (i > 0
-            && process.heap.get_value(argAddresses[i - 1]) instanceof StringNode)) {
+        if (
+          process.heap.get_value(argAddresses[i]) instanceof StringNode ||
+          (i < argCount - 1 &&
+            process.heap.get_value(argAddresses[i + 1]) instanceof
+              StringNode) ||
+          (i > 0 &&
+            process.heap.get_value(argAddresses[i - 1]) instanceof StringNode)
+        ) {
           process.print('')
         } else {
           process.print(' ')

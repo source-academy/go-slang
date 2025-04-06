@@ -23,7 +23,7 @@ interface ProgramData {
 interface CompileData {
   output?: string
   instructions: Instruction[]
-  symbols: (TokenLocation | null)[],
+  symbols: (TokenLocation | null)[]
   error?: {
     message: string
     type: 'parse' | 'compile' | 'runtime'
@@ -44,32 +44,35 @@ const runCode = (
   // this function is written by ChatGPT:
   // https://chatgpt.com/share/67bdd28d-454c-800f-8213-16fd7d6fbee1
   function insertSemicolons(input: string) {
-    let output = "";
-    let insideStructOrArray = false;
-    let insideFunction = false;
-    const lines = input.split("\n");
+    let output = ''
+    let insideStructOrArray = false
+    let insideFunction = false
+    const lines = input.split('\n')
 
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
+      const line = lines[i].trim()
 
       // Detect function definitions (e.g., `func foo() {`)
       if (line.match(/^func\s+[A-Za-z_][A-Za-z0-9_]*\s*\(.*\)\s*\{$/)) {
-        insideFunction = true;
+        insideFunction = true
       }
 
       // Detect struct, slice, or array literals (e.g., `Person {`, `[]int {`, `[...]int {`)
-      if (!insideFunction && line.match(/^(\.\.\.|[A-Za-z_\[\]])+[A-Za-z0-9_\[\]]*\s*\{$/)) {
-        insideStructOrArray = true;
+      if (
+        !insideFunction &&
+        line.match(/^(\.\.\.|[A-Za-z_\[\]])+[A-Za-z0-9_\[\]]*\s*\{$/)
+      ) {
+        insideStructOrArray = true
       }
 
       // Add semicolon if it's a statement and not inside a struct/array/slice
       if (!insideStructOrArray && line.match(/.*[a-zA-Z0-9_)}\-\+"]$/)) {
-        output += line + ";\n";
+        output += line + ';\n'
       } else {
-        output += line + "\n";
+        output += line + '\n'
       }
     }
-    return output;
+    return output
   }
   const code = insertSemicolons(source_code)
   try {
@@ -141,4 +144,4 @@ const runCode = (
   }
 }
 
-export { type CompileData,type InstructionData, type ProgramData, runCode }
+export { type CompileData, type InstructionData, type ProgramData, runCode }

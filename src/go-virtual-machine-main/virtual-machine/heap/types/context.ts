@@ -149,7 +149,10 @@ export class ContextNode extends BaseNode {
   }
 
   waitlist() {
-    return new ChannelArrayNode(this.heap, this.heap.memory.get_number(this.addr + 4))
+    return new ChannelArrayNode(
+      this.heap,
+      this.heap.memory.get_number(this.addr + 4),
+    )
   }
 
   deferStack(): StackNode {

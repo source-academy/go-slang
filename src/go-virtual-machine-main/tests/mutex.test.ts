@@ -11,9 +11,7 @@ describe('Mutex Type Checking', () => {
       var a sync.Mutex
     }
     `
-    expect(codeRunner(code).error?.message).toEqual(
-      'Variable sync not found',
-    )
+    expect(codeRunner(code).error?.message).toEqual('Variable sync not found')
   })
 
   test('Assinging a variable of another type to Mutex should fail.', () => {

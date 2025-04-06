@@ -10,7 +10,13 @@ const execute_instructions = (
   deterministic: boolean,
   visualisation = false,
 ) => {
-  const process = new Process(instrs, heapsize, symbols, deterministic, visualisation)
+  const process = new Process(
+    instrs,
+    heapsize,
+    symbols,
+    deterministic,
+    visualisation,
+  )
   return process.start()
 }
 

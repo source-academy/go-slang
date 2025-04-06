@@ -72,7 +72,9 @@ export class MutexNode extends BaseNode {
   handleLock(process: Process): void {
     if (this.is_locked()) {
       this.queue().push(process.context.addr)
-      process.context.set_waitlist(ChannelArrayNode.create(1, process.heap).addr)
+      process.context.set_waitlist(
+        ChannelArrayNode.create(1, process.heap).addr,
+      )
       process.context
         .waitlist()
         .set_child(

@@ -24,7 +24,7 @@ describe('Basic Expression Tests', () => {
     var x Num = 3.25
     fmt.Println(x + 52)
     `
-    expect(mainRunner(code).output).toEqual("55.25\n")
+    expect(mainRunner(code).output).toEqual('55.25\n')
   })
 
   test('float literal can act as an int too if it has no floating point values', () => {
@@ -34,7 +34,7 @@ describe('Basic Expression Tests', () => {
     var x Num = 12
     fmt.Println(x + 3.00000)
     `
-    expect(mainRunner(code).output).toEqual("15\n")
+    expect(mainRunner(code).output).toEqual('15\n')
   })
 
   test('Division truncates result when denominator is an int', () => {
@@ -43,7 +43,7 @@ describe('Basic Expression Tests', () => {
     fmt.Println(100 / 7)
     fmt.Println(8000 / x)
     `
-    expect(mainRunner(code).output).toEqual("14\n23\n")
+    expect(mainRunner(code).output).toEqual('14\n23\n')
   })
 
   test('Division does not truncate result when denominator is a float', () => {
@@ -52,7 +52,7 @@ describe('Basic Expression Tests', () => {
     fmt.Println(100.0 / 8.0)
     fmt.Println(800.0 / x)
     `
-    expect(mainRunner(code).output).toEqual("12.5\n0.125\n")
+    expect(mainRunner(code).output).toEqual('12.5\n0.125\n')
   })
 
   test('Binops work on untyped literals with 1 being a float and another being an int', () => {
@@ -66,6 +66,8 @@ describe('Basic Expression Tests', () => {
     fmt.Println(80.0 + 32)
     fmt.Println(80.0 - 32)
     `
-    expect(mainRunner(code).output).toEqual("2.5\n2560\n112\n48\n2\n2560\n112\n48")
+    expect(mainRunner(code).output).toEqual(
+      '2.5\n2560\n112\n48\n2\n2560\n112\n48',
+    )
   })
 }, 60000)

@@ -5,7 +5,6 @@ import { BaseNode } from './base'
 import { StructNode } from './struct'
 
 export class ReferenceNode extends BaseNode {
-
   static create(nodeAddr: number, heap: Heap): ReferenceNode {
     const addr = heap.allocate(2)
     heap.set_tag(addr, TAG.REFERENCE)
@@ -23,7 +22,11 @@ export class ReferenceNode extends BaseNode {
 
   override toString(): string {
     const node = this.heap.get_value(this.get_child())
-    if (node instanceof ArrayNode || node instanceof StructNode || node instanceof SliceNode) {
+    if (
+      node instanceof ArrayNode ||
+      node instanceof StructNode ||
+      node instanceof SliceNode
+    ) {
       return `&${node.toString()}`
     } else {
       return `0x${this.get_child().toString(16).padStart(8, '0')}`
@@ -31,14 +34,11 @@ export class ReferenceNode extends BaseNode {
   }
 
   apply_unary(operator: string): BaseNode {
-    if (operator === "indirection") {
+    if (operator === 'indirection') {
       return this.heap.get_value(this.get_child())
     }
-    if (operator === "address") {
-      return ReferenceNode.create(
-        this.addr,
-        this.heap,
-      )
+    if (operator === 'address') {
+      return ReferenceNode.create(this.addr, this.heap)
     }
     throw Error('Invalid Operation')
   }

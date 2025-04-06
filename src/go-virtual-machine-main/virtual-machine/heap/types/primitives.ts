@@ -47,7 +47,7 @@ export class IntegerNode extends PrimitiveNode {
     return new IntegerNode(heap, addr)
   }
 
-  sizeof() {
+  override sizeof() {
     return 4
   }
 
@@ -81,11 +81,8 @@ export class IntegerNode extends PrimitiveNode {
         NumUnaryOp[operator](this.get_value()),
         this.heap,
       )
-    } else if (operator === "address") {
-      return ReferenceNode.create(
-        this.addr,
-        this.heap,
-      )
+    } else if (operator === 'address') {
+      return ReferenceNode.create(this.addr, this.heap)
     }
     throw Error('Invalid Operation')
   }
@@ -99,7 +96,7 @@ export class FloatNode extends PrimitiveNode {
     return new FloatNode(heap, addr)
   }
 
-  sizeof() {
+  override sizeof() {
     return 4
   }
 
@@ -148,11 +145,8 @@ export class FloatNode extends PrimitiveNode {
   override apply_unary(operator: string): PrimitiveNode | ReferenceNode {
     if (NumUnaryOp[operator]) {
       return FloatNode.create(NumUnaryOp[operator](this.get_value()), this.heap)
-    } else if (operator === "address") {
-      return ReferenceNode.create(
-        this.addr,
-        this.heap,
-      )
+    } else if (operator === 'address') {
+      return ReferenceNode.create(this.addr, this.heap)
     }
     throw Error('Invalid Operation')
   }
@@ -165,8 +159,8 @@ export class BoolNode extends PrimitiveNode {
     heap.memory.set_bits(val ? 1 : 0, addr, 1, 16)
     return new BoolNode(heap, addr)
   }
-  
-  sizeof() {
+
+  override sizeof() {
     return 1
   }
 
@@ -208,11 +202,8 @@ export class BoolNode extends PrimitiveNode {
   override apply_unary(operator: string): PrimitiveNode | ReferenceNode {
     if (BoolUnaryOp[operator]) {
       return BoolNode.create(BoolUnaryOp[operator](this.get_value()), this.heap)
-    } else if (operator === "address") {
-      return ReferenceNode.create(
-        this.addr,
-        this.heap,
-      )
+    } else if (operator === 'address') {
+      return ReferenceNode.create(this.addr, this.heap)
     }
     throw Error('Invalid Operation')
   }
@@ -241,7 +232,7 @@ export class StringNode extends PrimitiveNode {
     return new StringNode(heap, addr)
   }
 
-  sizeof() {
+  override sizeof() {
     return 2
   }
 
@@ -259,7 +250,9 @@ export class StringNode extends PrimitiveNode {
       heap.set_tag(addr + StringNode.sizeof() * i, TAG.STRING)
       heap.temp_push(addr + StringNode.sizeof() * i)
       heap.memory.set_number(-1, addr + 1 + StringNode.sizeof() * i)
-      const list_addr = heap.allocate(Math.ceil((''.length + 1) / word_size) + 1)
+      const list_addr = heap.allocate(
+        Math.ceil((''.length + 1) / word_size) + 1,
+      )
       heap.set_tag(list_addr, TAG.STRING_LIST)
       heap.memory.set_word(list_addr, addr + 1 + StringNode.sizeof() * i)
       heap.temp_pop()
@@ -339,16 +332,13 @@ export class StringNode extends PrimitiveNode {
     throw Error('Invalid Operation')
   }
   override apply_unary(_operator: string): PrimitiveNode | ReferenceNode {
-    if (_operator === "address") {
-      return ReferenceNode.create(
-        this.addr,
-        this.heap,
-      )
+    if (_operator === 'address') {
+      return ReferenceNode.create(this.addr, this.heap)
     }
     throw Error('Invalid Opeartion')
   }
 }
-export class StringListNode extends BaseNode { }
+export class StringListNode extends BaseNode {}
 
 export class UnassignedNode extends BaseNode {
   static create(heap: Heap) {

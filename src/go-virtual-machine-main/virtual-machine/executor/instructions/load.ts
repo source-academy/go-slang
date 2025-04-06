@@ -82,9 +82,9 @@ export class LoadArrayInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
-    // this is for dynamic arrays (slices) only, actual arrays are allocated 
+    // this is for dynamic arrays (slices) only, actual arrays are allocated
     // when entering function and uses a different instruction
-    const arrayNode = ArrayNode.create(this.length, process.heap)
+    const arrayNode = ArrayNode.create(this.length, process.heap, NaN, NaN)
     for (let i = this.length - 1; i >= 0; i--) {
       arrayNode.set_child(i, process.context.popOS())
     }
@@ -107,7 +107,7 @@ export class LoadArrayElementInstruction extends Instruction {
     const index = indexNode.get_value()
     let a = process.context.popOS()
     if (process.heap.get_value(a) instanceof ReferenceNode) {
-      a = process.heap.get_value(a).get_child()
+      a = (process.heap.get_value(a) as ReferenceNode).get_child()
     }
     const array = new ArrayNode(process.heap, a)
     if (index < 0 || index >= array.length()) {
@@ -191,7 +191,8 @@ export class LoadPackageInstruction extends Instruction {
 
   override execute(process: Process): void {
     const packageName = process.context.popOSNode(StringNode).get_value()
-    if (packageName !== 'fmt' && packageName !== 'unsafe') throw new Error('Unreachable')
+    if (packageName !== 'fmt' && packageName !== 'unsafe')
+      throw new Error('Unreachable')
     if (packageName === 'fmt') {
       const packageNode = FmtPkgNode.default(process.heap)
       process.context.pushOS(packageNode.addr)
@@ -218,13 +219,15 @@ export class LoadStructFieldInstruction extends Instruction {
     //const indexNode = new IntegerNode(process.heap, process.context.popOS())
     let a = process.context.popOS()
     if (process.heap.get_value(a) instanceof ReferenceNode) {
-      a = process.heap.get_value(a).get_child()
+      a = (process.heap.get_value(a) as ReferenceNode).get_child()
     }
     const struct = new StructNode(process.heap, a)
     const field = struct.get_child(this.index)
-    if (process.heap.get_value(process.context.peekOS()) instanceof MethodNode
-      && process.heap.get_value(process.context.peekOS()).identifier() === "Offsetof"
-      && !(process.heap.get_value(field) instanceof StructNode)
+    if (
+      process.heap.get_value(process.context.peekOS()) instanceof MethodNode &&
+      (process.heap.get_value(process.context.peekOS()) as MethodNode).identifier() ===
+        'Offsetof' &&
+      !(process.heap.get_value(field) instanceof StructNode)
     ) {
       const offset = struct.offsetof(this.index)
       process.context.pushOS(IntegerNode.create(offset, process.heap).addr)

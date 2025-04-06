@@ -59,7 +59,7 @@ export class PrimitiveTypeToken extends TypeToken {
     this.name = name
   }
 
-  override compileUnchecked(compiler: Compiler): Type {
+  override compileUnchecked(_compiler: Compiler): Type {
     if (this.name === 'bool') return new BoolType()
     else if (this.name === 'float64') return new Float64Type()
     else if (this.name === 'int') return new Int64Type()
@@ -78,7 +78,7 @@ export class ArrayTypeToken extends TypeToken {
     super(sourceLocation)
   }
 
-  override compileUnchecked(compiler: Compiler): ArrayType {
+  override compileUnchecked(compiler: Compiler): Type {
     return new ArrayType(this.element.compile(compiler), this.length.getValue())
   }
 }
@@ -164,7 +164,11 @@ export class DeclaredTypeToken extends TypeToken {
   }
 
   override compileUnchecked(compiler: Compiler): Type {
-    const [baseTypes, internalName] = compiler.context.env.create_type(this.name)
+    const result = compiler.context.env.create_type(
+      this.name,
+    )
+    const internalName = Object.keys(result)[0]
+    const baseTypes = Object.values(result)[0]
     // load the underlying types
     // need to configure to use declared type if possible
     return new DeclaredType(internalName, baseTypes)
@@ -172,10 +176,9 @@ export class DeclaredTypeToken extends TypeToken {
 }
 
 export class StructTypeToken extends TypeToken {
-  
   constructor(
     sourceLocation: TokenLocation,
-    public fields: Token[],
+    public fields: Token[]
   ) {
     super(sourceLocation)
     this.fields = fields
@@ -190,10 +193,10 @@ export class StructTypeToken extends TypeToken {
     // used to declare the fields of the struct
     for (let i = 0; i < this.fields.length; i++) {
       // get type of each field line first
-      const type = (this.fields[i].type as TypeToken).compile(compiler)
-      for (let j = 0; j < this.fields[i].list.length; j++) {
+      const type = Object.values(this.fields[i])[1].compile(compiler)
+      for (let j = 0; j < Object.values(this.fields[i])[0].length; j++) {
         // link the identifier of each field line to the type
-        struct.set(this.fields[i].list[j].identifier, type)
+        struct.set(Object.values(this.fields[i])[0][j].identifier, type)
       }
     }
     return new StructType(struct)
@@ -201,17 +204,13 @@ export class StructTypeToken extends TypeToken {
 }
 
 export class PointerTypeToken extends TypeToken {
-  
-  constructor(
-    sourceLocation: TokenLocation,
-    public override type: Token,
-  ) {
+  constructor(sourceLocation: TokenLocation, public pointingType: Token) {
     super(sourceLocation)
-    this.type = type
+    this.pointingType = pointingType
   }
 
   override compileUnchecked(compiler: Compiler): Type {
-    const baseType = this.type.compile(compiler)
+    const baseType = this.pointingType.compile(compiler)
     return new PointerType(baseType)
   }
 }

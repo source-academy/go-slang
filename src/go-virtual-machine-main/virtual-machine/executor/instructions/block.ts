@@ -3,7 +3,15 @@ import { BaseNode } from '../../heap/types/base'
 import { FrameNode } from '../../heap/types/environment'
 import { StructNode } from '../../heap/types/struct'
 import { Process } from '../../runtime/process'
-import { ArrayType, BoolType, DeclaredType, PointerType, StringType, StructType, Type } from '../typing'
+import {
+  ArrayType,
+  BoolType,
+  DeclaredType,
+  PointerType,
+  StringType,
+  StructType,
+  Type,
+} from '../typing'
 
 import { Instruction } from './base'
 
@@ -85,22 +93,30 @@ export class BlockInstruction extends Instruction {
           // we ensured that the memory block is contiguous earlier
           // so we need to link ArrayNodes to the correct memory addresses
           for (let a = 0; a < length / next2.length; a++) {
-            arrayNodes.push(ArrayNode.create(next2.length, process.heap, sizeof, addr2))
+            arrayNodes.push(
+              ArrayNode.create(next2.length, process.heap, sizeof, addr2),
+            )
             addr2 += sizeof * next2.length
           }
           dimensions.pop()
           while (dimensions.length > 0) {
             const dim = dimensions.pop()
-            const n = arrayNodes.length
-            for (let a = 0; a < n / dim; a++) {
-              const array = ArrayNode.create(dim, process.heap, sizeof, addr)
-              for (let b = 0; b < dim; b++) {
-                array.set_child(b, arrayNodes.shift().addr)
+            if (dim !== undefined) {
+              const n = arrayNodes.length
+              for (let a = 0; a < n / dim; a++) {
+                const array = ArrayNode.create(dim, process.heap, sizeof, addr)
+                for (let b = 0; b < dim; b++) {
+                  const node = arrayNodes.shift()
+                  if (node !== undefined) array.set_child(b, node.addr)
+                }
+                arrayNodes.push(array)
               }
-              arrayNodes.push(array)
             }
           }
-          new_frame.set_idx(arrayNodes.pop().addr, i)
+          const node = arrayNodes.pop()
+          if (node !== undefined) {
+            new_frame.set_idx(node.addr, i)
+          }
         } else {
           // in the case of 1D array
           const array = ArrayNode.create(T.length, process.heap, sizeof, addr)
@@ -118,8 +134,8 @@ export class BlockInstruction extends Instruction {
         for (let i = 0; i < next.length; i++) {
           if (next[i] instanceof DeclaredType) {
             // Find underlying type to load default values into
-            let actualType = next[i]
-            let nextType = next[i].type
+            let actualType = next[i] as DeclaredType
+            let nextType = actualType.type
             while (nextType[0] instanceof DeclaredType) {
               actualType = nextType[0]
               nextType = actualType.type
@@ -129,19 +145,23 @@ export class BlockInstruction extends Instruction {
             size += next[i].sizeof()
           }
         }
-        const addr = T.defaultNodeCreator()(process.heap, size)
+        const addr = T.defaultNodeCreator()(process.heap)
         new_frame.set_idx(addr, i)
       } else {
         const addr = T.defaultNodeCreator()(process.heap)
         new_frame.set_idx(addr, i)
-        if (T instanceof PointerType && T.type instanceof DeclaredType && T.type.type[0] instanceof StructType) {
+        if (
+          T instanceof PointerType &&
+          T.type instanceof DeclaredType &&
+          T.type.type[0] instanceof StructType
+        ) {
           let size = 0
           const next = [...T.type.type[0].fields.values()]
           for (let i = 0; i < next.length; i++) {
             if (next[i] instanceof DeclaredType) {
               // Find underlying type to load default values into
-              let actualType = next[i]
-              let nextType = next[i].type
+              let actualType = next[i] as DeclaredType
+              let nextType = actualType.type
               while (nextType[0] instanceof DeclaredType) {
                 actualType = nextType[0]
                 nextType = actualType.type
@@ -151,7 +171,7 @@ export class BlockInstruction extends Instruction {
               size += next[i].sizeof()
             }
           }
-          const structAddr = T.type.type[0].defaultNodeCreator()(process.heap, size)
+          const structAddr = T.type.type[0].defaultNodeCreator()(process.heap)
           process.heap.get_value(addr).set_child(structAddr)
         } else if (T instanceof PointerType && T.type instanceof ArrayType) {
           const dimensions = [] as number[]
@@ -198,26 +218,46 @@ export class BlockInstruction extends Instruction {
             // we ensured that the memory block is contiguous earlier
             // so we need to link ArrayNodes to the correct memory addresses
             for (let a = 0; a < length / next2.length; a++) {
-              arrayNodes.push(ArrayNode.create(next2.length, process.heap, sizeof, addr2))
+              arrayNodes.push(
+                ArrayNode.create(next2.length, process.heap, sizeof, addr2),
+              )
               addr2 += sizeof * next2.length
             }
             dimensions.pop()
             while (dimensions.length > 0) {
               const dim = dimensions.pop()
               const n = arrayNodes.length
-              for (let a = 0; a < n / dim; a++) {
-                const array = ArrayNode.create(dim, process.heap, sizeof, arrayAddr)
-                for (let b = 0; b < dim; b++) {
-                  array.set_child(b, arrayNodes.shift().addr)
+              if (dim !== undefined) {
+                for (let a = 0; a < n / dim; a++) {
+                  const array = ArrayNode.create(
+                    dim,
+                    process.heap,
+                    sizeof,
+                    arrayAddr,
+                  )
+                  for (let b = 0; b < dim; b++) {
+                    const node = arrayNodes.shift()
+                    if (node !== undefined) {
+                      array.set_child(b, node.addr)
+                    }
+                  }
+                  arrayNodes.push(array)
                 }
-                arrayNodes.push(array)
               }
             }
             const pointer = process.heap.get_value(addr)
-            pointer.set_child(arrayNodes.pop().addr)
+            const node = arrayNodes.pop()
+            if (node !== undefined) {
+              pointer.set_child(node.addr)
+            }
           } else {
             // in the case of 1D array
-            const array = ArrayNode.create(T.type.length, process.heap, sizeof, arrayAddr)
+            const array = ArrayNode.create(
+              T.type.length,
+              process.heap,
+              sizeof,
+              arrayAddr,
+            )
             if (arrayAddr instanceof Array) {
               const length = arrayAddr.length
               for (let k = 0; k < length; k++) {
@@ -313,25 +353,40 @@ export class FuncBlockInstruction extends BlockInstruction {
           // we ensured that the memory block is contiguous earlier
           // so we need to link ArrayNodes to the correct memory addresses
           for (let a = 0; a < length / length2; a++) {
-            arrayNodes.push(ArrayNode.create(length2, process.heap, sizeof, addr2))
+            arrayNodes.push(
+              ArrayNode.create(length2, process.heap, sizeof, addr2),
+            )
             addr2 += sizeof * length2
           }
           dimensions.pop()
           while (dimensions.length > 0) {
             const dim = dimensions.pop()
             const n = arrayNodes.length
-            for (let a = 0; a < n / dim; a++) {
-              const array = ArrayNode.create(dim, process.heap, sizeof, addr)
-              for (let b = 0; b < dim; b++) {
-                array.set_child(b, arrayNodes.shift().addr)
+            if (dim !== undefined) {
+              for (let a = 0; a < n / dim; a++) {
+                const array = ArrayNode.create(dim, process.heap, sizeof, addr)
+                for (let b = 0; b < dim; b++) {
+                  const node = arrayNodes.shift()
+                  if (node !== undefined) {
+                    array.set_child(b, node.addr)
+                  }
+                }
+                arrayNodes.push(array)
               }
-              arrayNodes.push(array)
             }
           }
-          process.heap.copy(dst, arrayNodes.pop().addr)
+          const arrayNode = arrayNodes.pop()
+          if (arrayNode !== undefined) {
+            process.heap.copy(dst, arrayNode.addr)
+          }
         } else {
           // in the case of 1D array
-          const array = ArrayNode.create(node.length(), process.heap, sizeof, addr)
+          const array = ArrayNode.create(
+            node.length(),
+            process.heap,
+            sizeof,
+            addr,
+          )
           process.heap.copy(dst, array.addr)
         }
       } else if (node instanceof StructNode) {
@@ -346,9 +401,9 @@ export class FuncBlockInstruction extends BlockInstruction {
         push(process, baseNodes, node)
         const addr = process.heap.allocate(node.sizeof())
         const struct = StructNode.create(node.length(), process.heap)
-        for (let i = 0, count = 0; i < node.sizeof();) {
+        for (let i = 0, count = 0; i < node.sizeof(); ) {
           const node = baseNodes.shift()
-          if (!(node instanceof StructNode)) {
+          if (!(node instanceof StructNode) && node !== undefined) {
             process.heap.copy(addr + i, structStart + i)
             struct.set_child(count, addr + i)
             i += node.sizeof()

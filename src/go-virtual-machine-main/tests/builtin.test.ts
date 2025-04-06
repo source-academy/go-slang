@@ -15,6 +15,8 @@ describe('Builtins Type Checking', () => {
         const a = 5
         a = 6
       `).error?.message,
-    ).toEqual('cannot assign to a (neither addressable nor a map index expression)')
+    ).toEqual(
+      'cannot assign to a (neither addressable nor a map index expression)',
+    )
   })
 }, 60000)

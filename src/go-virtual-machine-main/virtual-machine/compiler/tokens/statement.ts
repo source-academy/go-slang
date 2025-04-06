@@ -102,7 +102,9 @@ export class AssignmentStatementToken extends Token {
           left = this.left[i]
           const varType = left.compile(compiler)
           if (!varType.assignableBy(assignType.types[j])) {
-            throw Error(`Cannot use ${assignType.types[j]} as ${varType} in assignment`)
+            throw Error(
+              `Cannot use ${assignType.types[j]} as ${varType} in assignment`,
+            )
           }
           this.pushInstruction(compiler, new StoreInstruction())
           i++
@@ -117,7 +119,12 @@ export class AssignmentStatementToken extends Token {
           const instructionSet = []
           let a = 0
           let next = compiler.instructions.pop()
-          while (!(next instanceof StoreInstruction || next instanceof CallInstruction)) {
+          while (
+            !(
+              next instanceof StoreInstruction ||
+              next instanceof CallInstruction
+            )
+          ) {
             instructionSet[a] = next // load and intermediate instructions get popped
             a++
             next = compiler.instructions.pop()
@@ -127,7 +134,10 @@ export class AssignmentStatementToken extends Token {
         }
         for (let j = 0; j < assignType.types.length; j++) {
           for (let k = reverse_instructions[j].length - 1; k >= 0; k--) {
-            this.pushInstruction(compiler, reverse_instructions[j][k] as Instruction)
+            this.pushInstruction(
+              compiler,
+              reverse_instructions[j][k] as Instruction,
+            )
           }
           this.pushInstruction(compiler, new StoreInstruction())
         }
@@ -137,13 +147,18 @@ export class AssignmentStatementToken extends Token {
           // check if assignType is primitive literal and if varType is declared
           // if it is, primitive literal should match varType if underlying type is
           // the same, since primitive literals are considered as untyped values
-          if (right instanceof PrimaryExpressionToken && right.operand.type === 'literal') {
+          if (
+            right instanceof PrimaryExpressionToken &&
+            right.operand.type === 'literal'
+          ) {
             let baseType = varType
             while (baseType instanceof DeclaredType) {
               baseType = baseType.type[0]
             }
             if (!baseType.assignableBy(assignType)) {
-              throw Error(`Cannot use ${assignType} as ${varType} in assignment`)
+              throw Error(
+                `Cannot use ${assignType} as ${varType} in assignment`,
+              )
             }
           } else {
             throw Error(`Cannot use ${assignType} as ${varType} in assignment`)
@@ -209,17 +224,24 @@ export class ReturnStatementToken extends Token {
       for (let i = 0; i < this.returns.length; i++) {
         let actualType = compiler.type_environment.expectedReturn.types[i]
         let nextType = actualType
-        if (this.returns[i] instanceof PrimaryExpressionToken
-          && (this.returns[i] as PrimaryExpressionToken).operand.type === "literal"
-          && compiler.type_environment.expectedReturn.types[i] instanceof DeclaredType) {
-            nextType = (compiler.type_environment.expectedReturn.types[i] as DeclaredType).type[0]
-            while (nextType instanceof DeclaredType) {
-              actualType = nextType
-              nextType = (actualType as DeclaredType).type[0]
-            }
-            if (returnType.types[i].assignableBy(nextType)) {
-              returnType.types[i] = compiler.type_environment.expectedReturn.types[i]
-            }
+        if (
+          this.returns[i] instanceof PrimaryExpressionToken &&
+          (this.returns[i] as PrimaryExpressionToken).operand.type ===
+            'literal' &&
+          compiler.type_environment.expectedReturn.types[i] instanceof
+            DeclaredType
+        ) {
+          nextType = (
+            compiler.type_environment.expectedReturn.types[i] as DeclaredType
+          ).type[0]
+          while (nextType instanceof DeclaredType) {
+            actualType = nextType
+            nextType = (actualType as DeclaredType).type[0]
+          }
+          if (returnType.types[i].assignableBy(nextType)) {
+            returnType.types[i] =
+              compiler.type_environment.expectedReturn.types[i]
+          }
         }
       }
     }
@@ -476,7 +498,9 @@ export class GoStatementToken extends Token {
 
   override compileUnchecked(compiler: Compiler): Type {
     this.call.compile(compiler)
-    const call = compiler.instructions[compiler.instructions.length - 1] as CallInstruction
+    const call = compiler.instructions[
+      compiler.instructions.length - 1
+    ] as CallInstruction
     const go_instr = new GoInstruction(call.args)
     compiler.instructions[compiler.instructions.length - 1] = go_instr
     go_instr.set_addr(compiler.instructions.length)
@@ -568,7 +592,7 @@ export class SelectStatementToken extends Token {
           clause.compile(compiler)
           const jump_instr = new JumpInstruction()
           this.pushInstruction(compiler, jump_instr)
-          end_jumps.push(jump_instr) 
+          end_jumps.push(jump_instr)
           break
         }
       }
@@ -628,6 +652,7 @@ export class CommunicationClauseToken extends Token {
             new ShortVariableDeclarationToken(
               this.sourceLocation,
               this.predicate.identifiers,
+              undefined,
               [new EmptyExpressionToken(this.sourceLocation, chanType)],
             ),
           )
@@ -674,13 +699,19 @@ export class ExpressionStatementToken extends Token {
   }
 }
 
-function handleAssignment(compiler: Compiler, left: ExpressionToken, right: ExpressionToken): Type {
+function handleAssignment(
+  compiler: Compiler,
+  left: ExpressionToken,
+  right: ExpressionToken,
+): Type {
   let leftType = left.compile(compiler)
   let rightType = right.compile(compiler)
   // literals have unnamed types, so it can match a declared type
-  if (left instanceof PrimaryExpressionToken
-    && (left as PrimaryExpressionToken).operand.type === "literal"
-    && rightType instanceof DeclaredType) {
+  if (
+    left instanceof PrimaryExpressionToken &&
+    (left as PrimaryExpressionToken).operand.type === 'literal' &&
+    rightType instanceof DeclaredType
+  ) {
     // LHS of the binop is a literal, make it match type of RHS
     let actualType = rightType
     let nextType = compiler.context.env.find_type(actualType.name)[0]
@@ -691,9 +722,11 @@ function handleAssignment(compiler: Compiler, left: ExpressionToken, right: Expr
     if (nextType.assignableBy(leftType)) {
       leftType = rightType
     }
-  } else if (right instanceof PrimaryExpressionToken
-    && (right as PrimaryExpressionToken).operand.type === "literal"
-    && leftType instanceof DeclaredType) {
+  } else if (
+    right instanceof PrimaryExpressionToken &&
+    (right as PrimaryExpressionToken).operand.type === 'literal' &&
+    leftType instanceof DeclaredType
+  ) {
     // RHS of the binop is a literal, make it match type of LHS
     let actualType = leftType
     let nextType = compiler.context.env.find_type(actualType.name)[0]

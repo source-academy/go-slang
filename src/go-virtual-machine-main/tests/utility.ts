@@ -2,12 +2,18 @@ import * as seedrandom from 'seedrandom'
 
 import { CompileData, runCode } from '../virtual-machine'
 import parser from '../virtual-machine/compiler/parser'
-import { SourceFileTokens, TokenLocation } from '../virtual-machine/compiler/tokens'
+import {
+  SourceFileTokens,
+  TokenLocation,
+} from '../virtual-machine/compiler/tokens'
 import { compile_tokens, CompileError } from '../virtual-machine/executor'
 import { Instruction } from '../virtual-machine/executor/instructions'
 import { Heap } from '../virtual-machine/heap'
 import { ContextNode } from '../virtual-machine/heap/types/context'
-import { EnvironmentNode, FrameNode } from '../virtual-machine/heap/types/environment'
+import {
+  EnvironmentNode,
+  FrameNode,
+} from '../virtual-machine/heap/types/environment'
 import { Debugger } from '../virtual-machine/runtime/debugger'
 import { Process } from '../virtual-machine/runtime/process'
 
@@ -40,13 +46,11 @@ export const codeRunner = (code: string) => {
   return runCode(code, 4096, true)
 }
 
-export const compileCode = (
-  source_code: string,
-): CompileData => {
+export const compileCode = (source_code: string): CompileData => {
   let instructions: Instruction[] = []
   let symbols: (TokenLocation | null)[] = []
-  let message = ""
-  const err = ""
+  let message = ''
+  const err = ''
   let tokens = null
   try {
     tokens = parser.parse(source_code) as SourceFileTokens
@@ -95,7 +99,13 @@ export const runCodeWithHeap = (
   // Execution.
   const instructions = compiled.instructions
   const symbols = compiled.symbols
-  const process = new Process(instructions, 4096, symbols, deterministic, visualisation)
+  const process = new Process(
+    instructions,
+    4096,
+    symbols,
+    deterministic,
+    visualisation,
+  )
   process.instructions = instructions
   process.heap = heap
   process.contexts = process.heap.contexts

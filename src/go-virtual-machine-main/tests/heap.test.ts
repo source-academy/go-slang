@@ -52,8 +52,7 @@ describe('Heap Tests', () => {
   })
 
   test('Array memory allocation for integers', () => {
-    const code =
-    `
+    const code = `
     package main
     import "fmt"
     func main() {
@@ -94,8 +93,7 @@ describe('Heap Tests', () => {
   })
 
   test('Array memory allocation for booleans', () => {
-    const code =
-    `
+    const code = `
     package main
     import "fmt"
     func main() {

@@ -72,18 +72,26 @@ export class PrimaryExpressionToken extends Token {
     // special handling for unsafe.Offsetof since it needs to be a struct field
     let offsetof = false
     for (const modifier of this.rest ?? []) {
-      if (this.operand instanceof IdentifierToken && this.operand.identifier === "unsafe"
-        && modifier instanceof SelectorToken && modifier.identifier === "Offsetof"
+      if (
+        this.operand instanceof IdentifierToken &&
+        this.operand.identifier === 'unsafe' &&
+        modifier instanceof SelectorToken &&
+        modifier.identifier === 'Offsetof'
       ) {
         offsetof = true
-      } else if (offsetof && modifier instanceof CallToken && modifier.expressions[0] instanceof PrimaryExpressionToken
-        && modifier.expressions[0].rest.length > 0 && modifier.expressions[0].rest[0] instanceof SelectorToken
+      } else if (
+        offsetof &&
+        modifier instanceof CallToken &&
+        modifier.expressions[0] instanceof PrimaryExpressionToken &&
+        modifier.expressions[0].rest !== null &&
+        modifier.expressions[0].rest.length > 0 &&
+        modifier.expressions[0].rest[0] instanceof SelectorToken
       ) {
         offsetof = false
       }
       operandType = modifier.compile(compiler, operandType)
     }
-    if (offsetof) throw new Error("Offsetof needs a struct field value.")
+    if (offsetof) throw new Error('Offsetof needs a struct field value.')
     return operandType
   }
 }
@@ -93,7 +101,7 @@ export class PrimaryExpressionToken extends Token {
 // Hence, its compilation method must take in an extra argument. Idk if this is the correct way
 // to fix, but it doesn't make sense to force them to follow the structure of Token.
 export abstract class PrimaryExpressionModifierToken {
-  constructor(public type: string, public sourceLocation: TokenLocation) { }
+  constructor(public type: string, public sourceLocation: TokenLocation) {}
   abstract compile(compiler: Compiler, operandType: Type): Type
 
   pushInstruction(compiler: Compiler, ...instr: Instruction[]) {
@@ -109,11 +117,16 @@ export class SelectorToken extends PrimaryExpressionModifierToken {
 
   override compile(compiler: Compiler, operandType: Type): Type {
     // handle structs first since parser sees them as the same as packages
-    if (operandType instanceof DeclaredType) {
+    if (operandType instanceof DeclaredType && operandType.type[0] instanceof StructType) {
       // declared type structs
-      if (operandType.type[0].fields.size >= 0) {
-        const resultType = (operandType as StructType).type[0].fields.get(this.identifier)
-        const index = [...(operandType as StructType).type[0].fields.keys()].indexOf(this.identifier)
+      if ((operandType.type[0]).fields.size >= 0) {
+        const resultType = operandType.type[0].fields.get(
+          this.identifier,
+        )
+        if (resultType === undefined) return new NoType()
+        const index = [
+          ...operandType.type[0].fields.keys(),
+        ].indexOf(this.identifier)
         compiler.instructions.push(new LoadStructFieldInstruction(index))
         return resultType
       }
@@ -121,6 +134,7 @@ export class SelectorToken extends PrimaryExpressionModifierToken {
       // anonymous structs
       if (operandType.fields.size >= 0) {
         const resultType = operandType.fields.get(this.identifier)
+        if (resultType === undefined) return new NoType()
         const index = [...operandType.fields.keys()].indexOf(this.identifier)
         compiler.instructions.push(new LoadStructFieldInstruction(index))
         return resultType
@@ -128,11 +142,16 @@ export class SelectorToken extends PrimaryExpressionModifierToken {
     } else if (operandType instanceof PointerType) {
       // pointers
       const baseType = operandType.type
-      if (baseType instanceof DeclaredType) {
+      if (baseType instanceof DeclaredType && baseType.type[0] instanceof StructType) {
         // pointers to declared type structs
         if (baseType.type[0].fields.size >= 0) {
-          const resultType = (baseType as StructType).type[0].fields.get(this.identifier)
-          const index = [...(baseType as StructType).type[0].fields.keys()].indexOf(this.identifier)
+          const resultType = baseType.type[0].fields.get(
+            this.identifier,
+          )
+          if (resultType === undefined) return new NoType()
+          const index = [
+            ...baseType.type[0].fields.keys(),
+          ].indexOf(this.identifier)
           compiler.instructions.push(new LoadStructFieldInstruction(index))
           return resultType
         }
@@ -140,21 +159,21 @@ export class SelectorToken extends PrimaryExpressionModifierToken {
         // pointers to anonymous structs
         if (baseType.fields.size >= 0) {
           const resultType = baseType.fields.get(this.identifier)
+          if (resultType === undefined) return new NoType()
           const index = [...baseType.fields.keys()].indexOf(this.identifier)
           compiler.instructions.push(new LoadStructFieldInstruction(index))
           return resultType
         }
       }
-    } else {
-      // standard package operations
-      const resultType = operandType.select(this.identifier)
-      this.pushInstruction(
-        compiler,
-        new LoadConstantInstruction(this.identifier, new StringType()),
-        new SelectorOperationInstruction(),
-      )
-      return resultType
     }
+    // standard package operations
+    const resultType = operandType.select(this.identifier)
+    this.pushInstruction(
+      compiler,
+      new LoadConstantInstruction(this.identifier, new StringType()),
+      new SelectorOperationInstruction(),
+    )
+    return resultType
   }
 }
 
@@ -170,27 +189,31 @@ export class IndexToken extends PrimaryExpressionModifierToken {
     if (operandType instanceof ArrayType) {
       this.compileIndex(compiler)
       this.pushInstruction(compiler, new LoadArrayElementInstruction())
+      if (operandType.element === undefined) return new NoType()
       return operandType.element
     } else if (operandType instanceof SliceType) {
       this.compileIndex(compiler)
       this.pushInstruction(compiler, new LoadSliceElementInstruction())
+      if (operandType.element === undefined) return new NoType()
       return operandType.element
     } else if (operandType instanceof PointerType) {
       const baseType = operandType.type
       if (baseType instanceof ArrayType) {
         this.compileIndex(compiler)
         this.pushInstruction(compiler, new LoadArrayElementInstruction())
+        if (baseType.element === undefined) return new NoType()
         return baseType.element
       } else if (baseType instanceof SliceType) {
         this.compileIndex(compiler)
         this.pushInstruction(compiler, new LoadSliceElementInstruction())
+        if (baseType.element === undefined) return new NoType()
+        
         return baseType.element
       }
-    } else {
-      throw Error(
-        `Invalid operation: Cannot index a variable of type ${operandType}`,
-      )
     }
+    throw new Error(
+      `Invalid operation: Cannot index a variable of type ${operandType}`,
+    )
   }
 
   private compileIndex(compiler: Compiler) {
@@ -255,13 +278,12 @@ export class CallToken extends PrimaryExpressionModifierToken {
     const argumentTypes = this.expressions.map((e) => e.compile(compiler))
     let argumentLength = 0
     for (let i = 0; i < argumentTypes.length; i++) {
-      argumentLength = argumentTypes[i] instanceof ReturnType
-        ? argumentLength + (argumentTypes[i] as ReturnType).types.length
-        : argumentLength + 1
+      argumentLength =
+        argumentTypes[i] instanceof ReturnType
+          ? argumentLength + (argumentTypes[i] as ReturnType).types.length
+          : argumentLength + 1
     }
-    this.pushInstruction(compiler, new CallInstruction(
-      argumentLength
-    ))
+    this.pushInstruction(compiler, new CallInstruction(argumentLength))
 
     // We only implement variadic functions that accept any number of any type of arguments,
     // so variadic functions do not require type checking.
@@ -269,15 +291,15 @@ export class CallToken extends PrimaryExpressionModifierToken {
       if (argumentLength < operandType.parameters.length) {
         throw Error(
           `Not enough arguments in function call\n` +
-          `have (${TypeUtility.arrayToString(argumentTypes)})\n` +
-          `want (${TypeUtility.arrayToString(operandType.parameters)})`,
+            `have (${TypeUtility.arrayToString(argumentTypes)})\n` +
+            `want (${TypeUtility.arrayToString(operandType.parameters)})`,
         )
       }
       if (argumentLength > operandType.parameters.length) {
         throw Error(
           `Too many arguments in function call\n` +
-          `have (${TypeUtility.arrayToString(argumentTypes)})\n` +
-          `want (${TypeUtility.arrayToString(operandType.parameters)})`,
+            `have (${TypeUtility.arrayToString(argumentTypes)})\n` +
+            `want (${TypeUtility.arrayToString(operandType.parameters)})`,
         )
       }
 
@@ -285,21 +307,37 @@ export class CallToken extends PrimaryExpressionModifierToken {
       for (let i = 0; i < argumentTypes.length; i++) {
         if (argumentTypes[i] instanceof ReturnType) {
           if ((argumentTypes[i] as ReturnType).types.length > 1) {
-            for (let j = 0; j < (argumentTypes[i] as ReturnType).types.length; j++) {
+            for (
+              let j = 0;
+              j < (argumentTypes[i] as ReturnType).types.length;
+              j++
+            ) {
               // literals have unnamed types, so it can match a declared type
               let type = (argumentTypes[i] as ReturnType).types[j]
-              if (this.expressions[i] instanceof PrimaryExpressionToken
-                && (this.expressions[i] as PrimaryExpressionToken).operand.type === "literal"
-                && operandType.parameters[i + j + delta] instanceof ParameterType
-                && operandType.parameters[i + j + delta].type instanceof DeclaredType) {
+              if (
+                this.expressions[i] instanceof PrimaryExpressionToken &&
+                (this.expressions[i] as PrimaryExpressionToken).operand.type ===
+                  'literal' &&
+                operandType.parameters[i + j + delta] instanceof
+                  ParameterType &&
+                operandType.parameters[i + j + delta].type instanceof
+                  DeclaredType
+              ) {
                 // argument is a literal, make it match type of required type by function
-                let actualType = operandType.parameters[i + j + delta].type as DeclaredType
-                let nextType = compiler.context.env.find_type(actualType.name)[0]
+                let actualType = operandType.parameters[i + j + delta]
+                  .type as DeclaredType
+                let nextType = compiler.context.env.find_type(
+                  actualType.name,
+                )[0]
                 while (nextType instanceof DeclaredType) {
                   actualType = nextType
                   nextType = compiler.context.env.find_type(actualType.name)[0]
                 }
-                if ((argumentTypes[i] as ReturnType).types[j].assignableBy(nextType)) {
+                if (
+                  (argumentTypes[i] as ReturnType).types[j].assignableBy(
+                    nextType,
+                  )
+                ) {
                   type = nextType
                   break
                 }
@@ -307,16 +345,21 @@ export class CallToken extends PrimaryExpressionModifierToken {
               if (type.assignableBy(operandType.parameters[i + j + delta].type))
                 continue
               throw Error(
-                `Cannot use ${type} as ${operandType.parameters[i + j + delta]} in argument to function call`,
+                `Cannot use ${type} as ${
+                  operandType.parameters[i + j + delta]
+                } in argument to function call`,
               )
             }
             delta += (argumentTypes[i] as ReturnType).types.length - 1
           } else {
             let type = argumentTypes[i]
-            if (this.expressions[i] instanceof PrimaryExpressionToken
-              && (this.expressions[i] as PrimaryExpressionToken).operand.type === "literal"
-              && operandType.parameters[i] instanceof ParameterType
-              && operandType.parameters[i].type instanceof DeclaredType) {
+            if (
+              this.expressions[i] instanceof PrimaryExpressionToken &&
+              (this.expressions[i] as PrimaryExpressionToken).operand.type ===
+                'literal' &&
+              operandType.parameters[i] instanceof ParameterType &&
+              operandType.parameters[i].type instanceof DeclaredType
+            ) {
               // argument is a literal, make it match type of required type by function
               let actualType = operandType.parameters[i].type as DeclaredType
               let nextType = compiler.context.env.find_type(actualType.name)[0]
@@ -329,18 +372,20 @@ export class CallToken extends PrimaryExpressionModifierToken {
                 break
               }
             }
-            if (type.assignableBy(operandType.parameters[i].type))
-              continue
+            if (type.assignableBy(operandType.parameters[i].type)) continue
             throw Error(
               `Cannot use ${type} as ${operandType.parameters[i]} in argument to function call`,
             )
           }
         } else {
           let type = argumentTypes[i]
-          if (this.expressions[i] instanceof PrimaryExpressionToken
-            && (this.expressions[i] as PrimaryExpressionToken).operand.type === "literal"
-            && operandType.parameters[i] instanceof ParameterType
-            && operandType.parameters[i].type instanceof DeclaredType) {
+          if (
+            this.expressions[i] instanceof PrimaryExpressionToken &&
+            (this.expressions[i] as PrimaryExpressionToken).operand.type ===
+              'literal' &&
+            operandType.parameters[i] instanceof ParameterType &&
+            operandType.parameters[i].type instanceof DeclaredType
+          ) {
             // argument is a literal, make it match type of required type by function
             let actualType = operandType.parameters[i].type as DeclaredType
             let nextType = compiler.context.env.find_type(actualType.name)[0]
@@ -353,8 +398,7 @@ export class CallToken extends PrimaryExpressionModifierToken {
               break
             }
           }
-          if (type.assignableBy(operandType.parameters[i].type))
-            continue
+          if (type.assignableBy(operandType.parameters[i].type)) continue
           throw Error(
             `Cannot use ${type} as ${operandType.parameters[i]} in argument to function call`,
           )

@@ -23,6 +23,15 @@ import {
 } from '.'
 
 export class WaitGroupType extends Type {
+  override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
+    throw new Error('Method not implemented.')
+  }
+  override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
+    throw new Error('Method not implemented.')
+  }
+  override sizeof(): number {
+    throw new Error('Method not implemented.')
+  }
   override isPrimitive(): boolean {
     return false
   }
@@ -57,6 +66,15 @@ export class WaitGroupType extends Type {
 }
 
 export class MutexType extends Type {
+  override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
+    throw new Error('Method not implemented.')
+  }
+  override defaultNodeAllocator(): (heap: Heap, addr: number) => void {
+    throw new Error('Method not implemented.')
+  }
+  override sizeof(): number {
+    throw new Error('Method not implemented.')
+  }
   override isPrimitive(): boolean {
     return false
   }
@@ -120,23 +138,47 @@ export const builtinPackages = {
       // variadic should be false but we accept any type
       // we will handle it separately like in fmt package functions
       // throw an error if incorrect number of arguments
-      Alignof: new FunctionType([new ParameterType("x", new ArbitraryType())], new ReturnType([new Int64Type()]), false),
-      Offsetof: new FunctionType([new ParameterType("x", new ArbitraryType())], new ReturnType([new Int64Type()]), false),
-      Sizeof: new FunctionType([new ParameterType("x", new ArbitraryType())], new ReturnType([new Int64Type()]), false),
-      String: new FunctionType([
-        new ParameterType("ptr", new PointerType(new ByteType())),
-        new ParameterType("len", new Int64Type()),
-      ], new ReturnType([new StringType()]), false),
-      StringData: new FunctionType([
-        new ParameterType("str", new StringType()),
-      ], new ReturnType([new PointerType(new ByteType())]), false),
-      Add: new FunctionType([
-        new ParameterType("ptr", new PointerType(new ArbitraryType())),
-        new ParameterType("len", new Int64Type()),
-      ], new ReturnType([new PointerType(new ArbitraryType())]), false),
-      Pointer: new FunctionType([
-        new ParameterType("ptr", new PointerType(new ArbitraryType())),
-      ], new ReturnType([new Int64Type()]), false),
+      Alignof: new FunctionType(
+        [new ParameterType('x', new ArbitraryType())],
+        new ReturnType([new Int64Type()]),
+        false,
+      ),
+      Offsetof: new FunctionType(
+        [new ParameterType('x', new ArbitraryType())],
+        new ReturnType([new Int64Type()]),
+        false,
+      ),
+      Sizeof: new FunctionType(
+        [new ParameterType('x', new ArbitraryType())],
+        new ReturnType([new Int64Type()]),
+        false,
+      ),
+      String: new FunctionType(
+        [
+          new ParameterType('ptr', new PointerType(new ByteType())),
+          new ParameterType('len', new Int64Type()),
+        ],
+        new ReturnType([new StringType()]),
+        false,
+      ),
+      StringData: new FunctionType(
+        [new ParameterType('str', new StringType())],
+        new ReturnType([new PointerType(new ByteType())]),
+        false,
+      ),
+      Add: new FunctionType(
+        [
+          new ParameterType('ptr', new PointerType(new ArbitraryType())),
+          new ParameterType('len', new Int64Type()),
+        ],
+        new ReturnType([new PointerType(new ArbitraryType())]),
+        false,
+      ),
+      Pointer: new FunctionType(
+        [new ParameterType('ptr', new PointerType(new ArbitraryType()))],
+        new ReturnType([new Int64Type()]),
+        false,
+      ),
     })
     compiler.type_environment.addType('unsafe', pkg)
     const [frame_idx, var_idx] = compiler.context.env.declare_var('unsafe')

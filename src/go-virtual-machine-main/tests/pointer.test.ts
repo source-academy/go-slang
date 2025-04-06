@@ -13,9 +13,7 @@ describe('Pointer Tests', () => {
       fmt.Println(&a)
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      '0x00000074\n',
-    )
+    expect(codeRunner(code).output).toEqual('0x00000074\n')
   })
 
   test('Shorthand declaration for pointer works', () => {
@@ -29,9 +27,7 @@ describe('Pointer Tests', () => {
       fmt.Println(p)
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      '0x00000074\n',
-    )
+    expect(codeRunner(code).output).toEqual('0x00000074\n')
   })
 
   test('Modifying value of dereferenced pointer works', () => {
@@ -47,9 +43,7 @@ describe('Pointer Tests', () => {
       fmt.Println(x)
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      '10\n20\n',
-    )
+    expect(codeRunner(code).output).toEqual('10\n20\n')
   })
 
   test('Dereferencing a variable should throw error', () => {
@@ -62,9 +56,7 @@ describe('Pointer Tests', () => {
       fmt.Println(*a)
     }
     `
-    expect(codeRunner(code).error?.type).toEqual(
-      'compile',
-    )
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 
   test('Dereferencing of a pointer works', () => {
@@ -77,9 +69,7 @@ describe('Pointer Tests', () => {
       fmt.Println(*(&a))
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      '1\n',
-    )
+    expect(codeRunner(code).output).toEqual('1\n')
   })
 
   test('Dereferencing of a pointer works together without brackets', () => {
@@ -92,9 +82,7 @@ describe('Pointer Tests', () => {
       fmt.Println(*&a)
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      '1\n',
-    )
+    expect(codeRunner(code).output).toEqual('1\n')
   })
 
   test('Dereferencing of a pointer works together without brackets on float', () => {
@@ -107,9 +95,7 @@ describe('Pointer Tests', () => {
       fmt.Println(*&a)
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      '1.5\n',
-    )
+    expect(codeRunner(code).output).toEqual('1.5\n')
   })
 
   test('Dereferencing of a pointer works together without brackets on bool', () => {
@@ -122,9 +108,7 @@ describe('Pointer Tests', () => {
       fmt.Println(*&a)
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      'true\n',
-    )
+    expect(codeRunner(code).output).toEqual('true\n')
   })
 
   test('Dereferencing of a pointer works together without brackets on string', () => {
@@ -137,9 +121,7 @@ describe('Pointer Tests', () => {
       fmt.Println(*&a)
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      'abufe\n',
-    )
+    expect(codeRunner(code).output).toEqual('abufe\n')
   })
 
   test('Getting a pointer of a pointer should throw error', () => {
@@ -152,9 +134,7 @@ describe('Pointer Tests', () => {
       fmt.Println(&(&a))
     }
     `
-    expect(codeRunner(code).error?.type).toEqual(
-      'compile',
-    )
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 
   test('Getting a pointer of a pointer stored as a variable should work', () => {
@@ -168,9 +148,7 @@ describe('Pointer Tests', () => {
       fmt.Println(&b)
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      '0x00000078\n',
-    )
+    expect(codeRunner(code).output).toEqual('0x00000078\n')
   })
 
   test('Pointer Type works', () => {
@@ -185,9 +163,7 @@ describe('Pointer Tests', () => {
       fmt.Println(a)
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      '0x00000074\n',
-    )
+    expect(codeRunner(code).output).toEqual('0x00000074\n')
   })
 
   test('Reassignment of pointers of declared pointer type works', () => {
@@ -206,9 +182,7 @@ describe('Pointer Tests', () => {
       fmt.Println(a)
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      '0x00000074\n0x00000078\n',
-    )
+    expect(codeRunner(code).output).toEqual('0x00000074\n0x00000078\n')
   })
 
   test(`Reassignment of pointers of declared pointer type should
@@ -227,9 +201,7 @@ describe('Pointer Tests', () => {
       fmt.Println(a)
     }
     `
-    expect(codeRunner(code).error?.type).toEqual(
-      'compile',
-    )
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 
   test('Obtaining pointer of array elements works', () => {
@@ -265,9 +237,7 @@ describe('Pointer Tests', () => {
       fmt.Println(*&a[3])
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      '3\n4\n78\n6\n',
-    )
+    expect(codeRunner(code).output).toEqual('3\n4\n78\n6\n')
   })
 
   test('Obtaining pointer of array works', () => {
@@ -280,9 +250,7 @@ describe('Pointer Tests', () => {
       fmt.Println(&a)
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      '&[3 4 5 6]\n',
-    )
+    expect(codeRunner(code).output).toEqual('&[3 4 5 6]\n')
   })
 
   test('Obtaining pointer of declared type primitive works', () => {
@@ -296,9 +264,7 @@ describe('Pointer Tests', () => {
       fmt.Println(&a)
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      '0x00000074\n',
-    )
+    expect(codeRunner(code).output).toEqual('0x00000074\n')
   })
 
   test('Obtaining pointer of declared struct works', () => {
@@ -315,9 +281,7 @@ describe('Pointer Tests', () => {
       fmt.Println(&a)
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      '&{E 12}\n',
-    )
+    expect(codeRunner(code).output).toEqual('&{E 12}\n')
   })
 
   test('Obtaining pointer of declared struct fields works', () => {
@@ -335,9 +299,7 @@ describe('Pointer Tests', () => {
       fmt.Println(&a.Age)
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      '0x00000078\n0x0000007a\n',
-    )
+    expect(codeRunner(code).output).toEqual('0x00000078\n0x0000007a\n')
   })
 
   test('Obtaining pointer of declared struct fields of nested structs works', () => {
@@ -421,9 +383,7 @@ describe('Pointer Tests', () => {
       fmt.Println(a)
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      '{345 {E 23}}\n',
-    )
+    expect(codeRunner(code).output).toEqual('{345 {E 23}}\n')
   })
 
   test('Passing pointers into functions should mutate arrays', () => {
@@ -441,9 +401,7 @@ describe('Pointer Tests', () => {
       fmt.Println(a)
     }
     `
-    expect(codeRunner(code).output).toEqual(
-      '[4 345]\n',
-    )
+    expect(codeRunner(code).output).toEqual('[4 345]\n')
   })
 
   test('Pointers of structs are automatically dereferenced', () => {
@@ -461,10 +419,8 @@ describe('Pointer Tests', () => {
       p.Age = 30
       fmt.Println(p)
     }
-    ` 
-    expect(codeRunner(code).output).toEqual(
-      '&{Alice 30}\n',
-    )
+    `
+    expect(codeRunner(code).output).toEqual('&{Alice 30}\n')
   })
 
   test('Pointers of pointer of structs work', () => {
@@ -482,10 +438,8 @@ describe('Pointer Tests', () => {
       p.Age = 30
       fmt.Println(&p)
     }
-    ` 
-    expect(codeRunner(code).output).toEqual(
-      '0x00000072\n',
-    )
+    `
+    expect(codeRunner(code).output).toEqual('0x00000072\n')
   })
 
   test('Modifying fields of pointers of pointer of structs should throw error', () => {
@@ -503,10 +457,8 @@ describe('Pointer Tests', () => {
       q := &p
       q.Age = 30
     }
-    ` 
-    expect(codeRunner(code).error?.type).toEqual(
-      'compile',
-    )
+    `
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 
   test('Modifying fields of dereferenced pointers of pointer of structs should work', () => {
@@ -525,10 +477,8 @@ describe('Pointer Tests', () => {
       (*q).Age = 30
       fmt.Println(*q)
     }
-    ` 
-    expect(codeRunner(code).output).toEqual(
-      '&{Alice 30}\n',
-    )
+    `
+    expect(codeRunner(code).output).toEqual('&{Alice 30}\n')
   })
 
   test('Pointers of arrays are automatically dereferenced', () => {
@@ -542,10 +492,8 @@ describe('Pointer Tests', () => {
       fmt.Println(p)
       fmt.Println(*p)
     }
-    ` 
-    expect(codeRunner(code).output).toEqual(
-      '&[3 44]\n[3 44]\n',
-    )
+    `
+    expect(codeRunner(code).output).toEqual('&[3 44]\n[3 44]\n')
   })
 
   test('Pointers of pointer of arrays work', () => {
@@ -557,10 +505,8 @@ describe('Pointer Tests', () => {
       p := &[3]int{5, 6, 7}
       fmt.Println(&p)
     }
-    ` 
-    expect(codeRunner(code).output).toEqual(
-      '0x00000072\n',
-    )
+    `
+    expect(codeRunner(code).output).toEqual('0x00000072\n')
   })
 
   test('Pointers of pointer of arrays are consistent', () => {
@@ -584,7 +530,7 @@ describe('Pointer Tests', () => {
       fmt.Println(p)
       fmt.Println(*p)
     }
-    ` 
+    `
     expect(codeRunner(code).output).toEqual(
       `&[sv hello r5gjri]
 0x00000084
@@ -610,10 +556,8 @@ describe('Pointer Tests', () => {
       q := &p
       q[0] = "bwjcbej"
     }
-    ` 
-    expect(codeRunner(code).error?.type).toEqual(
-      'compile',
-    )
+    `
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 
   test('Modifying elements of dereferenced pointers of pointer of arrays should work', () => {
@@ -627,10 +571,8 @@ describe('Pointer Tests', () => {
       (*q)[1] = "hello"
       fmt.Println(*q)
     }
-    ` 
-    expect(codeRunner(code).output).toEqual(
-      '&[sv hello r5gjri]\n',
-    )
+    `
+    expect(codeRunner(code).output).toEqual('&[sv hello r5gjri]\n')
   })
 
   test('Pointers of 2D arrays are automatically dereferenced', () => {
@@ -644,7 +586,7 @@ describe('Pointer Tests', () => {
       fmt.Println(p)
       fmt.Println(*p)
     }
-    ` 
+    `
     expect(codeRunner(code).output).toEqual(
       '&[[3 4 0] [5 0 44]]\n[[3 4 0] [5 0 44]]\n',
     )
@@ -659,10 +601,8 @@ describe('Pointer Tests', () => {
       p := &[3][2]int{{5}, {6, 7}, {11, 8}}
       fmt.Println(&p)
     }
-    ` 
-    expect(codeRunner(code).output).toEqual(
-      '0x00000072\n',
-    )
+    `
+    expect(codeRunner(code).output).toEqual('0x00000072\n')
   })
 
   test('Modifying elements of dereferenced pointers of pointer of 2D arrays should work', () => {
@@ -676,7 +616,7 @@ describe('Pointer Tests', () => {
       (*q)[1][2] = "hello"
       fmt.Println(*q)
     }
-    ` 
+    `
     expect(codeRunner(code).output).toEqual(
       '&[[sv  ] [vr he hello] [r5gjri  ]]\n',
     )

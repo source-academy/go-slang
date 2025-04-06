@@ -1,4 +1,9 @@
-import { ArrayType, DeclaredType, StructType, Type } from '../../executor/typing'
+import {
+  ArrayType,
+  DeclaredType,
+  StructType,
+  Type,
+} from '../../executor/typing'
 import { Heap, TAG } from '..'
 
 import { BaseNode } from './base'
@@ -38,14 +43,28 @@ export class StructNode extends BaseNode {
     let nextAddr = addr
     for (let i = 0; i < [...fields.values()].length; i++) {
       if ([...fields.values()][i] instanceof StructType) {
-        const node = [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr).addr
+        const node = [...fields.values()][i].defaultNodeAllocator()(
+          heap,
+          nextAddr,
+        ).addr
         struct.set_child(i, node)
-      } else if ([...fields.values()][i] instanceof DeclaredType && [...fields.values()][i].type[0] instanceof StructType) {
-        const node = [...fields.values()][i].type[0].defaultNodeAllocator()(heap, nextAddr).addr
+      } else if (
+        [...fields.values()][i] instanceof DeclaredType &&
+        [...fields.values()][i].type[0] instanceof StructType
+      ) {
+        const node = [...fields.values()][i].type[0].defaultNodeAllocator()(
+          heap,
+          nextAddr,
+        ).addr
         struct.set_child(i, node)
       } else {
         if ([...fields.values()][i] instanceof ArrayType) {
-          const arrayNodeAddr = [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr, [...fields.values()][i].length, [...fields.values()][i].element).addr
+          const arrayNodeAddr = [...fields.values()][i].defaultNodeAllocator()(
+            heap,
+            nextAddr,
+            [...fields.values()][i].length,
+            [...fields.values()][i].element,
+          ).addr
           struct.set_child(i, arrayNodeAddr)
         } else {
           [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr)
@@ -78,14 +97,30 @@ export class StructNode extends BaseNode {
       const struct = new StructNode(heap, nodeAddr)
       for (let i = 0; i < [...fields.values()].length; i++) {
         if ([...fields.values()][i] instanceof StructType) {
-          const node = [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr).addr
+          const node = [...fields.values()][i].defaultNodeAllocator()(
+            heap,
+            nextAddr,
+          ).addr
           struct.set_child(i, node)
-        } else if ([...fields.values()][i] instanceof DeclaredType && [...fields.values()][i].type[0] instanceof StructType) {
-          const node = [...fields.values()][i].type[0].defaultNodeAllocator()(heap, nextAddr).addr
+        } else if (
+          [...fields.values()][i] instanceof DeclaredType &&
+          ([...fields.values()][i] as DeclaredType).type[0] instanceof StructType
+        ) {
+          const node = ([...fields.values()][i] as DeclaredType).type[0].defaultNodeAllocator()(
+            heap,
+            nextAddr,
+          ).addr
           struct.set_child(i, node)
         } else {
           if ([...fields.values()][i] instanceof ArrayType) {
-            const arrayNodeAddr = [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr, [...fields.values()][i].length, [...fields.values()][i].element).addr
+            const arrayNodeAddr = [...fields.values()][
+              i
+            ].defaultNodeAllocator()(
+              heap,
+              nextAddr,
+              [...fields.values()][i].length,
+              [...fields.values()][i].element,
+            ).addr
             struct.set_child(i, arrayNodeAddr)
           } else {
             [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr)
@@ -105,7 +140,7 @@ export class StructNode extends BaseNode {
     fields: Map<string, Type>,
     defaultCreator: Array<(heap: Heap) => number>,
     heap: Heap,
-    addr: number
+    addr: number,
   ) {
     let size = 0
     for (let i = 0; i < [...fields.values()].length; i++) {
@@ -117,14 +152,28 @@ export class StructNode extends BaseNode {
     let nextAddr = addr
     for (let i = 0; i < [...fields.values()].length; i++) {
       if ([...fields.values()][i] instanceof StructType) {
-        const node = [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr).addr
+        const node = [...fields.values()][i].defaultNodeAllocator()(
+          heap,
+          nextAddr,
+        ).addr
         struct.set_child(i, node)
-      } else if ([...fields.values()][i] instanceof DeclaredType && [...fields.values()][i].type[0] instanceof StructType) {
-        const node = [...fields.values()][i].type[0].defaultNodeAllocator()(heap, nextAddr).addr
+      } else if (
+        [...fields.values()][i] instanceof DeclaredType &&
+        [...fields.values()][i].type[0] instanceof StructType
+      ) {
+        const node = [...fields.values()][i].type[0].defaultNodeAllocator()(
+          heap,
+          nextAddr,
+        ).addr
         struct.set_child(i, node)
       } else {
         if ([...fields.values()][i] instanceof ArrayType) {
-          const arrayNodeAddr = [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr, [...fields.values()][i].length, [...fields.values()][i].element).addr
+          const arrayNodeAddr = [...fields.values()][i].defaultNodeAllocator()(
+            heap,
+            nextAddr,
+            [...fields.values()][i].length,
+            [...fields.values()][i].element,
+          ).addr
           struct.set_child(i, arrayNodeAddr)
         } else {
           [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr)
@@ -146,7 +195,7 @@ export class StructNode extends BaseNode {
     return this.length()
   }
 
-  sizeof() {
+  override sizeof() {
     let size = 0
     for (let i = 0; i < this.get_children().length; i++) {
       size += this.heap.get_value(this.get_child(i)).sizeof()
@@ -172,7 +221,7 @@ export class StructNode extends BaseNode {
 
   override get_children(): number[] {
     return [...Array(this.length()).keys()].map((x) => this.get_child(x))
-  } 
+  }
 
   override toString(): string {
     const length = this.length()
@@ -184,11 +233,8 @@ export class StructNode extends BaseNode {
   }
 
   apply_unary(operator: string) {
-    if (operator === "address") {
-      return ReferenceNode.create(
-        this.addr,
-        this.heap,
-      )
+    if (operator === 'address') {
+      return ReferenceNode.create(this.addr, this.heap)
     }
     throw Error('Invalid Operation')
   }

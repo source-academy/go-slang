@@ -1,4 +1,9 @@
-import { ArrayType, DeclaredType, StructType, Type } from '../../executor/typing'
+import {
+  ArrayType,
+  DeclaredType,
+  StructType,
+  Type,
+} from '../../executor/typing'
 import { Heap, TAG } from '..'
 
 import { BaseNode } from './base'
@@ -11,7 +16,12 @@ import { ReferenceNode } from './reference'
  * Remaining `length` words: Each word is the address of an element.
  */
 export class ArrayNode extends BaseNode {
-  static create(length: number, heap: Heap, sizeof: number, startAddr: number): ArrayNode {
+  static create(
+    length: number,
+    heap: Heap,
+    sizeof: number,
+    startAddr: number,
+  ): ArrayNode {
     const addr = heap.allocate(2 + length)
     heap.set_tag(addr, TAG.ARRAY)
     heap.memory.set_number(length, addr + 1)
@@ -25,11 +35,7 @@ export class ArrayNode extends BaseNode {
    * `defaultCreator` is a function that allocates a default element on the heap,
    * and returns its address.
    */
-  static default(
-    length: number,
-    type: Type,
-    heap: Heap,
-  ) {
+  static default(length: number, type: Type, heap: Heap) {
     const addr = heap.allocate(2 + length)
     heap.set_tag(addr, TAG.ARRAY)
     heap.memory.set_number(length, addr + 1)
@@ -47,10 +53,17 @@ export class ArrayNode extends BaseNode {
     heap.set_tag(nodeAddr, TAG.ARRAY)
     heap.memory.set_number(length, nodeAddr + 1)
     heap.temp_push(nodeAddr)
-    for (let i = 0; i < length; i++) heap.memory.set_number(-1, nodeAddr + i + 2)
+    for (let i = 0; i < length; i++)
+      heap.memory.set_number(-1, nodeAddr + i + 2)
     for (let i = 0; i < length; i++) {
-      const nodeAddr2 = type.defaultNodeAllocator()(heap, addr + i * type.sizeof()).addr
-      if (type instanceof ArrayType || (type instanceof DeclaredType && type.type[0] instanceof StructType)) {
+      const nodeAddr2 = type.defaultNodeAllocator()(
+        heap,
+        addr + i * type.sizeof(),
+      ).addr
+      if (
+        type instanceof ArrayType ||
+        (type instanceof DeclaredType && type.type[0] instanceof StructType)
+      ) {
         heap.memory.set_word(nodeAddr2, nodeAddr + 2 + i)
       } else {
         heap.memory.set_word(addr + i * type.sizeof(), nodeAddr + 2 + i)
@@ -72,14 +85,14 @@ export class ArrayNode extends BaseNode {
     this.heap.memory.set_word(address, this.addr + 2 + index)
   }
 
-  sizeof() {
+  override sizeof() {
     return this.length() * this.heap.get_value(this.get_child(0)).sizeof()
   }
 
   get_child(index: number): number {
     return this.heap.memory.get_word(this.addr + 2 + index)
   }
- 
+
   override get_children(): number[] {
     return [...Array(this.length()).keys()].map((x) => this.get_child(x))
   }
@@ -94,11 +107,8 @@ export class ArrayNode extends BaseNode {
   }
 
   apply_unary(operator: string) {
-    if (operator === "address") {
-      return ReferenceNode.create(
-        this.addr,
-        this.heap,
-      )
+    if (operator === 'address') {
+      return ReferenceNode.create(this.addr, this.heap)
     }
     throw Error('Invalid Operation')
   }
@@ -176,11 +186,8 @@ export class SliceNode extends BaseNode {
   }
 
   apply_unary(operator: string) {
-    if (operator === "address") {
-      return ReferenceNode.create(
-        this.addr,
-        this.heap,
-      )
+    if (operator === 'address') {
+      return ReferenceNode.create(this.addr, this.heap)
     }
     throw Error('Invalid Operation')
   }

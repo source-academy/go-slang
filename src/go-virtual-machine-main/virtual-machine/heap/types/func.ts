@@ -37,11 +37,8 @@ export class FuncNode extends BaseNode {
   }
 
   apply_unary(operator: string) {
-    if (operator === "address") {
-      return ReferenceNode.create(
-        this.addr,
-        this.heap,
-      )
+    if (operator === 'address') {
+      return ReferenceNode.create(this.addr, this.heap)
     }
     throw Error('Invalid Operation')
   }

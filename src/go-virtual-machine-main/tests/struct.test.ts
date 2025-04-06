@@ -95,7 +95,7 @@ describe('Struct tests', () => {
     ).toEqual('{  0}\n')
   })
 
-  test('Assignment of anonymous struct values work', () => {
+  test('Assignment of anonymous struct values work with multiple fields in a line of code', () => {
     expect(
       codeRunner(`
         package main
@@ -111,7 +111,7 @@ describe('Struct tests', () => {
     ).toEqual('{1 3}\n')
   })
 
-  test('Assignment of anonymous struct values work', () => {
+  test('Assignment of anonymous struct values work with multiple line of codes defining fields', () => {
     expect(
       codeRunner(`
         package main
@@ -215,7 +215,7 @@ describe('Struct tests', () => {
     ).toEqual('compile')
   })
 
-  test('Partial assignment of typed struct values with different type should work', () => {
+  test('Partial assignment of typed struct values with different type should work with struct type declared locally', () => {
     expect(
       codeRunner(`
         package main
@@ -233,7 +233,7 @@ describe('Struct tests', () => {
     ).toEqual('{John 0}\n')
   })
 
-  test('Partial assignment of typed struct values with different type should work', () => {
+  test('Partial assignment of typed struct values with different type should work with struct type declared globally', () => {
     expect(
       codeRunner(`
         package main
@@ -322,7 +322,7 @@ describe('Struct tests', () => {
     ).toEqual('compile')
   })
 
-  test('Partial assignment of typed struct values with different type with shorthand should work', () => {
+  test('Partial assignment of typed struct values with different type with shorthand should work with struct type declared locally', () => {
     expect(
       codeRunner(`
         package main
@@ -340,7 +340,7 @@ describe('Struct tests', () => {
     ).toEqual('{John 0}\n')
   })
 
-  test('Partial assignment of typed struct values with different type with shorthand should work', () => {
+  test('Partial assignment of typed struct values with different type with shorthand should work with struct type declared globally', () => {
     expect(
       codeRunner(`
         package main
@@ -597,7 +597,7 @@ describe('Struct tests', () => {
     ).toEqual('compile')
   })
 
-  test('Reassignment of field values work', () => {
+  test('Reassignment of field values work for structs with 1 field', () => {
     expect(
       codeRunner(`
         package main
@@ -615,7 +615,7 @@ describe('Struct tests', () => {
     ).toEqual('{40}\n')
   })
 
-  test('Reassignment of field values work', () => {
+  test('Reassignment of field values work for structs with 2 fields', () => {
     expect(
       codeRunner(`
         package main
@@ -652,7 +652,7 @@ describe('Struct tests', () => {
     ).toEqual('40\n')
   })
 
-  test('Printing of structs after reassignment work', () => {
+  test('Printing of structs after reassignment work with partial initialisation', () => {
     expect(
       codeRunner(`
         package main
@@ -671,7 +671,7 @@ describe('Struct tests', () => {
     ).toEqual('{40 SA}\n')
   })
 
-  test('Printing of structs after reassignment work', () => {
+  test('Printing of structs after reassignment work without initialisation', () => {
     expect(
       codeRunner(`
         package main
@@ -709,7 +709,7 @@ describe('Struct tests', () => {
     ).toEqual('compile')
   })
 
-  test('Reassignment of field values work with shorthand', () => {
+  test('Reassignment of field values work with shorthand for structs with 1 field', () => {
     expect(
       codeRunner(`
         package main
@@ -727,7 +727,7 @@ describe('Struct tests', () => {
     ).toEqual('{40}\n')
   })
 
-  test('Reassignment of field values work with shorthand', () => {
+  test('Reassignment of field values work with shorthand for structs with 2 fields', () => {
     expect(
       codeRunner(`
         package main
@@ -764,7 +764,7 @@ describe('Struct tests', () => {
     ).toEqual('40\n')
   })
 
-  test('Printing of structs after reassignment work with shorthand', () => {
+  test('Printing of structs after reassignment work with shorthand with partial initialisation', () => {
     expect(
       codeRunner(`
         package main
@@ -783,7 +783,7 @@ describe('Struct tests', () => {
     ).toEqual('{40 SA}\n')
   })
 
-  test('Printing of structs after reassignment work with shorthand', () => {
+  test('Printing of structs after reassignment work with shorthand with no initialisation', () => {
     expect(
       codeRunner(`
         package main
@@ -1028,7 +1028,7 @@ describe('Struct tests', () => {
     ).toEqual('{{Alice 25} 3934}\n')
   })
 
-  test('Modifying inner field of an anonymous nested struct', () => {
+  test('Modifying inner field of a declared nested struct', () => {
     expect(
       codeRunner(`
         package main
@@ -1062,7 +1062,7 @@ describe('Struct tests', () => {
     ).toEqual('{{Sammy 35} 1241}\n')
   })
 
-  test('Nesting declared structs within another declared struct work', () => {
+  test('Nesting declared structs within another declared struct work with a declared type as a field', () => {
     expect(
       codeRunner(`
         package main
@@ -1097,41 +1097,7 @@ describe('Struct tests', () => {
     ).toEqual('{{Alice 25} 3934}\n')
   })
 
-  test('Modifying inner field of an anonymous nested struct', () => {
-    expect(
-      codeRunner(`
-        package main
-        import "fmt"
-
-        type A struct {
-          Person struct {
-            Name string
-            Age int
-          }
-          Code int
-        }
-        
-        func main() {
-          a := A{
-            Person: struct{
-              Name string
-              Age int
-            }{
-              "Alice",
-              25,
-            },
-            Code: 3934,
-          }
-          a.Person.Name = "Sammy"
-          a.Person.Age = 35
-          a.Code = 1241
-          fmt.Println(a)
-        }
-      `).output,
-    ).toEqual('{{Sammy 35} 1241}\n')
-  })
-
-  test('Nesting declared structs within another declared struct work', () => {
+  test('Nesting declared structs within another declared struct work with only primitives as fields', () => {
     expect(
       codeRunner(`
         package main
@@ -1158,7 +1124,7 @@ describe('Struct tests', () => {
     ).toEqual('{{Alice 25} 3934}\n')
   })
 
-  test('Modifying inner field of a declared nested struct', () => {
+  test('Modifying inner field of a declared nested struct with inner struct declared separately', () => {
     expect(
       codeRunner(`
         package main
@@ -1210,7 +1176,7 @@ describe('Struct tests', () => {
     ).toEqual('{[H A] 3934}\n')
   })
 
-  test('Modifying array elements within another declared struct work', () => {
+  test('Modifying array elements within another declared struct work with array at the start', () => {
     expect(
       codeRunner(`
         package main
@@ -1233,7 +1199,7 @@ describe('Struct tests', () => {
     ).toEqual('{[H B E] 3934}\n')
   })
 
-  test('Modifying array elements within another declared struct work', () => {
+  test('Modifying array elements within another declared struct work with array at the middle', () => {
     expect(
       codeRunner(`
         package main
@@ -1397,7 +1363,7 @@ describe('Struct tests', () => {
     ).toEqual('[{123 [dd ]} {352 [ee ]}]\n')
   })
 
-  test('Array of declared structs containing arrays as the later field work', () => {
+  test('Modifying array of declared structs containing arrays as the later field work', () => {
     expect(
       codeRunner(`
         package main
@@ -1546,7 +1512,7 @@ describe('Struct tests', () => {
       `).output,
     ).toEqual('{53 {927 [A ff]}}\n')
   })
-/*
+  /*
   test('Declared structs of arrays containing structs work', () => {
     expect(
       codeRunner(`
