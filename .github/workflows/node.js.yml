@@ -22,6 +22,10 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
     - name: Check for package-lock.json
       run: |
         if [ -e package-lock.json ]; then
