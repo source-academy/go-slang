@@ -1,31 +1,56 @@
-# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
+# This file is copied from https://github.com/source-academy/js-slang/blob/master/.github/workflows/nodejs.yml
+# This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
 
 name: Node.js CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - master
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - master
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x, 22.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js ${{ matrix.node-version }}
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Check for package-lock.json
+      run: |
+        if [ -e package-lock.json ]; then
+          echo "package-lock.json found; please do not use NPM! This project uses Yarn!"
+          exit 1
+        fi
+        exit 0
+    - name: Install dependencies (apt)
+      run: |
+        sudo apt-get update && \
+        sudo apt-get install -y --no-install-recommends \
+        texlive texlive-fonts-extra texlive-lang-cjk latexmk latex-cjk-all
+    # Has to be run before actions/setup-node.
+    # See: https://github.com/actions/setup-node/issues/480
+    - name: Enable corepack for Yarn
+      run: corepack enable
+    - name: Setup Node
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: 20
         cache: yarn
+    - run: yarn install --immutable
+    - run: yarn build
     - run: yarn format:ci
-    - run: yarn run build --if-present
-    - run: yarn test
+    - run: yarn eslint
+    - run: yarn test-coverage
+      env:
+        CI: true
+    - name: Check that docs build
+      run:  yarn jsdoc prepare
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
