@@ -1,10 +1,9 @@
-import {
-  BoolType,
-  Float64Type,
-  Int64Type,
-  NoType,
-  StringType,
-} from '../executor/typing'
+import {} from '../executor/typing'
+import { BoolType } from '../executor/typing/bool_type'
+import { Float64Type } from '../executor/typing/float64_type'
+import { Int64Type } from '../executor/typing/int64_type'
+import { NoType } from '../executor/typing/no_type'
+import { StringType } from '../executor/typing/string_type'
 import { Debugger } from '../runtime/debugger'
 
 import { ArrayNode, SliceNode } from './types/array'

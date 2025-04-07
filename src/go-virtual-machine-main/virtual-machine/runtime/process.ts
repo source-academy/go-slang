@@ -70,7 +70,6 @@ export class Process {
     const time_quantum = 30
     this.runtime_count = 0
     let completed = false
-    let a = 0
     try {
       const main_context = this.contexts.peek()
       while (this.contexts.sz()) {
@@ -100,7 +99,6 @@ export class Process {
             break
           }
           const pc = this.context.PC()
-          a = pc
           const instr = this.instructions[this.context.incr_PC()]
           // console.log('ctx:', this.context.addr)
           // console.log('Instr:', instr, this.context.PC() - 1)
@@ -136,10 +134,6 @@ export class Process {
       }
       if (!completed && !this.heap.blocked_contexts.is_empty())
         throw Error('all goroutines are asleep - deadlock!')
-
-      if (a != 0) {
-        a = a
-      }
 
       return {
         stdout: this.stdout,

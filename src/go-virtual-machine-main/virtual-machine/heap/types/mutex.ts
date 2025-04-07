@@ -108,6 +108,5 @@ export class MutexNode extends BaseNode {
 
   override toString(): string {
     return 'MUTEX LOCKED ' + this.is_locked().toString()
-    // throw new Error('Unimplemented')
   }
 }

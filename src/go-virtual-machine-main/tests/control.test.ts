@@ -62,4 +62,4 @@ describe('Variable Declaration Tests', () => {
       ).output,
     ).toEqual('12\n')
   })
-}, 60000)
+})

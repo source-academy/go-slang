@@ -5,15 +5,13 @@ import {
   LoadVariableInstruction,
   StoreInstruction,
 } from '../../executor/instructions'
-import {
-  ArrayType,
-  DeclaredType,
-  NoType,
-  PointerType,
-  ReturnType,
-  StructType,
-  Type,
-} from '../../executor/typing'
+import { Type } from '../../executor/typing'
+import { ArrayType } from '../../executor/typing/array_type'
+import { DeclaredType } from '../../executor/typing/declared_type'
+import { NoType } from '../../executor/typing/no_type'
+import { PointerType } from '../../executor/typing/pointer_type'
+import { ReturnType } from '../../executor/typing/return_type'
+import { StructType } from '../../executor/typing/struct_type'
 
 import { Token, TokenLocation } from './base'
 import { ExpressionToken, PrimaryExpressionToken } from './expressions'
@@ -170,7 +168,10 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
               }
             }
           }
-          if (expectedType && !expectedType.assignableBy(expressionTypes as Type)) {
+          if (
+            expectedType &&
+            !expectedType.assignableBy(expressionTypes as Type)
+          ) {
             throw Error(
               `Cannot use ${expressionTypes} as ${expectedType} in variable declaration`,
             )
@@ -326,7 +327,10 @@ export class VariableDeclarationToken extends DeclarationToken {
             }
           }
 
-          if (expectedType && !expectedType.assignableBy(expressionTypes as Type)) {
+          if (
+            expectedType &&
+            !expectedType.assignableBy(expressionTypes as Type)
+          ) {
             throw Error(
               `Cannot use ${expressionTypes} as ${expectedType} in variable declaration`,
             )

@@ -12,23 +12,20 @@ import {
   SliceOperationInstruction,
 } from '../../executor/instructions'
 import { CallInstruction } from '../../executor/instructions/funcs'
-import {
-  ArrayType,
-  BoolType,
-  ChannelType,
-  DeclaredType,
-  FunctionType,
-  Int64Type,
-  NoType,
-  ParameterType,
-  PointerType,
-  ReturnType,
-  SliceType,
-  StringType,
-  StructType,
-  Type,
-  TypeUtility,
-} from '../../executor/typing'
+import { Type, TypeUtility } from '../../executor/typing'
+import { ArrayType } from '../../executor/typing/array_type'
+import { BoolType } from '../../executor/typing/bool_type'
+import { ChannelType } from '../../executor/typing/channel_type'
+import { DeclaredType } from '../../executor/typing/declared_type'
+import { FunctionType } from '../../executor/typing/function_type'
+import { Int64Type } from '../../executor/typing/int64_type'
+import { NoType } from '../../executor/typing/no_type'
+import { ParameterType } from '../../executor/typing/parameter_type'
+import { PointerType } from '../../executor/typing/pointer_type'
+import { ReturnType } from '../../executor/typing/return_type'
+import { SliceType } from '../../executor/typing/slice_type'
+import { StringType } from '../../executor/typing/string_type'
+import { StructType } from '../../executor/typing/struct_type'
 
 import { Token, TokenLocation } from './base'
 import { IdentifierToken } from './identifier'
@@ -117,16 +114,17 @@ export class SelectorToken extends PrimaryExpressionModifierToken {
 
   override compile(compiler: Compiler, operandType: Type): Type {
     // handle structs first since parser sees them as the same as packages
-    if (operandType instanceof DeclaredType && operandType.type[0] instanceof StructType) {
+    if (
+      operandType instanceof DeclaredType &&
+      operandType.type[0] instanceof StructType
+    ) {
       // declared type structs
-      if ((operandType.type[0]).fields.size >= 0) {
-        const resultType = operandType.type[0].fields.get(
+      if (operandType.type[0].fields.size >= 0) {
+        const resultType = operandType.type[0].fields.get(this.identifier)
+        if (resultType === undefined) return new NoType()
+        const index = [...operandType.type[0].fields.keys()].indexOf(
           this.identifier,
         )
-        if (resultType === undefined) return new NoType()
-        const index = [
-          ...operandType.type[0].fields.keys(),
-        ].indexOf(this.identifier)
         compiler.instructions.push(new LoadStructFieldInstruction(index))
         return resultType
       }
@@ -142,16 +140,17 @@ export class SelectorToken extends PrimaryExpressionModifierToken {
     } else if (operandType instanceof PointerType) {
       // pointers
       const baseType = operandType.type
-      if (baseType instanceof DeclaredType && baseType.type[0] instanceof StructType) {
+      if (
+        baseType instanceof DeclaredType &&
+        baseType.type[0] instanceof StructType
+      ) {
         // pointers to declared type structs
         if (baseType.type[0].fields.size >= 0) {
-          const resultType = baseType.type[0].fields.get(
+          const resultType = baseType.type[0].fields.get(this.identifier)
+          if (resultType === undefined) return new NoType()
+          const index = [...baseType.type[0].fields.keys()].indexOf(
             this.identifier,
           )
-          if (resultType === undefined) return new NoType()
-          const index = [
-            ...baseType.type[0].fields.keys(),
-          ].indexOf(this.identifier)
           compiler.instructions.push(new LoadStructFieldInstruction(index))
           return resultType
         }
@@ -207,7 +206,7 @@ export class IndexToken extends PrimaryExpressionModifierToken {
         this.compileIndex(compiler)
         this.pushInstruction(compiler, new LoadSliceElementInstruction())
         if (baseType.element === undefined) return new NoType()
-        
+
         return baseType.element
       }
     }

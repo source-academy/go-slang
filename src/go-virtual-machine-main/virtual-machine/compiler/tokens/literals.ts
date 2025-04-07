@@ -12,18 +12,16 @@ import {
   StoreArrayElementInstruction,
   StoreStructFieldInstruction,
 } from '../../executor/instructions'
-import {
-  ArrayType,
-  DeclaredType,
-  Float64Type,
-  FunctionType,
-  Int64Type,
-  ReturnType,
-  SliceType,
-  StringType,
-  StructType,
-  Type,
-} from '../../executor/typing'
+import { Type } from '../../executor/typing'
+import { ArrayType } from '../../executor/typing/array_type'
+import { DeclaredType } from '../../executor/typing/declared_type'
+import { Float64Type } from '../../executor/typing/float64_type'
+import { FunctionType } from '../../executor/typing/function_type'
+import { Int64Type } from '../../executor/typing/int64_type'
+import { ReturnType } from '../../executor/typing/return_type'
+import { SliceType } from '../../executor/typing/slice_type'
+import { StringType } from '../../executor/typing/string_type'
+import { StructType } from '../../executor/typing/struct_type'
 
 import { Token, TokenLocation } from './base'
 import { BlockToken } from './block'
@@ -281,9 +279,16 @@ export class LiteralValueToken extends Token {
           // load field in actual struct and then store field
           offset = handleInstructions(compiler, type, offset)
         }
-        for (let i = 0; i < [...actualType.fields.values()].length - this.elements.length; i++) {
+        for (
+          let i = 0;
+          i < [...actualType.fields.values()].length - this.elements.length;
+          i++
+        ) {
           // Ran out of literal values, use the default values.
-          this.pushInstruction(compiler, new LoadDefaultInstruction([...actualType.fields.values()][i]))
+          this.pushInstruction(
+            compiler,
+            new LoadDefaultInstruction([...actualType.fields.values()][i]),
+          )
           // load field in actual struct and then store field
           offset = handleInstructions(compiler, type, offset)
         }
@@ -376,11 +381,20 @@ export class StructLiteralToken extends Token {
     if (this.fieldType instanceof StructTypeToken) {
       for (let i = 0; i < this.body.elements.length; i++) {
         for (let j = 0; j < this.fieldType.fields.length; j++) {
-          for (let k = 0; k < Object.values(this.fieldType.fields[j])[0].length; k++) {
+          for (
+            let k = 0;
+            k < Object.values(this.fieldType.fields[j])[0].length;
+            k++
+          ) {
             const valueType = this.body.elements[i].compile(compiler)
-            const fieldType = Object.values(this.fieldType.fields[j])[1].compile(compiler)
+            const fieldType = Object.values(
+              this.fieldType.fields[j],
+            )[1].compile(compiler)
             if (!valueType.assignableBy(fieldType)) {
-              if ((this.body.elements[i] as PrimaryExpressionToken).operand instanceof LiteralToken) {
+              if (
+                (this.body.elements[i] as PrimaryExpressionToken)
+                  .operand instanceof LiteralToken
+              ) {
                 let baseType = fieldType
                 while (baseType instanceof DeclaredType) {
                   baseType = baseType.type[0]
@@ -460,13 +474,11 @@ export class StructLiteralToken extends Token {
       }
     } else if (this.fieldType instanceof DeclaredTypeToken) {
       // explicitly type-declared structs
-      const struct = compiler.context.env.find_type(
-        this.fieldType.name,
-      )[0]
+      const struct = compiler.context.env.find_type(this.fieldType.name)[0]
       if (struct instanceof StructType) {
         for (let i = 0; i < this.body.elements.length; i++) {
           let fieldType = [...struct.fields.values()][i]
-          const hasKey = Object.keys(this.body.elements[i])[0] === "key"
+          const hasKey = Object.keys(this.body.elements[i])[0] === 'key'
           let valueType = undefined
           // compile struct values separately if nested struct
           if (
@@ -481,20 +493,28 @@ export class StructLiteralToken extends Token {
               j++
             ) {
               const type = names[i]
-              if (type instanceof DeclaredType && type.type[0] instanceof StructType) {
+              if (
+                type instanceof DeclaredType &&
+                type.type[0] instanceof StructType
+              ) {
                 map.set(
                   [...type.type[0].fields.keys()][j],
-                  Object.values(this.body.elements[i])[1].elements[j].compile(compiler),
+                  Object.values(this.body.elements[i])[1].elements[j].compile(
+                    compiler,
+                  ),
                 )
               } else {
                 map.set(
                   type.toString(),
-                  Object.values(this.body.elements[i])[1].elements[j].compile(compiler),
+                  Object.values(this.body.elements[i])[1].elements[j].compile(
+                    compiler,
+                  ),
                 )
               }
               if (
-                compiler.instructions[compiler.instructions.length - 2] instanceof
-                StoreStructFieldInstruction
+                compiler.instructions[
+                  compiler.instructions.length - 2
+                ] instanceof StoreStructFieldInstruction
               ) {
                 if (
                   !(fieldType instanceof ArrayType) &&
@@ -565,20 +585,28 @@ export class StructLiteralToken extends Token {
               j++
             ) {
               const type = names[i]
-              if (type instanceof DeclaredType && type.type[0] instanceof StructType) {
+              if (
+                type instanceof DeclaredType &&
+                type.type[0] instanceof StructType
+              ) {
                 map.set(
                   [...type.type[0].fields.keys()][j],
-                  Object.values(this.body.elements[i])[1].elements[j].compile(compiler),
+                  Object.values(this.body.elements[i])[1].elements[j].compile(
+                    compiler,
+                  ),
                 )
               } else {
                 map.set(
                   type.toString(),
-                  Object.values(this.body.elements[i])[1].elements[j].compile(compiler),
+                  Object.values(this.body.elements[i])[1].elements[j].compile(
+                    compiler,
+                  ),
                 )
               }
               if (
-                compiler.instructions[compiler.instructions.length - 2] instanceof
-                StoreStructFieldInstruction
+                compiler.instructions[
+                  compiler.instructions.length - 2
+                ] instanceof StoreStructFieldInstruction
               ) {
                 if (
                   !(fieldType instanceof ArrayType) &&
@@ -638,8 +666,9 @@ export class StructLiteralToken extends Token {
             }
             valueType = new StructType(map)
           } else if (hasKey) {
-            
-            valueType = Object.values(this.body.elements[i])[1].compile(compiler)
+            valueType = Object.values(this.body.elements[i])[1].compile(
+              compiler,
+            )
           } else {
             valueType = this.body.elements[i].compile(compiler)
           }
@@ -661,22 +690,25 @@ export class StructLiteralToken extends Token {
             throw new Error('Value type does not match field type.')
           }
           if (
-            !(fieldType instanceof StructType || valueType instanceof StructType)
+            !(
+              fieldType instanceof StructType || valueType instanceof StructType
+            )
           ) {
             if (hasKey) {
               const index = [...struct.fields.keys()].indexOf(
                 Object.values(this.body.elements[i])[0].identifier,
               )
               if (
-                compiler.instructions[compiler.instructions.length - 2] instanceof
-                StoreStructFieldInstruction
+                compiler.instructions[
+                  compiler.instructions.length - 2
+                ] instanceof StoreStructFieldInstruction
               ) {
                 let place = 0
                 for (let i = 0; i < index; i++) {
                   if (
                     Object.values(this.body.elements[i])[1] instanceof
                       PrimaryExpressionToken &&
-                      Object.values(this.body.elements[i])[1].operand instanceof
+                    Object.values(this.body.elements[i])[1].operand instanceof
                       StructLiteralToken
                   ) {
                     place += fieldCounterStruct(
@@ -684,9 +716,13 @@ export class StructLiteralToken extends Token {
                       0,
                     )
                   } else if (
-                    Object.values(this.body.elements[i])[1] instanceof LiteralValueToken
+                    Object.values(this.body.elements[i])[1] instanceof
+                    LiteralValueToken
                   ) {
-                    place += fieldCounterLiteral(Object.values(this.body.elements[i])[1], 0)
+                    place += fieldCounterLiteral(
+                      Object.values(this.body.elements[i])[1],
+                      0,
+                    )
                   }
                 }
                 if (place > 0) place--
@@ -740,8 +776,9 @@ export class StructLiteralToken extends Token {
               }
             } else {
               if (
-                compiler.instructions[compiler.instructions.length - 2] instanceof
-                StoreStructFieldInstruction
+                compiler.instructions[
+                  compiler.instructions.length - 2
+                ] instanceof StoreStructFieldInstruction
               ) {
                 if (
                   !(fieldType instanceof ArrayType) &&
@@ -774,8 +811,9 @@ export class StructLiteralToken extends Token {
                   )
                 }
               } else if (
-                compiler.instructions[compiler.instructions.length - 2] instanceof
-                StoreArrayElementInstruction
+                compiler.instructions[
+                  compiler.instructions.length - 2
+                ] instanceof StoreArrayElementInstruction
               ) {
                 if (
                   !(fieldType instanceof ArrayType) &&
@@ -883,7 +921,8 @@ function handleInstructions(
     !((type as ArrayType).element instanceof ArrayType) &&
     !(
       (type as ArrayType).element instanceof DeclaredType &&
-      ((type as ArrayType).element as DeclaredType).type[0] instanceof StructType
+      ((type as ArrayType).element as DeclaredType).type[0] instanceof
+        StructType
     ) &&
     !(
       compiler.instructions[compiler.instructions.length - 1] instanceof
@@ -896,24 +935,34 @@ function handleInstructions(
   ) {
     if (
       compiler.instructions[compiler.instructions.length - 2] instanceof
-        StoreArrayElementInstruction
+      StoreArrayElementInstruction
     ) {
       // instruction correction to ensure the storing of array elements are in the correct place
       compiler.instructions.push(new LoadVariableInstruction(0, 0, ''))
       compiler.instructions.push(
         new StoreArrayElementInstruction(
-          1 + (compiler.instructions[compiler.instructions.length - 3] as StoreArrayElementInstruction).index,
+          1 +
+            (
+              compiler.instructions[
+                compiler.instructions.length - 3
+              ] as StoreArrayElementInstruction
+            ).index,
         ),
       )
     } else if (
       compiler.instructions[compiler.instructions.length - 2] instanceof
-        StoreStructFieldInstruction
+      StoreStructFieldInstruction
     ) {
       // instruction correction to ensure the storing of array elements are in the correct place
       compiler.instructions.push(new LoadVariableInstruction(0, 0, ''))
       compiler.instructions.push(
         new StoreArrayElementInstruction(
-          1 + (compiler.instructions[compiler.instructions.length - 3] as StoreStructFieldInstruction).index,
+          1 +
+            (
+              compiler.instructions[
+                compiler.instructions.length - 3
+              ] as StoreStructFieldInstruction
+            ).index,
         ),
       )
     } else {

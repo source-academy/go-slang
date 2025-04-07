@@ -11,7 +11,7 @@ describe('fmt Type Checking', () => {
       'undefined: fmt.nonexistent',
     )
   })
-}, 60000)
+})
 
 describe('fmt.Println', () => {
   test('fmt.Println handles string and boolean', () => {
@@ -33,7 +33,7 @@ describe('fmt.Println', () => {
       'John Doe is 17 years old\n1 2 3 4\n',
     )
   })
-}, 60000)
+})
 
 describe('fmt.Print', () => {
   test('boolean/integer printing', () => {
@@ -62,7 +62,7 @@ describe('fmt.Print', () => {
     `
     expect(mainRunner(code).output).toEqual('John Doeis17years old1 2 3 4')
   })
-}, 60000)
+})
 
 describe('fmt.Printf', () => {
   test('fmt.Printf works the same as fmt.Print if only 1 string argument is supplied', () => {
@@ -72,4 +72,4 @@ describe('fmt.Printf', () => {
     `
     expect(mainRunner(code).output).toEqual('Hello WorldByebye World')
   })
-}, 60000)
+})

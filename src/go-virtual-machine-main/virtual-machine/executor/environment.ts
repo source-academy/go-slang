@@ -29,7 +29,8 @@ class CompileEnvironment {
           name + (frame_sz - frame_idx).toString()
         ) {
           const recordToReturn = {} as Record<string, Type[]>
-          recordToReturn[name + (frame_sz - frame_idx).toString()] = (Object.values(this.types[frame_sz - frame_idx][var_idx]))
+          recordToReturn[name + (frame_sz - frame_idx).toString()] =
+            Object.values(this.types[frame_sz - frame_idx][var_idx])
           return recordToReturn
         }
         var_idx--

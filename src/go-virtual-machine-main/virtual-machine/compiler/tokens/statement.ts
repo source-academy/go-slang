@@ -20,15 +20,13 @@ import {
   JumpIfFalseInstruction,
   JumpInstruction,
 } from '../../executor/instructions/control'
-import {
-  BoolType,
-  ChannelType,
-  DeclaredType,
-  Int64Type,
-  NoType,
-  ReturnType,
-  Type,
-} from '../../executor/typing'
+import { Type } from '../../executor/typing'
+import { BoolType } from '../../executor/typing/bool_type'
+import { ChannelType } from '../../executor/typing/channel_type'
+import { DeclaredType } from '../../executor/typing/declared_type'
+import { Int64Type } from '../../executor/typing/int64_type'
+import { NoType } from '../../executor/typing/no_type'
+import { ReturnType } from '../../executor/typing/return_type'
 
 import { Token, TokenLocation } from './base'
 import { BlockToken } from './block'

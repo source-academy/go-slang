@@ -26,4 +26,4 @@ describe('Basic Environment Tests', () => {
       ).output,
     ).toEqual('3\n')
   })
-}, 60000)
+})

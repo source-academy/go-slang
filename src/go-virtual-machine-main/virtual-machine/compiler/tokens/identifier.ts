@@ -1,6 +1,7 @@
 import { Compiler } from '../../executor'
 import { LoadVariableInstruction } from '../../executor/instructions'
-import { PackageType, Type } from '../../executor/typing'
+import { Type } from '../../executor/typing'
+import { PackageType } from '../../executor/typing/package_type'
 
 import { Token, TokenLocation } from './base'
 

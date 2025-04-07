@@ -1,4 +1,5 @@
-import { ReturnType, Type } from '.'
+import { ReturnType } from './return_type'
+import { Type } from '.'
 
 export class TypeEnvironment {
   parent?: TypeEnvironment

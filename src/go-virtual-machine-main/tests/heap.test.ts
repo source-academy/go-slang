@@ -132,4 +132,4 @@ describe('Heap Tests', () => {
     expect(start + 9).toEqual(heap.get_value(arrayNode).get_children()[9])
     expect((heap.get_value(start + 9) as BoolNode).get_value()).toEqual(true)
   })
-}, 60000)
+})

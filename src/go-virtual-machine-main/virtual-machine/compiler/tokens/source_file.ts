@@ -6,8 +6,10 @@ import {
   LoadVariableInstruction,
   StoreInstruction,
 } from '../../executor/instructions'
-import { BoolType, NoType, Type } from '../../executor/typing'
-import { builtinPackages } from '../../executor/typing/packages'
+import { Type } from '../../executor/typing'
+import { BoolType } from '../../executor/typing/bool_type'
+import { NoType } from '../../executor/typing/no_type'
+import { builtinPackages } from '../../executor/typing/packages/packages'
 
 import { Token, TokenLocation } from './base'
 import { TopLevelDeclarationToken } from './declaration'

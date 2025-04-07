@@ -21,7 +21,7 @@ describe('Import statement syntax check', () => {
         `).error?.type,
     ).toEqual('parse')
   })
-}, 60000)
+})
 
 describe('If statement syntax check', () => {
   test(`Missing conditional in if statements should throw parsing error`, () => {
@@ -173,4 +173,4 @@ describe('If statement syntax check', () => {
         `).output,
     ).toEqual('63\n41\n')
   })
-}, 60000)
+})

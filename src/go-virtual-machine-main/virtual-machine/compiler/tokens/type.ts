@@ -1,21 +1,19 @@
 import { Compiler } from '../../executor'
-import {
-  ArrayType,
-  BoolType,
-  ChannelType,
-  DeclaredType,
-  Float64Type,
-  FunctionType,
-  Int64Type,
-  NoType,
-  ParameterType,
-  PointerType,
-  ReturnType,
-  SliceType,
-  StringType,
-  StructType,
-  Type,
-} from '../../executor/typing'
+import { Type } from '../../executor/typing'
+import { ArrayType } from '../../executor/typing/array_type'
+import { BoolType } from '../../executor/typing/bool_type'
+import { ChannelType } from '../../executor/typing/channel_type'
+import { DeclaredType } from '../../executor/typing/declared_type'
+import { Float64Type } from '../../executor/typing/float64_type'
+import { FunctionType } from '../../executor/typing/function_type'
+import { Int64Type } from '../../executor/typing/int64_type'
+import { NoType } from '../../executor/typing/no_type'
+import { ParameterType } from '../../executor/typing/parameter_type'
+import { PointerType } from '../../executor/typing/pointer_type'
+import { ReturnType } from '../../executor/typing/return_type'
+import { SliceType } from '../../executor/typing/slice_type'
+import { StringType } from '../../executor/typing/string_type'
+import { StructType } from '../../executor/typing/struct_type'
 
 import { Token, TokenLocation } from './base'
 import { IntegerLiteralToken } from './literals'
@@ -164,9 +162,7 @@ export class DeclaredTypeToken extends TypeToken {
   }
 
   override compileUnchecked(compiler: Compiler): Type {
-    const result = compiler.context.env.create_type(
-      this.name,
-    )
+    const result = compiler.context.env.create_type(this.name)
     const internalName = Object.keys(result)[0]
     const baseTypes = Object.values(result)[0]
     // load the underlying types
@@ -176,10 +172,7 @@ export class DeclaredTypeToken extends TypeToken {
 }
 
 export class StructTypeToken extends TypeToken {
-  constructor(
-    sourceLocation: TokenLocation,
-    public fields: Token[]
-  ) {
+  constructor(sourceLocation: TokenLocation, public fields: Token[]) {
     super(sourceLocation)
     this.fields = fields
   }

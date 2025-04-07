@@ -1,17 +1,18 @@
 import { ArrayNode } from '../../heap/types/array'
 import { BaseNode } from '../../heap/types/base'
 import { FrameNode } from '../../heap/types/environment'
+import { ReferenceNode } from '../../heap/types/reference'
 import { StructNode } from '../../heap/types/struct'
 import { Process } from '../../runtime/process'
 import {
-  ArrayType,
-  BoolType,
-  DeclaredType,
-  PointerType,
-  StringType,
-  StructType,
   Type,
 } from '../typing'
+import { ArrayType } from '../typing/array_type'
+import { BoolType } from '../typing/bool_type'
+import { DeclaredType } from '../typing/declared_type'
+import { PointerType } from '../typing/pointer_type'
+import { StringType } from '../typing/string_type'
+import { StructType } from '../typing/struct_type'
 
 import { Instruction } from './base'
 
@@ -42,12 +43,12 @@ export class BlockInstruction extends Instruction {
       if (T instanceof DeclaredType) {
         // Find underlying type to load default values into
         let actualType = T
-        let nextType = T.type
-        while (nextType[0] instanceof DeclaredType) {
-          actualType = nextType[0]
-          nextType = actualType.type
+        let nextType = T.type[0]
+        while (nextType instanceof DeclaredType) {
+          actualType = nextType
+          nextType = actualType.type[0]
         }
-        new_frame.set_idx(nextType[0].defaultNodeCreator()(process.heap), i)
+        new_frame.set_idx(nextType.defaultNodeCreator()(process.heap), i)
       } else if (T instanceof ArrayType) {
         const dimensions = [] as number[]
         let length = T.length
@@ -61,12 +62,12 @@ export class BlockInstruction extends Instruction {
         if (next instanceof DeclaredType) {
           // Find underlying type to load default values into
           let actualType = next
-          let nextType = next.type
-          while (nextType[0] instanceof DeclaredType) {
-            actualType = nextType[0]
-            nextType = actualType.type
+          let nextType = next.type[0]
+          while (nextType instanceof DeclaredType) {
+            actualType = nextType
+            nextType = actualType.type[0]
           }
-          next = nextType[0]
+          next = nextType
         }
         const addr = next.bulkDefaultNodeCreator()(process.heap, length)
         let sizeof = 4
@@ -120,7 +121,7 @@ export class BlockInstruction extends Instruction {
         } else {
           // in the case of 1D array
           const array = ArrayNode.create(T.length, process.heap, sizeof, addr)
-          if (addr instanceof Array) {
+          if (Array.isArray(addr)) {
             const length = addr.length
             for (let k = 0; k < length; k++) {
               array.set_child(k, addr[k])
@@ -135,12 +136,12 @@ export class BlockInstruction extends Instruction {
           if (next[i] instanceof DeclaredType) {
             // Find underlying type to load default values into
             let actualType = next[i] as DeclaredType
-            let nextType = actualType.type
-            while (nextType[0] instanceof DeclaredType) {
-              actualType = nextType[0]
-              nextType = actualType.type
+            let nextType = actualType.type[0]
+            while (nextType instanceof DeclaredType) {
+              actualType = nextType
+              nextType = actualType.type[0]
             }
-            size += nextType[0].sizeof()
+            size += nextType.sizeof()
           } else {
             size += next[i].sizeof()
           }
@@ -172,7 +173,8 @@ export class BlockInstruction extends Instruction {
             }
           }
           const structAddr = T.type.type[0].defaultNodeCreator()(process.heap)
-          process.heap.get_value(addr).set_child(structAddr)
+          const node = process.heap.get_value(addr) as ReferenceNode
+          node.set_child(structAddr)
         } else if (T instanceof PointerType && T.type instanceof ArrayType) {
           const dimensions = [] as number[]
           let length = T.type.length
@@ -245,7 +247,7 @@ export class BlockInstruction extends Instruction {
                 }
               }
             }
-            const pointer = process.heap.get_value(addr)
+            const pointer = process.heap.get_value(addr) as ReferenceNode
             const node = arrayNodes.pop()
             if (node !== undefined) {
               pointer.set_child(node.addr)
@@ -258,13 +260,13 @@ export class BlockInstruction extends Instruction {
               sizeof,
               arrayAddr,
             )
-            if (arrayAddr instanceof Array) {
+            if (Array.isArray(arrayAddr)) {
               const length = arrayAddr.length
               for (let k = 0; k < length; k++) {
                 array.set_child(k, arrayAddr[k])
               }
             }
-            const pointer = process.heap.get_value(addr)
+            const pointer = process.heap.get_value(addr) as ReferenceNode
             pointer.set_child(array.addr)
           }
         }
@@ -318,16 +320,6 @@ export class FuncBlockInstruction extends BlockInstruction {
           arrayStart = next.get_child(0)
           next = process.heap.get_value(next.get_child(0))
         }
-        if (next instanceof DeclaredType) {
-          // Find underlying type to load default values into
-          let actualType = next
-          let nextType = next.type
-          while (nextType[0] instanceof DeclaredType) {
-            actualType = nextType[0]
-            nextType = actualType.type
-          }
-          next = nextType[0]
-        }
         const type = process.heap.get_type(next.addr)
         const addr = type.bulkDefaultNodeCreator()(process.heap, length)
         let sizeof = 4
@@ -379,15 +371,6 @@ export class FuncBlockInstruction extends BlockInstruction {
           if (arrayNode !== undefined) {
             process.heap.copy(dst, arrayNode.addr)
           }
-        } else {
-          // in the case of 1D array
-          const array = ArrayNode.create(
-            node.length(),
-            process.heap,
-            sizeof,
-            addr,
-          )
-          process.heap.copy(dst, array.addr)
         }
       } else if (node instanceof StructNode) {
         // deepcopy if struct

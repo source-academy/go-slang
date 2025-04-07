@@ -11,7 +11,11 @@ import { ReferenceNode } from '../../heap/types/reference'
 import { StructNode } from '../../heap/types/struct'
 import { UnsafePkgNode } from '../../heap/types/unsafe'
 import { Process } from '../../runtime/process'
-import { BoolType, Float64Type, Int64Type, StringType, Type } from '../typing'
+import { Type } from '../typing'
+import { BoolType } from '../typing/bool_type'
+import { Float64Type } from '../typing/float64_type'
+import { Int64Type } from '../typing/int64_type'
+import { StringType } from '../typing/string_type'
 
 import { Instruction } from './base'
 
@@ -225,8 +229,9 @@ export class LoadStructFieldInstruction extends Instruction {
     const field = struct.get_child(this.index)
     if (
       process.heap.get_value(process.context.peekOS()) instanceof MethodNode &&
-      (process.heap.get_value(process.context.peekOS()) as MethodNode).identifier() ===
-        'Offsetof' &&
+      (
+        process.heap.get_value(process.context.peekOS()) as MethodNode
+      ).identifier() === 'Offsetof' &&
       !(process.heap.get_value(field) instanceof StructNode)
     ) {
       const offset = struct.offsetof(this.index)

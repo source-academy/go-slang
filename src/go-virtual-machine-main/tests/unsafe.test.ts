@@ -270,4 +270,4 @@ describe('Unsafe Package Checking', () => {
     `
     expect(codeRunner(code).error?.type).toEqual('compile')
   })
-}, 60000)
+})

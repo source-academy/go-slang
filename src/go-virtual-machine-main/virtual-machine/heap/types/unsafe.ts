@@ -133,8 +133,10 @@ export class UnsafePkgNode extends BaseNode {
       if (node2 instanceof ReferenceNode) {
         process.context.popOS() // "Add" method node
         process.context.pushOS(
-          ReferenceNode.create(node.get_value() + node2.get_child(), process.heap)
-            .addr,
+          ReferenceNode.create(
+            node.get_value() + node2.get_child(),
+            process.heap,
+          ).addr,
         )
       }
     } else {

@@ -1,9 +1,7 @@
-import {
-  ArrayType,
-  DeclaredType,
-  StructType,
-  Type,
-} from '../../executor/typing'
+import { Type } from '../../executor/typing'
+import { ArrayType } from '../../executor/typing/array_type'
+import { DeclaredType } from '../../executor/typing/declared_type'
+import { StructType } from '../../executor/typing/struct_type'
 import { Heap, TAG } from '..'
 
 import { BaseNode } from './base'
@@ -59,7 +57,7 @@ export class ArrayNode extends BaseNode {
       const nodeAddr2 = type.defaultNodeAllocator()(
         heap,
         addr + i * type.sizeof(),
-      ).addr
+      )
       if (
         type instanceof ArrayType ||
         (type instanceof DeclaredType && type.type[0] instanceof StructType)

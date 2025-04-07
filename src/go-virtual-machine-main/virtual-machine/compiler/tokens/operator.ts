@@ -9,13 +9,11 @@ import {
   TryChannelReqInstruction,
   UnaryInstruction,
 } from '../../executor/instructions'
-import {
-  BoolType,
-  ChannelType,
-  DeclaredType,
-  PointerType,
-  Type,
-} from '../../executor/typing'
+import { Type } from '../../executor/typing'
+import { BoolType } from '../../executor/typing/bool_type'
+import { ChannelType } from '../../executor/typing/channel_type'
+import { DeclaredType } from '../../executor/typing/declared_type'
+import { PointerType } from '../../executor/typing/pointer_type'
 
 import { Token, TokenLocation } from './base'
 import { PrimaryExpressionToken } from './expressions'
@@ -71,7 +69,7 @@ export class UnaryOperator extends Operator {
           if (
             this.children[0] instanceof PrimaryExpressionToken &&
             this.children[0].operand instanceof UnaryOperator &&
-            this.children[0].operand.name === "address"
+            this.children[0].operand.name === 'address'
           ) {
             throw new Error('Cannot obtain address of a pointer')
           }

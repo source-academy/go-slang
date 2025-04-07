@@ -10,7 +10,8 @@ import { FuncNode, MethodNode } from '../../heap/types/func'
 import { IntegerNode } from '../../heap/types/primitives'
 import { StructNode } from '../../heap/types/struct'
 import { Process } from '../../runtime/process'
-import { BoolType, DeclaredType, StringType } from '../typing'
+import { BoolType } from '../typing/bool_type'
+import { StringType } from '../typing/string_type'
 
 import { Instruction } from './base'
 import { CallInstruction } from './funcs'
@@ -96,16 +97,6 @@ export class GoInstruction extends Instruction {
             arrayStart = next.get_child(0)
             next = process.heap.get_value(next.get_child(0))
           }
-          if (next instanceof DeclaredType) {
-            // Find underlying type to load default values into
-            let actualType = next
-            let nextType = next.type
-            while (nextType[0] instanceof DeclaredType) {
-              actualType = nextType[0]
-              nextType = actualType.type
-            }
-            next = nextType[0]
-          }
           const type = process.heap.get_type(next.addr)
           const addr = type.bulkDefaultNodeCreator()(process.heap, length)
           let sizeof = 4
@@ -142,7 +133,12 @@ export class GoInstruction extends Instruction {
               const n = arrayNodes.length
               if (dim !== undefined) {
                 for (let a = 0; a < n / dim; a++) {
-                  const array = ArrayNode.create(dim, process.heap, sizeof, addr)
+                  const array = ArrayNode.create(
+                    dim,
+                    process.heap,
+                    sizeof,
+                    addr,
+                  )
                   for (let b = 0; b < dim; b++) {
                     const arrayNode = arrayNodes.shift()
                     if (arrayNode !== undefined) {
@@ -157,15 +153,6 @@ export class GoInstruction extends Instruction {
             if (arrayNode !== undefined) {
               process.heap.copy(allocate, arrayNode.addr)
             }
-          } else {
-            // in the case of 1D array
-            const array = ArrayNode.create(
-              node.length(),
-              process.heap,
-              sizeof,
-              addr,
-            )
-            process.heap.copy(allocate, array.addr)
           }
         } else if (node instanceof StructNode) {
           // deepcopy if struct
@@ -181,7 +168,7 @@ export class GoInstruction extends Instruction {
           const struct = StructNode.create(node.length(), process.heap)
           for (let i = 0, count = 0; i < node.sizeof(); ) {
             const node = baseNodes.shift()
-            if (!(node instanceof StructNode)) {
+            if (!(node instanceof StructNode) && node instanceof BaseNode) {
               process.heap.copy(addr + i, structStart + i)
               struct.set_child(count, addr + i)
               i += node.sizeof()
@@ -237,16 +224,6 @@ export class GoInstruction extends Instruction {
             arrayStart = next.get_child(0)
             next = process.heap.get_value(next.get_child(0))
           }
-          if (next instanceof DeclaredType) {
-            // Find underlying type to load default values into
-            let actualType = next
-            let nextType = next.type
-            while (nextType[0] instanceof DeclaredType) {
-              actualType = nextType[0]
-              nextType = actualType.type
-            }
-            next = nextType[0]
-          }
           const type = process.heap.get_type(next.addr)
           const addr = type.bulkDefaultNodeCreator()(process.heap, length)
           let sizeof = 4
@@ -283,7 +260,12 @@ export class GoInstruction extends Instruction {
               const n = arrayNodes.length
               if (dim !== undefined) {
                 for (let a = 0; a < n / dim; a++) {
-                  const array = ArrayNode.create(dim, process.heap, sizeof, addr)
+                  const array = ArrayNode.create(
+                    dim,
+                    process.heap,
+                    sizeof,
+                    addr,
+                  )
                   for (let b = 0; b < dim; b++) {
                     const arrayNode = arrayNodes.shift()
                     if (arrayNode !== undefined) {
@@ -298,15 +280,6 @@ export class GoInstruction extends Instruction {
             if (arrayNode !== undefined) {
               process.heap.copy(allocate, arrayNode.addr)
             }
-          } else {
-            // in the case of 1D array
-            const array = ArrayNode.create(
-              node.length(),
-              process.heap,
-              sizeof,
-              addr,
-            )
-            process.heap.copy(allocate, array.addr)
           }
         } else if (node instanceof StructNode) {
           // deepcopy if struct

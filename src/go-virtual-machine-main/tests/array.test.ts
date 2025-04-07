@@ -59,7 +59,7 @@ describe('Array Type Checking', () => {
         ?.message,
     ).toEqual('Invalid argument: Index has type float64 but must be an integer')
   })
-}, 60000)
+})
 
 describe('Array Execution', () => {
   test('Array indexing with valid index works.', () => {
@@ -353,6 +353,30 @@ describe('Array Execution', () => {
     ).toEqual('[[934 0 4] [2 5 1]]\n[[3 0 4] [2 5 1]]\n')
   })
 
+  test('Passing 2D arrays of declared types to goroutines should also not change array element values', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type A int
+
+        func help(a [2][3]A) {
+          a[0][0] = 934
+          fmt.Println(a)
+        }
+        
+        func main() {
+          a := [2][3]A{{3, 0, 4}, {2, 5, 1}}
+          go help(a)
+          for i := 0; i < 99; i++ {
+          }
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('[[934 0 4] [2 5 1]]\n[[3 0 4] [2 5 1]]\n')
+  })
+
   test('Returning 2D arrays of declared types work', () => {
     expect(
       codeRunner(`
@@ -545,4 +569,4 @@ describe('Array Execution', () => {
       '[[[3 0 4] [2 5 1]] [[888 13 24] [29 56 15]]]\n[[1 2 3] [888 56 999]]\n',
     )
   })
-}, 60000)
+})

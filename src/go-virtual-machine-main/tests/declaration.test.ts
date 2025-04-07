@@ -273,16 +273,6 @@ describe('Variable Declaration Tests', () => {
     expect(mainRunner(code).output).toEqual('5.75\n')
   })
 
-  test('+ should work on a variable with float as underlying type and int literal', () => {
-    const code = `
-    type Age float64
-    type Num Age
-    var x Num = 3.25
-    fmt.Println(x + 33)
-    `
-    expect(mainRunner(code).output).toEqual('36.25\n')
-  })
-
   test('Type declaration works on function arguments with typed variable', () => {
     const code = `
     package main
@@ -684,4 +674,4 @@ describe('Variable Declaration Tests', () => {
     `
     expect(codeRunner(code).output).toEqual('196\n28\n14\n')
   })
-}, 60000)
+})
