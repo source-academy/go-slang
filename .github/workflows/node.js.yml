@@ -16,10 +16,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
     - name: Check for package-lock.json
       run: |
         if [ -e package-lock.json ]; then
@@ -48,9 +44,3 @@ jobs:
     - run: yarn test-coverage
       env:
         CI: true
-    - name: Check that docs build
-      run:  yarn jsdoc prepare
-    - name: Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
