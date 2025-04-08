@@ -83,41 +83,88 @@ export class BlockInstruction extends Instruction {
         }
         const arrayNodes = [] as ArrayNode[]
         if (T.element instanceof ArrayType) {
-          let next2 = T.element
-          while (next2.element instanceof ArrayType) {
-            next2 = next2.element
-          }
-          const baseType = next2.element
-          if (baseType instanceof BoolType) sizeof = 1
-          if (baseType instanceof StringType) sizeof = 2
-          let addr2 = addr
-          // handle multi-dimensional arrays: inner-most layer
-          // we ensured that the memory block is contiguous earlier
-          // so we need to link ArrayNodes to the correct memory addresses
-          for (let a = 0; a < length / next2.length; a++) {
-            arrayNodes.push(
-              ArrayNode.create(next2.length, process.heap, sizeof, addr2),
-            )
-            addr2 += sizeof * next2.length
-          }
-          dimensions.pop()
-          while (dimensions.length > 0) {
-            const dim = dimensions.pop()
-            if (dim !== undefined) {
-              const n = arrayNodes.length
-              for (let a = 0; a < n / dim; a++) {
-                const array = ArrayNode.create(dim, process.heap, sizeof, addr)
-                for (let b = 0; b < dim; b++) {
-                  const node = arrayNodes.shift()
-                  if (node !== undefined) array.set_child(b, node.addr)
+          if (next instanceof StructType) {
+            // we get the ArrayNode containing all the structs from bulkDefault
+            // now we have to split them into the correct dimension
+            const dimensions2 = [] as number[]
+            for (let i = 0; i < dimensions.length; i++) {
+              dimensions2[i] = dimensions[i]
+            }
+            const structs = process.heap.get_value(addr).get_children()
+            const structNodes = [] as StructNode[]
+            for (let i = 0; i < structs.length; i++) {
+              structNodes.push(process.heap.get_value(structs[i]) as StructNode)
+            }
+            while (dimensions2.length > 0) {
+              const dim = dimensions2.pop()
+              if (dim !== undefined) {
+                const n = structNodes.length
+                for (let a = 0; a < n / dim; a++) {
+                  const array = ArrayNode.create(dim, process.heap, sizeof, addr)
+                  for (let b = 0; b < dim; b++) {
+                    const node = structNodes.shift()
+                    if (node !== undefined) array.set_child(b, node.addr)
+                  }
+                  arrayNodes.push(array)
                 }
-                arrayNodes.push(array)
               }
             }
-          }
-          const node = arrayNodes.pop()
-          if (node !== undefined) {
-            new_frame.set_idx(node.addr, i)
+            dimensions.pop()
+            while (dimensions.length > 0) {
+              const dim = dimensions.pop()
+              if (dim !== undefined) {
+                const n = arrayNodes.length
+                for (let a = 0; a < n / dim; a++) {
+                  const array = ArrayNode.create(dim, process.heap, sizeof, addr)
+                  for (let b = 0; b < dim; b++) {
+                    const node = arrayNodes.shift()
+                    if (node !== undefined) array.set_child(b, node.addr)
+                  }
+                  arrayNodes.push(array)
+                }
+              }
+            }
+            const node = arrayNodes.pop()
+            if (node !== undefined) {
+              new_frame.set_idx(node.addr, i)
+            }
+          } else {
+            let next2 = T.element
+            while (next2.element instanceof ArrayType) {
+              next2 = next2.element
+            }
+            const baseType = next2.element
+            if (baseType instanceof BoolType) sizeof = 1
+            if (baseType instanceof StringType) sizeof = 2
+            let addr2 = addr
+            // handle multi-dimensional arrays: inner-most layer
+            // we ensured that the memory block is contiguous earlier
+            // so we need to link ArrayNodes to the correct memory addresses
+            for (let a = 0; a < length / next2.length; a++) {
+              arrayNodes.push(
+                ArrayNode.create(next2.length, process.heap, sizeof, addr2),
+              )
+              addr2 += sizeof * next2.length
+            }
+            dimensions.pop()
+            while (dimensions.length > 0) {
+              const dim = dimensions.pop()
+              if (dim !== undefined) {
+                const n = arrayNodes.length
+                for (let a = 0; a < n / dim; a++) {
+                  const array = ArrayNode.create(dim, process.heap, sizeof, addr)
+                  for (let b = 0; b < dim; b++) {
+                    const node = arrayNodes.shift()
+                    if (node !== undefined) array.set_child(b, node.addr)
+                  }
+                  arrayNodes.push(array)
+                }
+              }
+            }
+            const node = arrayNodes.pop()
+            if (node !== undefined) {
+              new_frame.set_idx(node.addr, i)
+            }
           }
         } else {
           // in the case of array of structs, since bulk default returns an ArrayNode

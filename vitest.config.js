@@ -8,6 +8,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       reportOnFailure: true,
+      exclude: ['./build/**', './src/frontend/**'],
     },
     include: ['./src/go-virtual-machine-main/tests/**'],
     exclude: ['./src/go-virtual-machine-main/tests/utility.ts'],

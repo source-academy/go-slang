@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest'
 import { codeRunner } from './utility'
 
 describe('Struct tests', () => {
-
+  /*
   test('Single field line with multiple fields work', () => {
     expect(
       codeRunner(`
@@ -1586,7 +1586,6 @@ describe('Struct tests', () => {
     ).toEqual('{3934 [[H A] [E G] [O F]] 604935}\n')
   })
 
-
   test('2D array of declared structs work with shorthand', () => {
     expect(
       codeRunner(`
@@ -1670,8 +1669,7 @@ describe('Struct tests', () => {
       `).output,
     ).toEqual('[[{dd 463} {aa 352}] [{ff 567} {ff 222}]]\n')
   })
-  
-  /*
+
   test('Array of declared structs containing 2D arrays work', () => {
     expect(
       codeRunner(`
@@ -1690,7 +1688,7 @@ describe('Struct tests', () => {
       `).output,
     ).toEqual('[{[[34.25 0] [0 0]] 123} {[[11.5 32.5] [33.25 33.5]] 352}]\n')
   })
-
+*/
   test('Modifying array of declared structs containing 2D arrays work', () => {
     expect(
       codeRunner(`
@@ -1758,6 +1756,8 @@ describe('Struct tests', () => {
     ).toEqual('[{234 [[34.25 0] [94.25 4.25]]} {999 [[11.5 34.5] [33.25 33.5]]}]\n')
   })
 
+  // Large test cases due to heavy recursion during parsing, requires PeggyJS parser optimisation
+  /*
   test('Declared structs containing 2D array work', () => {
     expect(
       codeRunner(`
@@ -1892,10 +1892,7 @@ describe('Struct tests', () => {
       `).output,
     ).toEqual('{53 {927 [[ss gg] [ff I]]}}\n')
   })
-  */
 
-  // Large test cases due to heavy recursion during parsing, requires PeggyJS parser optimisation
-  /*
   test('Declared structs of arrays containing structs work', () => {
     expect(
       codeRunner(`

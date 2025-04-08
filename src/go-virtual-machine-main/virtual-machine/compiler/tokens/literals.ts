@@ -190,6 +190,16 @@ export class LiteralValueToken extends Token {
           `Array literal has ${this.elements.length} elements but only expected ${type.length}, in type ${type}.`,
         )
       }
+      let length = 0
+      let baseType = type.element
+      while (baseType instanceof ArrayType) {
+        if (length === 0) {
+          length = baseType.length
+        } else {
+          length *= baseType.length
+        }
+        baseType = baseType.element
+      }
       let offset = 0
       // we want the array to be contiguous in memory, so we count them in sequence, even if the array is
       // multi-dimensional
@@ -223,9 +233,27 @@ export class LiteralValueToken extends Token {
       }
       for (let i = 0; i < type.length - this.elements.length; i++) {
         // Ran out of literal values, use the default values.
-        this.pushInstruction(compiler, new LoadDefaultInstruction(type.element))
-        // load element in actual array and then store element
-        offset = handleInstructions(compiler, type, offset)
+        if (length === 0) {
+          // 1D array
+          this.pushInstruction(compiler, new LoadDefaultInstruction(type.element))
+          // load element in actual array and then store element
+          offset = handleInstructions(compiler, type, offset)
+        } else {
+          // more than 1 dimensional to correct the number of default instructions
+          for (let j = 0; j < length; j++) {
+            this.pushInstruction(compiler, new LoadDefaultInstruction(baseType))
+            this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ''))
+            if (compiler.instructions[compiler.instructions.length - 3] instanceof StoreArrayElementInstruction) {
+              offset = 1 + (compiler.instructions[compiler.instructions.length - 3] as StoreArrayElementInstruction).index
+            } else if (compiler.instructions[compiler.instructions.length - 3] instanceof StoreStructFieldInstruction) {
+              offset = 1 + (compiler.instructions[compiler.instructions.length - 3] as StoreStructFieldInstruction).index
+            }
+            // load element in actual array and then store element
+            this.pushInstruction(compiler, new StoreArrayElementInstruction(offset))
+            offset++
+          }
+        }
+        
       }
     } else if (type instanceof SliceType) {
       for (const element of this.elements) {
