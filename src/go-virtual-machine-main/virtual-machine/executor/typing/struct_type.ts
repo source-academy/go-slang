@@ -38,14 +38,15 @@ export class StructType extends Type {
     return (heap) => StructNode.default(this.fields, creators, heap).addr
   }
 
-  override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number[] {
+  override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
     const creators = [] as Array<(heap: Heap) => number>
     const keys = [...this.fields.values()]
     for (let i = 0; i < keys.length; i++) {
       creators.push(keys[i].defaultNodeCreator())
     }
+    // since it is a bulk default, it returns an array
     return (heap, length) =>
-      StructNode.bulkDefault(this.fields, creators, heap, length)
+      StructNode.bulkDefault(this.fields, creators, heap, length).addr
   }
 
   override defaultNodeAllocator(): (heap: Heap, addr: number) => number {

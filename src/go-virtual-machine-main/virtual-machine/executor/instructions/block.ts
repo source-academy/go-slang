@@ -69,6 +69,7 @@ export class BlockInstruction extends Instruction {
           }
           next = nextType
         }
+        // handle structs elegantly
         const addr = next.bulkDefaultNodeCreator()(process.heap, length)
         let sizeof = 4
         if (next instanceof BoolType) sizeof = 1
@@ -119,15 +120,21 @@ export class BlockInstruction extends Instruction {
             new_frame.set_idx(node.addr, i)
           }
         } else {
+          // in the case of array of structs, since bulk default returns an ArrayNode
+          // there is no need to create a separate array
+          if (next instanceof StructType) {
+            new_frame.set_idx(addr, i)
+          } else {
           // in the case of 1D array
-          const array = ArrayNode.create(T.length, process.heap, sizeof, addr)
-          if (Array.isArray(addr)) {
-            const length = addr.length
-            for (let k = 0; k < length; k++) {
-              array.set_child(k, addr[k])
+            const array = ArrayNode.create(T.length, process.heap, sizeof, addr)
+            if (Array.isArray(addr)) {
+              const length = addr.length
+              for (let k = 0; k < length; k++) {
+                array.set_child(k, addr[k])
+              }
             }
+            new_frame.set_idx(array.addr, i)
           }
-          new_frame.set_idx(array.addr, i)
         }
       } else if (T instanceof StructType) {
         let size = 0
@@ -253,21 +260,29 @@ export class BlockInstruction extends Instruction {
               pointer.set_child(node.addr)
             }
           } else {
-            // in the case of 1D array
-            const array = ArrayNode.create(
-              T.type.length,
-              process.heap,
-              sizeof,
-              arrayAddr,
-            )
-            if (Array.isArray(arrayAddr)) {
-              const length = arrayAddr.length
-              for (let k = 0; k < length; k++) {
-                array.set_child(k, arrayAddr[k])
+            // in the case of array of structs, since bulk default returns an ArrayNode
+            // there is no need to create a separate array
+            if (next instanceof StructType) {
+              //const pointer = process.heap.get_value(addr) as ReferenceNode
+              //pointer.set_child(array.addr)
+              new_frame.set_idx(addr, i)
+            } else {
+              // in the case of 1D array
+              const array = ArrayNode.create(
+                T.type.length,
+                process.heap,
+                sizeof,
+                arrayAddr,
+              )
+              if (Array.isArray(arrayAddr)) {
+                const length = arrayAddr.length
+                for (let k = 0; k < length; k++) {
+                  array.set_child(k, arrayAddr[k])
+                }
               }
+              const pointer = process.heap.get_value(addr) as ReferenceNode
+              pointer.set_child(array.addr)
             }
-            const pointer = process.heap.get_value(addr) as ReferenceNode
-            pointer.set_child(array.addr)
           }
         }
       }

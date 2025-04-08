@@ -4,6 +4,7 @@ import { DeclaredType } from '../../executor/typing/declared_type'
 import { StructType } from '../../executor/typing/struct_type'
 import { Heap, TAG } from '..'
 
+import { ArrayNode } from './array'
 import { BaseNode } from './base'
 import { ReferenceNode } from './reference'
 
@@ -48,9 +49,9 @@ export class StructNode extends BaseNode {
         struct.set_child(i, node)
       } else if (
         [...fields.values()][i] instanceof DeclaredType &&
-        [...fields.values()][i].type[0] instanceof StructType
+        ([...fields.values()][i] as DeclaredType).type[0] instanceof StructType
       ) {
-        const node = [...fields.values()][i].type[0].defaultNodeAllocator()(
+        const node = ([...fields.values()][i] as DeclaredType).type[0].defaultNodeAllocator()(
           heap,
           nextAddr,
         )
@@ -60,8 +61,6 @@ export class StructNode extends BaseNode {
           const arrayNodeAddr = [...fields.values()][i].defaultNodeAllocator()(
             heap,
             nextAddr,
-            [...fields.values()][i].length,
-            [...fields.values()][i].element,
           )
           struct.set_child(i, arrayNodeAddr)
         } else {
@@ -87,13 +86,15 @@ export class StructNode extends BaseNode {
       size += [...fields.values()][i].sizeof()
     }
     size *= length
-    const addr = heap.allocate(size)
+    const addr = heap.allocate(size) // allocate actual values in heap
     let nextAddr = addr
     const structList = [] as number[]
     for (let i = 0; i < length; i++) {
+      // handle 1 struct
       const nodeAddr = heap.allocate(2 + defaultCreator.length)
       const struct = new StructNode(heap, nodeAddr)
       for (let i = 0; i < [...fields.values()].length; i++) {
+        // handle fields in 1 struct
         if ([...fields.values()][i] instanceof StructType) {
           const node = [...fields.values()][i].defaultNodeAllocator()(
             heap,
@@ -116,8 +117,6 @@ export class StructNode extends BaseNode {
             ].defaultNodeAllocator()(
               heap,
               nextAddr,
-              [...fields.values()][i].length,
-              [...fields.values()][i].element,
             )
             struct.set_child(i, arrayNodeAddr)
           } else {
@@ -131,7 +130,17 @@ export class StructNode extends BaseNode {
       heap.memory.set_number(defaultCreator.length, nodeAddr + 1)
       structList.push(struct.addr)
     }
-    return structList
+    // link the inner fields to the main array, since it is a bulkDefault method
+    const arrayAddr = ArrayNode.defaultBlank(length, heap).addr
+    const array = new ArrayNode(heap, arrayAddr)
+    const structLength = structList.length
+    for (let i = 0; i < structLength; i++) {
+      const child = structList.shift()
+      if (child !== undefined) {
+        array.set_child(i, child)
+      }
+    }
+    return array
   }
 
   static allocate(
@@ -140,11 +149,6 @@ export class StructNode extends BaseNode {
     heap: Heap,
     addr: number,
   ) {
-    let size = 0
-    for (let i = 0; i < [...fields.values()].length; i++) {
-      size += [...fields.values()][i].sizeof()
-    }
-    //const addr = heap.allocate(size)
     const nodeAddr = heap.allocate(2 + defaultCreator.length)
     const struct = new StructNode(heap, nodeAddr)
     let nextAddr = addr
@@ -157,9 +161,9 @@ export class StructNode extends BaseNode {
         struct.set_child(i, node)
       } else if (
         [...fields.values()][i] instanceof DeclaredType &&
-        [...fields.values()][i].type[0] instanceof StructType
+        ([...fields.values()][i] as DeclaredType).type[0] instanceof StructType
       ) {
-        const node = [...fields.values()][i].type[0].defaultNodeAllocator()(
+        const node = ([...fields.values()][i] as DeclaredType).type[0].defaultNodeAllocator()(
           heap,
           nextAddr,
         )
@@ -169,8 +173,6 @@ export class StructNode extends BaseNode {
           const arrayNodeAddr = [...fields.values()][i].defaultNodeAllocator()(
             heap,
             nextAddr,
-            [...fields.values()][i].length,
-            [...fields.values()][i].element,
           )
           struct.set_child(i, arrayNodeAddr)
         } else {
