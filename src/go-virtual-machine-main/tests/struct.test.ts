@@ -3,7 +3,6 @@ import { describe, expect, test } from 'vitest'
 import { codeRunner } from './utility'
 
 describe('Struct tests', () => {
-  /*
   test('Single field line with multiple fields work', () => {
     expect(
       codeRunner(`
@@ -1688,7 +1687,7 @@ describe('Struct tests', () => {
       `).output,
     ).toEqual('[{[[34.25 0] [0 0]] 123} {[[11.5 32.5] [33.25 33.5]] 352}]\n')
   })
-*/
+
   test('Modifying array of declared structs containing 2D arrays work', () => {
     expect(
       codeRunner(`

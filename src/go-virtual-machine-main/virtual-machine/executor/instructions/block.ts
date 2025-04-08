@@ -183,25 +183,6 @@ export class BlockInstruction extends Instruction {
             new_frame.set_idx(array.addr, i)
           }
         }
-      } else if (T instanceof StructType) {
-        let size = 0
-        const next = [...T.fields.values()]
-        for (let i = 0; i < next.length; i++) {
-          if (next[i] instanceof DeclaredType) {
-            // Find underlying type to load default values into
-            let actualType = next[i] as DeclaredType
-            let nextType = actualType.type[0]
-            while (nextType instanceof DeclaredType) {
-              actualType = nextType
-              nextType = actualType.type[0]
-            }
-            size += nextType.sizeof()
-          } else {
-            size += next[i].sizeof()
-          }
-        }
-        const addr = T.defaultNodeCreator()(process.heap)
-        new_frame.set_idx(addr, i)
       } else {
         const addr = T.defaultNodeCreator()(process.heap)
         new_frame.set_idx(addr, i)
@@ -210,22 +191,6 @@ export class BlockInstruction extends Instruction {
           T.type instanceof DeclaredType &&
           T.type.type[0] instanceof StructType
         ) {
-          let size = 0
-          const next = [...T.type.type[0].fields.values()]
-          for (let i = 0; i < next.length; i++) {
-            if (next[i] instanceof DeclaredType) {
-              // Find underlying type to load default values into
-              let actualType = next[i] as DeclaredType
-              let nextType = actualType.type
-              while (nextType[0] instanceof DeclaredType) {
-                actualType = nextType[0]
-                nextType = actualType.type
-              }
-              size += nextType[0].sizeof()
-            } else {
-              size += next[i].sizeof()
-            }
-          }
           const structAddr = T.type.type[0].defaultNodeCreator()(process.heap)
           const node = process.heap.get_value(addr) as ReferenceNode
           node.set_child(structAddr)
