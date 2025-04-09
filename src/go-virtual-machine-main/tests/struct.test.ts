@@ -3,6 +3,107 @@ import { describe, expect, test } from 'vitest'
 import { codeRunner } from './utility'
 
 describe('Struct tests', () => {
+  test('Field of declared type passes when using literal untyped values', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type Years int
+        type Person struct {
+          Age Years
+          Name string
+        }
+
+        func main() {
+          var a Person = Person{30, "John"}
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{30 John}\n')
+  })
+
+  test('Field of declared type passes when using literal untyped values with shorthand', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type Years int
+        type Person struct {
+          Age Years
+          Name string
+        }
+
+        func main() {
+          a := Person{30, "John"}
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{30 John}\n')
+  })
+
+  test('Field of declared type passes when using literal untyped values with key', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type Years int
+        type Person struct {
+          Age Years
+          Name string
+        }
+
+        func main() {
+          var a Person = Person{Age: 30, Name: "John"}
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{30 John}\n')
+  })
+
+  test('Field of declared type passes when using literal untyped values with key with shorthand', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type Years int
+        type Person struct {
+          Age Years
+          Name string
+        }
+
+        func main() {
+          a := Person{Age: 30, Name: "John"}
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{30 John}\n')
+  })
+
+  test('Field of declared type passes when using literal untyped values for value modification', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type Years int
+        type Person struct {
+          Age Years
+          Name string
+        }
+
+        func main() {
+          var a Person = Person{30, "John"}
+          a.Age = 40
+          fmt.Println(a)
+        }
+      `).output,
+    ).toEqual('{40 John}\n')
+  })
+
   test('Single field line with multiple fields work', () => {
     expect(
       codeRunner(`

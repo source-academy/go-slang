@@ -715,7 +715,31 @@ export class StructLiteralToken extends Token {
             }
           }
           if (!valueType.assignableBy(fieldType)) {
-            throw new Error('Value type does not match field type.')
+            if (
+              (this.body.elements[i] as PrimaryExpressionToken)
+                .operand instanceof LiteralToken
+            ) {
+              let baseType = fieldType
+              while (baseType instanceof DeclaredType) {
+                baseType = baseType.type[0]
+              }
+              if (!baseType.assignableBy(valueType)) {
+                throw new Error('Value type does not match field type.')
+              }
+            } else if (
+              (Object.values(this.body.elements[i])[1] as PrimaryExpressionToken)
+                .operand instanceof LiteralToken
+            ) {
+              let baseType = fieldType
+              while (baseType instanceof DeclaredType) {
+                baseType = baseType.type[0]
+              }
+              if (!baseType.assignableBy(valueType)) {
+                throw new Error('Value type does not match field type.')
+              }
+            } else {
+              throw new Error('Value type does not match field type.')
+            }
           }
           if (
             !(
