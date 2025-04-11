@@ -43,11 +43,12 @@ export class IdentifierToken extends Token {
 
   override compileUnchecked(compiler: Compiler): Type {
     const [frame_idx, var_idx] = compiler.context.env.find_var(this.identifier)
+    const type = compiler.type_environment.get(this.identifier)
     this.pushInstruction(
       compiler,
-      new LoadVariableInstruction(frame_idx, var_idx, this.identifier),
+      new LoadVariableInstruction(frame_idx, var_idx, this.identifier, type),
     )
-    return compiler.type_environment.get(this.identifier)
+    return type
   }
 }
 

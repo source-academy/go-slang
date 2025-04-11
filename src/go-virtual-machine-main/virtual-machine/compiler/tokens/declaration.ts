@@ -3,7 +3,10 @@ import {
   CallInstruction,
   Instruction,
   LoadVariableInstruction,
+  NoInstruction,
+  StoreArrayElementInstruction,
   StoreInstruction,
+  StoreStructFieldInstruction,
 } from '../../executor/instructions'
 import { Type } from '../../executor/typing'
 import { ArrayType } from '../../executor/typing/array_type'
@@ -43,10 +46,10 @@ export class FunctionDeclarationToken extends Token {
       this.name.identifier,
       this.func.signature.compile(compiler),
     )
-    this.func.compile(compiler)
+    const type = this.func.compile(compiler)
     this.pushInstruction(
       compiler,
-      new LoadVariableInstruction(frame_idx, var_idx, this.name.identifier),
+      new LoadVariableInstruction(frame_idx, var_idx, this.name.identifier, type),
     )
     this.pushInstruction(compiler, new StoreInstruction())
     return new NoType()
@@ -160,10 +163,30 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
                 compiler.instructions[j] instanceof LoadVariableInstruction &&
                 (compiler.instructions[j] as LoadVariableInstruction).id === ''
               ) {
+                // if named variable, we save it
                 compiler.instructions[j] = new LoadVariableInstruction(
                   frame_idx,
                   var_idx,
                   identifier,
+                  expressionTypes
+                )
+              }
+              if (
+                compiler.instructions[j] instanceof StoreStructFieldInstruction
+              ) {
+                const oldInstruction = compiler.instructions[j] as StoreStructFieldInstruction
+                compiler.instructions[j] = new StoreStructFieldInstruction(
+                  oldInstruction.index,
+                  true,
+                )
+              }
+              if (
+                compiler.instructions[j] instanceof StoreArrayElementInstruction
+              ) {
+                const oldInstruction = compiler.instructions[j] as StoreArrayElementInstruction
+                compiler.instructions[j] = new StoreArrayElementInstruction(
+                  oldInstruction.index,
+                  true,
                 )
               }
             }
@@ -189,7 +212,7 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
             // again, just to decouple the instructions from nested structs/multi-dimensional arrays
             this.pushInstruction(
               compiler,
-              new LoadVariableInstruction(frame_idx, var_idx, identifier),
+              new LoadVariableInstruction(frame_idx, var_idx, identifier, expressionTypes),
             )
           } else if (
             expressionTypes instanceof PointerType &&
@@ -198,15 +221,24 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
                 expressionTypes.type.type[0] instanceof StructType))
           ) {
             // instruction correction for pointers of arrays and structs, since pointers
-            // come with a unary instruction, we move LoadVariableInstruction to be before
-            // the UnaryInstruction that retrieves the pointer
-            compiler.instructions[compiler.instructions.length - 2] =
-              new LoadVariableInstruction(frame_idx, var_idx, identifier)
-            compiler.instructions.pop()
+            // come with a unary instruction and we already handled pointers earlier,
+            // we have to remove the UnaryInstruction
+
+            // however, we check if it is indeed the case where it is still initialising a struct/array
+            // or is it already done. If it is already done, we skip this step
+            // at this point, instruction stack should look like:
+            // StoreStuctField/ArrayElement, LoadVariable, Unary
+            if (compiler.instructions[compiler.instructions.length - 3] instanceof StoreStructFieldInstruction
+              || compiler.instructions[compiler.instructions.length - 3] instanceof StoreArrayElementInstruction
+            ) {
+              compiler.instructions[compiler.instructions.length - 2] =
+                new LoadVariableInstruction(frame_idx, var_idx, identifier, expressionTypes)
+              compiler.instructions[compiler.instructions.length - 1] = new NoInstruction()
+            }
           }
           this.pushInstruction(
             compiler,
-            new LoadVariableInstruction(frame_idx, var_idx, identifier),
+            new LoadVariableInstruction(frame_idx, var_idx, identifier, expressionTypes),
           )
           this.pushInstruction(compiler, new StoreInstruction())
         }
@@ -301,6 +333,25 @@ export class VariableDeclarationToken extends DeclarationToken {
                   frame_idx,
                   var_idx,
                   identifier,
+                  expressionTypes
+                )
+              }
+              if (
+                compiler.instructions[j] instanceof StoreStructFieldInstruction
+              ) {
+                const oldInstruction = compiler.instructions[j] as StoreStructFieldInstruction
+                compiler.instructions[j] = new StoreStructFieldInstruction(
+                  oldInstruction.index,
+                  true,
+                )
+              }
+              if (
+                compiler.instructions[j] instanceof StoreArrayElementInstruction
+              ) {
+                const oldInstruction = compiler.instructions[j] as StoreArrayElementInstruction
+                compiler.instructions[j] = new StoreArrayElementInstruction(
+                  oldInstruction.index,
+                  true,
                 )
               }
             }
@@ -346,7 +397,7 @@ export class VariableDeclarationToken extends DeclarationToken {
             // instruction correction for arrays and structs
             this.pushInstruction(
               compiler,
-              new LoadVariableInstruction(frame_idx, var_idx, identifier),
+              new LoadVariableInstruction(frame_idx, var_idx, identifier, expressionTypes),
             )
             this.pushInstruction(compiler, new StoreInstruction())
           }
@@ -397,7 +448,7 @@ export class ConstantDeclarationToken extends DeclarationToken {
       compiler.type_environment.addType(var_name, expressionType)
       this.pushInstruction(
         compiler,
-        new LoadVariableInstruction(frame_idx, var_idx, var_name),
+        new LoadVariableInstruction(frame_idx, var_idx, var_name, expressionType),
       )
       this.pushInstruction(compiler, new StoreInstruction())
     }
@@ -424,7 +475,7 @@ function handleReturnType(
     }
     compiler.type_environment.addType(identifier, expressionTypes.types[j])
     compiler.instructions.push(
-      new LoadVariableInstruction(frame_idx, var_idx, identifier),
+      new LoadVariableInstruction(frame_idx, var_idx, identifier, expressionTypes.types[j]),
     )
     compiler.instructions.push(new StoreInstruction())
   }

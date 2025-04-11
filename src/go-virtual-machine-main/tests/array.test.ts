@@ -62,6 +62,84 @@ describe('Array Type Checking', () => {
 })
 
 describe('Array Execution', () => {
+  test('Arrays with 1 element work when supplied directly as arguments', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        func main() {
+	        fmt.Println([1]int{3})
+        }
+      `).output,
+    ).toEqual('[3]\n')
+  })
+
+  test('Arrays with 2 elements work when supplied directly as arguments', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        func main() {
+	        fmt.Println([2]float64{5.5})
+        }
+      `).output,
+    ).toEqual('[5.5 0]\n')
+  })
+
+  test('Arrays with 3 elements work when supplied directly as arguments', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        func main() {
+	        fmt.Println([3]bool{false, true, true})
+        }
+      `).output,
+    ).toEqual('[false true true]\n')
+  })
+
+  test('Pointers to arrays with 1 element work when supplied directly as arguments', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        func main() {
+	        fmt.Println(&[1]int{3})
+        }
+      `).output,
+    ).toEqual('&[3]\n')
+  })
+
+  test('Pointers to arrays with 2 elements work when supplied directly as arguments', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        func main() {
+	        fmt.Println(&[2]float64{5.5})
+        }
+      `).output,
+    ).toEqual('&[5.5 0]\n')
+  })
+
+  test('Pointers to arrays with 3 elements work when supplied directly as arguments', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        func main() {
+	        fmt.Println(&[3]bool{false, true, true})
+        }
+      `).output,
+    ).toEqual('&[false true true]\n')
+  })
+  
   test('Array indexing with valid index works.', () => {
     expect(
       mainRunner(
@@ -569,4 +647,6 @@ describe('Array Execution', () => {
       '[[[3 0 4] [2 5 1]] [[888 13 24] [29 56 15]]]\n[[1 2 3] [888 56 999]]\n',
     )
   })
+  /*
+  */
 })

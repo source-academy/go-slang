@@ -242,14 +242,14 @@ export class LiteralValueToken extends Token {
           // more than 1 dimensional to correct the number of default instructions
           for (let j = 0; j < length; j++) {
             this.pushInstruction(compiler, new LoadDefaultInstruction(baseType))
-            this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ''))
+            this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, '', type))
             if (compiler.instructions[compiler.instructions.length - 3] instanceof StoreArrayElementInstruction) {
               offset = 1 + (compiler.instructions[compiler.instructions.length - 3] as StoreArrayElementInstruction).index
             } else if (compiler.instructions[compiler.instructions.length - 3] instanceof StoreStructFieldInstruction) {
               offset = 1 + (compiler.instructions[compiler.instructions.length - 3] as StoreStructFieldInstruction).index
             }
             // load element in actual array and then store element
-            this.pushInstruction(compiler, new StoreArrayElementInstruction(offset))
+            this.pushInstruction(compiler, new StoreArrayElementInstruction(offset, false))
             offset++
           }
         }
@@ -456,7 +456,7 @@ export class StructLiteralToken extends Token {
                   // instruction correction to ensure that struct fields are stored correctly
                   this.pushInstruction(
                     compiler,
-                    new LoadVariableInstruction(0, 0, ''),
+                    new LoadVariableInstruction(0, 0, '', fieldType),
                   )
                   this.pushInstruction(
                     compiler,
@@ -467,6 +467,7 @@ export class StructLiteralToken extends Token {
                             compiler.instructions.length - 3
                           ] as StoreStructFieldInstruction
                         ).index,
+                      false,
                     ),
                   )
                 }
@@ -487,11 +488,11 @@ export class StructLiteralToken extends Token {
                   // instruction correction to ensure that struct fields are stored correctly
                   this.pushInstruction(
                     compiler,
-                    new LoadVariableInstruction(0, 0, ''),
+                    new LoadVariableInstruction(0, 0, '', fieldType),
                   )
                   this.pushInstruction(
                     compiler,
-                    new StoreStructFieldInstruction(i),
+                    new StoreStructFieldInstruction(i, false),
                   )
                 }
               }
@@ -560,7 +561,7 @@ export class StructLiteralToken extends Token {
                   // instruction correction to ensure that struct fields are stored correctly
                   this.pushInstruction(
                     compiler,
-                    new LoadVariableInstruction(0, 0, ''),
+                    new LoadVariableInstruction(0, 0, '', struct),
                   )
                   this.pushInstruction(
                     compiler,
@@ -571,6 +572,7 @@ export class StructLiteralToken extends Token {
                             compiler.instructions.length - 3
                           ] as StoreStructFieldInstruction
                         ).index,
+                      false,
                     ),
                   )
                 }
@@ -591,11 +593,11 @@ export class StructLiteralToken extends Token {
                   // instruction correction to ensure that struct fields are stored correctly
                   this.pushInstruction(
                     compiler,
-                    new LoadVariableInstruction(0, 0, ''),
+                    new LoadVariableInstruction(0, 0, '', struct),
                   )
                   this.pushInstruction(
                     compiler,
-                    new StoreStructFieldInstruction(j),
+                    new StoreStructFieldInstruction(j, false),
                   )
                 }
               }
@@ -652,7 +654,7 @@ export class StructLiteralToken extends Token {
                   // instruction correction to ensure that struct fields are stored correctly
                   this.pushInstruction(
                     compiler,
-                    new LoadVariableInstruction(0, 0, ''),
+                    new LoadVariableInstruction(0, 0, '', struct),
                   )
                   this.pushInstruction(
                     compiler,
@@ -663,6 +665,7 @@ export class StructLiteralToken extends Token {
                             compiler.instructions.length - 3
                           ] as StoreStructFieldInstruction
                         ).index,
+                      false,
                     ),
                   )
                 }
@@ -683,11 +686,11 @@ export class StructLiteralToken extends Token {
                   // instruction correction to ensure that struct fields are stored correctly
                   this.pushInstruction(
                     compiler,
-                    new LoadVariableInstruction(0, 0, ''),
+                    new LoadVariableInstruction(0, 0, '', struct),
                   )
                   this.pushInstruction(
                     compiler,
-                    new StoreStructFieldInstruction(j),
+                    new StoreStructFieldInstruction(j, false),
                   )
                 }
               }
@@ -794,11 +797,11 @@ export class StructLiteralToken extends Token {
                   // instruction correction to ensure that struct fields are stored correctly
                   this.pushInstruction(
                     compiler,
-                    new LoadVariableInstruction(0, 0, ''),
+                    new LoadVariableInstruction(0, 0, '', struct),
                   )
                   this.pushInstruction(
                     compiler,
-                    new StoreStructFieldInstruction(index + place),
+                    new StoreStructFieldInstruction(index + place, false),
                   )
                 }
               } else {
@@ -818,11 +821,11 @@ export class StructLiteralToken extends Token {
                   // instruction correction to ensure that struct fields are stored correctly
                   this.pushInstruction(
                     compiler,
-                    new LoadVariableInstruction(0, 0, ''),
+                    new LoadVariableInstruction(0, 0, '', struct),
                   )
                   this.pushInstruction(
                     compiler,
-                    new StoreStructFieldInstruction(index),
+                    new StoreStructFieldInstruction(index, false),
                   )
                 }
               }
@@ -848,7 +851,7 @@ export class StructLiteralToken extends Token {
                   // instruction correction to ensure that struct fields are stored correctly
                   this.pushInstruction(
                     compiler,
-                    new LoadVariableInstruction(0, 0, ''),
+                    new LoadVariableInstruction(0, 0, '', struct),
                   )
                   this.pushInstruction(
                     compiler,
@@ -859,6 +862,7 @@ export class StructLiteralToken extends Token {
                             compiler.instructions.length - 3
                           ] as StoreStructFieldInstruction
                         ).index,
+                      false,
                     ),
                   )
                 }
@@ -883,7 +887,7 @@ export class StructLiteralToken extends Token {
                   // instruction correction to ensure that struct fields are stored correctly
                   this.pushInstruction(
                     compiler,
-                    new LoadVariableInstruction(0, 0, ''),
+                    new LoadVariableInstruction(0, 0, '', struct),
                   )
                   this.pushInstruction(
                     compiler,
@@ -894,6 +898,7 @@ export class StructLiteralToken extends Token {
                             compiler.instructions.length - 3
                           ] as StoreArrayElementInstruction
                         ).index,
+                      false,
                     ),
                   )
                 }
@@ -914,11 +919,11 @@ export class StructLiteralToken extends Token {
                   // instruction correction to ensure that struct fields are stored correctly
                   this.pushInstruction(
                     compiler,
-                    new LoadVariableInstruction(0, 0, ''),
+                    new LoadVariableInstruction(0, 0, '', struct),
                   )
                   this.pushInstruction(
                     compiler,
-                    new StoreStructFieldInstruction(i),
+                    new StoreStructFieldInstruction(i, false),
                   )
                 }
               }
@@ -990,7 +995,7 @@ function handleInstructions(
       StoreArrayElementInstruction
     ) {
       // instruction correction to ensure the storing of array elements are in the correct place
-      compiler.instructions.push(new LoadVariableInstruction(0, 0, ''))
+      compiler.instructions.push(new LoadVariableInstruction(0, 0, '', type))
       compiler.instructions.push(
         new StoreArrayElementInstruction(
           1 +
@@ -999,6 +1004,7 @@ function handleInstructions(
                 compiler.instructions.length - 3
               ] as StoreArrayElementInstruction
             ).index,
+          false,
         ),
       )
     } else if (
@@ -1006,7 +1012,7 @@ function handleInstructions(
       StoreStructFieldInstruction
     ) {
       // instruction correction to ensure the storing of array elements are in the correct place
-      compiler.instructions.push(new LoadVariableInstruction(0, 0, ''))
+      compiler.instructions.push(new LoadVariableInstruction(0, 0, '', type))
       compiler.instructions.push(
         new StoreArrayElementInstruction(
           1 +
@@ -1015,11 +1021,12 @@ function handleInstructions(
                 compiler.instructions.length - 3
               ] as StoreStructFieldInstruction
             ).index,
+          false,
         ),
       )
     } else {
-      compiler.instructions.push(new LoadVariableInstruction(0, 0, ''))
-      compiler.instructions.push(new StoreArrayElementInstruction(offset))
+      compiler.instructions.push(new LoadVariableInstruction(0, 0, '', type))
+      compiler.instructions.push(new StoreArrayElementInstruction(offset, false))
     }
     return offset + 1
   }

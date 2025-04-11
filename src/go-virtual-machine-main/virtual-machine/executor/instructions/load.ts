@@ -169,8 +169,10 @@ export class LoadVariableInstruction extends Instruction {
     public frame_idx: number,
     public var_idx: number,
     public id: string,
+    public type: Type,
   ) {
     super('LD')
+    this.type = type
   }
 
   override toString() {
@@ -178,9 +180,14 @@ export class LoadVariableInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
-    process.context.pushOS(
-      process.context.E().get_var(this.frame_idx, this.var_idx),
-    )
+    if (this.id === '') {
+      // handle structs and arrays without identifiers
+      const node = this.type.defaultNodeCreator()(process.heap)
+      process.context.pushOS(node)
+    } else {
+      const node = process.context.E().get_var(this.frame_idx, this.var_idx)
+      process.context.pushOS(node)
+    }
   }
 }
 

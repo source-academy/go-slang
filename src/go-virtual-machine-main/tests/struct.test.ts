@@ -3,6 +3,110 @@ import { describe, expect, test } from 'vitest'
 import { codeRunner } from './utility'
 
 describe('Struct tests', () => {
+  test('Structs with 1 field work when supplied directly as arguments', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type P struct {
+          x int
+        }
+
+        func main() {
+	        fmt.Println(P{2})
+        }
+      `).output,
+    ).toEqual('{2}\n')
+  })
+
+  test('Structs with 2 fields work when supplied directly as arguments', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type P struct {
+          x, y int
+        }
+
+        func main() {
+	        fmt.Println(P{2, 5})
+        }
+      `).output,
+    ).toEqual('{2 5}\n')
+  })
+
+  test('Structs with 3 fields work when supplied directly as arguments', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type P struct {
+          x, y int
+          z string
+        }
+
+        func main() {
+	        fmt.Println(P{2, 5, "vhe"})
+        }
+      `).output,
+    ).toEqual('{2 5 vhe}\n')
+  })
+
+  test('Pointers to structs with 1 field work when supplied directly as arguments', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type P struct {
+          x int
+        }
+
+        func main() {
+	        fmt.Println(&P{2})
+        }
+      `).output,
+    ).toEqual('&{2}\n')
+  })
+
+  test('Pointers to structs with 2 fields work when supplied directly as arguments', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type P struct {
+            x, y int
+        }
+
+        func main() {
+	        fmt.Println(&P{2, 5})
+        }
+      `).output,
+    ).toEqual('&{2 5}\n')
+  })
+
+  test('Pointers to structs with 3 fields work when supplied directly as arguments', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type P struct {
+            x, y int
+            z string
+        }
+
+        func main() {
+	        fmt.Println(&P{2, 5, "vhe"})
+        }
+      `).output,
+    ).toEqual('&{2 5 vhe}\n')
+  })
+
   test('Field of declared type passes when using literal untyped values', () => {
     expect(
       codeRunner(`

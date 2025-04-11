@@ -76,12 +76,16 @@ export class UnaryOperator extends Operator {
         }
       }
       if (
-        compiler.instructions[compiler.instructions.length - 1] instanceof
-          StoreStructFieldInstruction ||
-        compiler.instructions[compiler.instructions.length - 1] instanceof
-          StoreArrayElementInstruction
+        (
+          compiler.instructions[compiler.instructions.length - 1] instanceof
+            StoreStructFieldInstruction
+          ||
+          compiler.instructions[compiler.instructions.length - 1] instanceof
+            StoreArrayElementInstruction
+          
+        )
       ) {
-        this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, ''))
+        this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, '', expressionType))
       }
       this.pushInstruction(compiler, new UnaryInstruction(this.name))
       if (this.name === 'address') {

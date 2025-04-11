@@ -34,7 +34,7 @@ export const builtinPackages = {
     compiler.instructions.push(
       new LoadConstantInstruction('fmt', new StringType()),
       new LoadPackageInstruction(),
-      new LoadVariableInstruction(frame_idx, var_idx, 'fmt'),
+      new LoadVariableInstruction(frame_idx, var_idx, 'fmt', pkg),
       new StoreInstruction(),
     )
     compiler.symbols.push(...Array(4).fill(null))
@@ -100,7 +100,7 @@ export const builtinPackages = {
     compiler.instructions.push(
       new LoadConstantInstruction('unsafe', new StringType()),
       new LoadPackageInstruction(),
-      new LoadVariableInstruction(frame_idx, var_idx, 'unsafe'),
+      new LoadVariableInstruction(frame_idx, var_idx, 'unsafe', pkg),
       new StoreInstruction(),
     )
     compiler.symbols.push(...Array(4).fill(null))

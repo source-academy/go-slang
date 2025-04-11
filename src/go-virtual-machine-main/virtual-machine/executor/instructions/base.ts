@@ -41,3 +41,17 @@ export class PopInstruction extends Instruction {
     process.context.popOS()
   }
 }
+
+export class NoInstruction extends Instruction {
+  constructor() {
+    super('NIL')
+  }
+
+  static is(instr: Instruction): instr is DoneInstruction {
+    return instr.tag === 'NIL'
+  }
+
+  override execute(_process: Process): void {
+    // Do nothing.
+  }
+}

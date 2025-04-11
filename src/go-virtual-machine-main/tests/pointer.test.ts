@@ -3,6 +3,40 @@ import { describe, expect, test } from 'vitest'
 import { codeRunner } from './utility'
 
 describe('Pointer Tests', () => {
+  test('Pointer to a struct that is declared as a struct works correctly', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type P struct {
+          x int
+        }
+
+        func main() {
+            p := P{3}
+            f := &p
+            fmt.Println(*f)
+        }
+      `).output,
+    ).toEqual('{3}\n')
+  })
+
+  test('Pointer to an array that is declared as an array works correctly', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        func main() {
+            p := [3]float64{3.5}
+            f := &p
+            fmt.Println(*f)
+        }
+      `).output,
+    ).toEqual('[3.5 0 0]\n')
+  })
+
   test('Getting pointer of variable works', () => {
     const code = `
     package main

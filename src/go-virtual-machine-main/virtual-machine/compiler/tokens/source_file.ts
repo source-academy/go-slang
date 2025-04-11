@@ -47,7 +47,7 @@ export class SourceFileTokens extends Token {
     const [frame_idx, var_idx] = compiler.context.env.find_var('main')
     this.pushInstruction(
       compiler,
-      new LoadVariableInstruction(frame_idx, var_idx, 'main'),
+      new LoadVariableInstruction(frame_idx, var_idx, 'main', new NoType()),
     )
     this.pushInstruction(compiler, new CallInstruction(0))
     const vars = compiler.context.env.get_frame()
@@ -77,7 +77,7 @@ export class SourceFileTokens extends Token {
       this.pushInstruction(
         compiler,
         loadInstruction,
-        new LoadVariableInstruction(frame_idx, var_idx, name),
+        new LoadVariableInstruction(frame_idx, var_idx, name, type),
         new StoreInstruction(),
       )
       compiler.type_environment.addType(name, type)
