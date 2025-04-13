@@ -68,7 +68,7 @@ export class StructType extends Type {
 
       return entries1.every(([key, value], index) => {
         const [key2, value2] = entries2[index]
-        return key === key2 && value.equals(value2)
+        return (key === key2 || key === '') && value.equals(value2)
       })
     } else if (t instanceof DeclaredType && t.type[0] instanceof StructType) {
       const entries1 = Array.from(t.type[0].fields.entries())
@@ -76,7 +76,7 @@ export class StructType extends Type {
 
       return entries1.every(([key, value], index) => {
         const [key2, value2] = entries2[index]
-        return key === key2 && value.equals(value2)
+        return (key === key2 || key === '') && value.equals(value2)
       })
     }
     return false
