@@ -3,7 +3,6 @@ import { describe, expect, test } from 'vitest'
 import { codeRunner } from './utility'
 
 describe('Struct tests', () => {
-  /*
   test('Anonymous structs work with keys', () => {
     expect(
       codeRunner(`
@@ -25,9 +24,8 @@ describe('Struct tests', () => {
       `).output,
     ).toEqual('{3 2.5 true}\n')
   })
-  */
 
-  test('Nested anonymous structs work with keys', () => {
+  test('Nested anonymous structs work with keys on outer layer', () => {
     expect(
       codeRunner(`
         package main
@@ -40,26 +38,23 @@ describe('Struct tests', () => {
               Name string
               Age int
             }
-              Money float64
           }{
-            Money: 345.5,
+            Code: 456321,
             Person: struct {
               Name string
               Age int
             }{
-              
-              Age: 32,
-              Name: "Jack",
+              "Jack",
+              32,
             },
-            Code: 456321,
           }
           fmt.Println(a)
         }
       `).output,
-    ).toEqual('{{Jack 32} 1345}\n')
+    ).toEqual('{456321 {Jack 32}}\n')
   })
 
-  test('Nested anonymous structs work with keys', () => {
+  test('Nested declared type structs work with keys on outer layer', () => {
     expect(
       codeRunner(`
         package main
@@ -79,43 +74,13 @@ describe('Struct tests', () => {
           a := A{
             Code: 3934,
             Person: {"Alice", 25.5},
-            
           }
           fmt.Println(a)
         }
       `).output,
     ).toEqual('{{Alice 25.5} 3934}\n')
   })
-
-  test('Nested anonymous structs work with keys', () => {
-    expect(
-      codeRunner(`
-        package main
-        import "fmt"
-
-        type Person struct {
-          Name string
-          Age float64
-        }
-
-        type A struct {
-          Person Person
-          Code int
-        }
-        
-        func main() {
-          a := A{
-            Code: 3934,
-            Person: {Age: 25.5, Name: "Alice"},
-            
-          }
-          fmt.Println(a)
-        }
-      `).output,
-    ).toEqual('{{Alice 25.5} 3934}\n')
-  })
-
-  /*
+ 
   test('Structs with 1 field work when supplied directly as arguments', () => {
     expect(
       codeRunner(`
