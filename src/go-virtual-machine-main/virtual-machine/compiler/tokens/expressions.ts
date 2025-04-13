@@ -8,6 +8,7 @@ import {
   LoadConstantInstruction,
   LoadSliceElementInstruction,
   LoadStructFieldInstruction,
+  NoInstruction,
   SelectorOperationInstruction,
   SliceOperationInstruction,
 } from '../../executor/instructions'
@@ -274,7 +275,13 @@ export class CallToken extends PrimaryExpressionModifierToken {
       )
     }
 
-    const argumentTypes = this.expressions.map((e) => e.compile(compiler))
+    const argumentTypes = this.expressions.map((e) => {
+      const type = e.compile(compiler);
+      // NoInstruction is inserted to separate each argument
+      // for the purposes of handling different structs or arrays
+      compiler.instructions.push(new NoInstruction())
+      return type
+    })
     let argumentLength = 0
     for (let i = 0; i < argumentTypes.length; i++) {
       argumentLength =

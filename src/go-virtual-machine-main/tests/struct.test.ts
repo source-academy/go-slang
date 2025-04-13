@@ -37,6 +37,57 @@ describe('Struct tests', () => {
     ).toEqual('{2 5}\n')
   })
 
+  test('Structs with 2 fields work when supplied directly as arguments with keys', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type P struct {
+          x, y int
+        }
+
+        func main() {
+	        fmt.Println(P{y: 2, x: 5})
+        }
+      `).output,
+    ).toEqual('{5 2}\n')
+  })
+
+  test('Structs with 2 fields work when supplied directly as multiple arguments with keys', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type P struct {
+          x, y int
+        }
+
+        func main() {
+	        fmt.Println(P{y: 2, x: 5}, P{y: 4, x: 10}, P{x: 3, y: 32})
+        }
+      `).output,
+    ).toEqual('{5 2} {10 4} {3 32}\n')
+  })
+
+  test('Structs with 2 fields work when supplied directly as multiple arguments with or without keys', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type P struct {
+          x, y int
+        }
+
+        func main() {
+	        fmt.Println(P{y: 2, x: 5}, P{4, 11}, P{x: 3, y: 32})
+        }
+      `).output,
+    ).toEqual('{5 2} {4 11} {3 32}\n')
+  })
+
   test('Structs with 3 fields work when supplied directly as arguments', () => {
     expect(
       codeRunner(`

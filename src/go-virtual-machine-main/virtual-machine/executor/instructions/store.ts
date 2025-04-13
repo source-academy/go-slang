@@ -128,10 +128,14 @@ export class StoreArrayElementInstruction extends Instruction {
 
 export class StoreStructFieldInstruction extends Instruction {
   index: number
+  order: number
+  hasKey: boolean
   toPop: boolean
-  constructor(index: number, toPop: boolean) {
+  constructor(index: number, order: number, hasKey: boolean, toPop: boolean) {
     super('STORE STRUCT FIELD ' + index)
     this.index = index
+    this.order = order
+    this.hasKey = hasKey
     this.toPop = toPop
   }
 
@@ -181,7 +185,10 @@ export class StoreStructFieldInstruction extends Instruction {
       // Old OS: ..., correct struct, value to store in next field, residual empty struct
       // Correct version: ..., value to store in next field, correct struct
       // Since we are popping the other 2 nodes anyway, just flip the variable names around
-      if (this.index > 0) {
+
+      // need change to check by 1st initialisation or not
+      // and a way to separate 2 structs if there are 2 structs supplied as arguments
+      if (this.order > 0) {
         process.context.popOS() // empty residual struct from previous LoadVariableInstruction
         const src = process.context.popOS()
         let dst = process.context.popOS()

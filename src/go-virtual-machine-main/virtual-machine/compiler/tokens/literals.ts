@@ -8,6 +8,7 @@ import {
   LoadFuncInstruction,
   LoadSliceInstruction,
   LoadVariableInstruction,
+  NoInstruction,
   ReturnInstruction,
   StoreArrayElementInstruction,
   StoreStructFieldInstruction,
@@ -418,6 +419,7 @@ export class StructLiteralToken extends Token {
             const fieldType = Object.values(
               this.fieldType.fields[j],
             )[1].compile(compiler)
+            const hasKey = false
             if (!valueType.assignableBy(fieldType)) {
               if (
                 (this.body.elements[i] as PrimaryExpressionToken)
@@ -467,6 +469,8 @@ export class StructLiteralToken extends Token {
                             compiler.instructions.length - 3
                           ] as StoreStructFieldInstruction
                         ).index,
+                      j,
+                      hasKey,
                       false,
                     ),
                   )
@@ -492,7 +496,7 @@ export class StructLiteralToken extends Token {
                   )
                   this.pushInstruction(
                     compiler,
-                    new StoreStructFieldInstruction(i, false),
+                    new StoreStructFieldInstruction(i, i, hasKey, false),
                   )
                 }
               }
@@ -572,6 +576,8 @@ export class StructLiteralToken extends Token {
                             compiler.instructions.length - 3
                           ] as StoreStructFieldInstruction
                         ).index,
+                      j,
+                      hasKey,
                       false,
                     ),
                   )
@@ -597,7 +603,7 @@ export class StructLiteralToken extends Token {
                   )
                   this.pushInstruction(
                     compiler,
-                    new StoreStructFieldInstruction(j, false),
+                    new StoreStructFieldInstruction(j, j, hasKey, false),
                   )
                 }
               }
@@ -665,6 +671,8 @@ export class StructLiteralToken extends Token {
                             compiler.instructions.length - 3
                           ] as StoreStructFieldInstruction
                         ).index,
+                      j,
+                      hasKey,
                       false,
                     ),
                   )
@@ -690,7 +698,7 @@ export class StructLiteralToken extends Token {
                   )
                   this.pushInstruction(
                     compiler,
-                    new StoreStructFieldInstruction(j, false),
+                    new StoreStructFieldInstruction(j, j, hasKey, false),
                   )
                 }
               }
@@ -801,7 +809,7 @@ export class StructLiteralToken extends Token {
                   )
                   this.pushInstruction(
                     compiler,
-                    new StoreStructFieldInstruction(index + place, false),
+                    new StoreStructFieldInstruction(index + place, i, hasKey, false),
                   )
                 }
               } else {
@@ -825,7 +833,7 @@ export class StructLiteralToken extends Token {
                   )
                   this.pushInstruction(
                     compiler,
-                    new StoreStructFieldInstruction(index, false),
+                    new StoreStructFieldInstruction(index, i, hasKey, false),
                   )
                 }
               }
@@ -862,6 +870,8 @@ export class StructLiteralToken extends Token {
                             compiler.instructions.length - 3
                           ] as StoreStructFieldInstruction
                         ).index,
+                      i,
+                      hasKey,
                       false,
                     ),
                   )
@@ -898,6 +908,8 @@ export class StructLiteralToken extends Token {
                             compiler.instructions.length - 3
                           ] as StoreArrayElementInstruction
                         ).index,
+                      i,
+                      hasKey,
                       false,
                     ),
                   )
@@ -923,7 +935,7 @@ export class StructLiteralToken extends Token {
                   )
                   this.pushInstruction(
                     compiler,
-                    new StoreStructFieldInstruction(i, false),
+                    new StoreStructFieldInstruction(i, i, hasKey, false),
                   )
                 }
               }

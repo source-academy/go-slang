@@ -177,6 +177,8 @@ export class ShortVariableDeclarationToken extends DeclarationToken {
                 const oldInstruction = compiler.instructions[j] as StoreStructFieldInstruction
                 compiler.instructions[j] = new StoreStructFieldInstruction(
                   oldInstruction.index,
+                  oldInstruction.order,
+                  oldInstruction.hasKey,
                   true,
                 )
               }
@@ -342,6 +344,8 @@ export class VariableDeclarationToken extends DeclarationToken {
                 const oldInstruction = compiler.instructions[j] as StoreStructFieldInstruction
                 compiler.instructions[j] = new StoreStructFieldInstruction(
                   oldInstruction.index,
+                  oldInstruction.order,
+                  oldInstruction.hasKey,
                   true,
                 )
               }
