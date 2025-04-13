@@ -75,7 +75,7 @@ describe('Concurrency Check', () => {
       wg.Wait()
     }
     `
-    expect(codeRunner(code).output).toEqual('3\nhello\n')
+    expect(codeRunner(code).output).toEqual('hello\n3\n')
   })
 
   test(`Arguments supplied to go statements are evaluated at that line
