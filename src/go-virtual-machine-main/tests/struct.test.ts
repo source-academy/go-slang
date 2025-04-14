@@ -236,6 +236,24 @@ describe('Struct tests', () => {
     ).toEqual('&{2 5 vhe}\n')
   })
 
+  test('Pointers to structs with 3 keyed fields work when supplied directly as arguments', () => {
+    expect(
+      codeRunner(`
+        package main
+        import "fmt"
+
+        type P struct {
+            x, y int
+            z string
+        }
+
+        func main() {
+	        fmt.Println(&P{y: 2, x: 5, z: "vhe"})
+        }
+      `).output,
+    ).toEqual('&{5 2 vhe}\n')
+  })
+
   test('Field of declared type passes when using literal untyped values', () => {
     expect(
       codeRunner(`

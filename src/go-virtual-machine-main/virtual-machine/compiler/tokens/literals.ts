@@ -410,11 +410,7 @@ export class StructLiteralToken extends Token {
     if (this.fieldType instanceof StructTypeToken) {
       for (let i = 0; i < this.body.elements.length; i++) {
         for (let j = 0; j < this.fieldType.fields.length; j++) {
-          for (
-            let k = 0;
-            k < Object.values(this.fieldType.fields[j])[0].length;
-            k++
-          ) {
+          for (let k = 0; k < Object.values(this.fieldType.fields[j])[0].length; k++) {
             const hasKey = Object.keys(this.body.elements[i])[0] === 'key'
             const valueType = hasKey
               ? Object.values(this.body.elements[i])[1].compile(compiler)
@@ -422,6 +418,7 @@ export class StructLiteralToken extends Token {
             let fieldType = Object.values(this.fieldType.fields[j])[1].compile(compiler)
             let index = j
             if (hasKey) {
+              // if it is a keyed field, we find the index and type
               let fieldName = undefined
               const key = Object.values(this.body.elements[i])[0].identifier
               const structFields = this.fieldType.fields
@@ -440,6 +437,8 @@ export class StructLiteralToken extends Token {
               }
             }
             if (!valueType.assignableBy(fieldType)) {
+              // in case of untyped literals, we match it to the declared type
+              // however, the literal must still be compatible with the declared type
               if (
                 (this.body.elements[i] as PrimaryExpressionToken)
                   .operand instanceof LiteralToken
@@ -456,11 +455,14 @@ export class StructLiteralToken extends Token {
               }
             }
             if (hasKey) {
+              // instructions handling in the case where field is keyed
               if (
                 compiler.instructions[
                   compiler.instructions.length - 2
                 ] instanceof StoreStructFieldInstruction
               ) {
+                // continue on from previous index
+                // TODO: Change this completely to handle nested structs/arrays correctly
                 let place = 0
                 for (let i = 0; i < index; i++) {
                   if (
@@ -508,6 +510,8 @@ export class StructLiteralToken extends Token {
                   )
                 }
               } else {
+                // handle the case of nested struct/array to remove excessive instructions
+                // TODO: Change this completely to handle nested structs/arrays correctly
                 if (
                   !(fieldType instanceof ArrayType) &&
                   !(
@@ -533,11 +537,14 @@ export class StructLiteralToken extends Token {
                 }
               }
             } else {
+              // if it is not keyed
               if (
                 compiler.instructions[
                   compiler.instructions.length - 2
                 ] instanceof StoreStructFieldInstruction
               ) {
+                // continue on from previous index
+                // TODO: Change this completely to handle nested structs/arrays correctly
                 if (
                   !(fieldType instanceof ArrayType) &&
                   !(
@@ -576,6 +583,8 @@ export class StructLiteralToken extends Token {
                   compiler.instructions.length - 2
                 ] instanceof StoreArrayElementInstruction
               ) {
+                // continue on from previous index
+                // TODO: Change this completely to handle nested structs/arrays correctly
                 if (
                   !(fieldType instanceof ArrayType) &&
                   !(
@@ -610,6 +619,8 @@ export class StructLiteralToken extends Token {
                   )
                 }
               } else {
+                // handle the case of nested struct/array to remove excessive instructions
+                // TODO: Change this completely to handle nested structs/arrays correctly
                 if (
                   !(fieldType instanceof ArrayType) &&
                   !(
@@ -647,7 +658,8 @@ export class StructLiteralToken extends Token {
           let fieldType = [...struct.fields.values()][i]
           let hasKey = Object.keys(this.body.elements[i])[0] === 'key'
           let valueType = undefined
-          // compile struct values separately if nested struct
+          // compile struct values separately if nested struct and outer struct is keyed
+          // TODO: Change this completely to handle nested structs/arrays correctly
           if (
             hasKey &&
             Object.values(this.body.elements[i])[1] instanceof LiteralValueToken
@@ -685,6 +697,9 @@ export class StructLiteralToken extends Token {
                   compiler.instructions.length - 2
                 ] instanceof StoreStructFieldInstruction
               ) {
+                // continue on from previous index and handle the case of nested struct/array
+                // to remove excessive instructions
+                // TODO: Change this completely to handle nested structs/arrays correctly
                 if (
                   !(fieldType instanceof ArrayType) &&
                   !(
@@ -704,6 +719,7 @@ export class StructLiteralToken extends Token {
                     new LoadVariableInstruction(0, 0, '', struct),
                   )
                   if (hasKey) {
+                    // handle the case where the inner fields are keyed
                     const index = [...struct.fields.keys()].indexOf(
                       Object.values(this.body.elements[i])[0].identifier,
                     )
@@ -726,6 +742,7 @@ export class StructLiteralToken extends Token {
                       ),
                     )
                   } else {
+                    // handle the case where the inner fields are not keyed
                     this.pushInstruction(
                       compiler,
                       new StoreStructFieldInstruction(
@@ -743,6 +760,8 @@ export class StructLiteralToken extends Token {
                   }
                 }
               } else {
+                // handle the case of nested struct/array to remove excessive instructions
+                // TODO: Change this completely to handle nested structs/arrays correctly
                 if (
                   !(fieldType instanceof ArrayType) &&
                   !(
@@ -774,6 +793,8 @@ export class StructLiteralToken extends Token {
             !hasKey &&
             this.body.elements[i] instanceof LiteralValueToken
           ) {
+          // compile struct values separately if nested struct and outer struct is not keyed
+          // TODO: Change this completely to handle nested structs/arrays correctly
             const map = new Map<string, Type>()
             const names = [...struct.fields.values()]
             for (
@@ -807,6 +828,9 @@ export class StructLiteralToken extends Token {
                   compiler.instructions.length - 2
                 ] instanceof StoreStructFieldInstruction
               ) {
+                // continue on from previous index and handle the case of nested struct/array
+                // to remove excessive instructions
+                // TODO: Change this completely to handle nested structs/arrays correctly
                 if (
                   !(fieldType instanceof ArrayType) &&
                   !(
@@ -841,6 +865,8 @@ export class StructLiteralToken extends Token {
                   )
                 }
               } else {
+                // handle the case of nested struct/array to remove excessive instructions
+                // TODO: Change this completely to handle nested structs/arrays correctly
                 if (
                   !(fieldType instanceof ArrayType) &&
                   !(
@@ -869,13 +895,17 @@ export class StructLiteralToken extends Token {
             valueType = new StructType(map)
             continue
           } else if (hasKey) {
+            // not nested struct but struct fields are keyed
+            // get the correct input type instead of just using the default ordering
             valueType = Object.values(this.body.elements[i])[1].compile(
               compiler,
             )
           } else {
+            // use default ordering since not keyed
             valueType = this.body.elements[i].compile(compiler)
           }
           if (hasKey) {
+            // get the actual required type since it might not match if it is keyed
             let fieldName = undefined
             const key = Object.values(this.body.elements[i])[0].identifier
             for (const [k, v] of struct.fields) {
@@ -890,6 +920,8 @@ export class StructLiteralToken extends Token {
             }
           }
           if (!valueType.assignableBy(fieldType)) {
+            // handle untyped literals since they can be assigned to declared types
+            // if they are compatible
             if (
               (this.body.elements[i] as PrimaryExpressionToken)
                 .operand instanceof LiteralToken
@@ -930,7 +962,8 @@ export class StructLiteralToken extends Token {
             )
           ) {
             if (hasKey) {
-              // need adjust index to account for earlier fields
+              // handle the case where fields are keyed
+              // TODO: Change this completely to handle nested structs/arrays correctly
               const index = [...struct.fields.keys()].indexOf(
                 Object.values(this.body.elements[i])[0].identifier,
               )
@@ -939,6 +972,8 @@ export class StructLiteralToken extends Token {
                   compiler.instructions.length - 2
                 ] instanceof StoreStructFieldInstruction
               ) {
+                // continue on from previous index
+                // TODO: Change this completely to handle nested structs/arrays correctly
                 let place = 0
                 for (let i = 0; i < index; i++) {
                   if (
@@ -963,6 +998,8 @@ export class StructLiteralToken extends Token {
                 }
                 if (place > 0) place--
                 if (
+                  // handle the case of nested struct/array to remove excessive instructions
+                  // TODO: Change this completely to handle nested structs/arrays correctly
                   !(fieldType instanceof ArrayType) &&
                   !(
                     compiler.instructions[
@@ -986,6 +1023,8 @@ export class StructLiteralToken extends Token {
                   )
                 }
               } else {
+                // handle the case of nested struct/array to remove excessive instructions
+                // TODO: Change this completely to handle nested structs/arrays correctly
                 if (
                   !(fieldType instanceof ArrayType) &&
                   !(
@@ -1024,6 +1063,9 @@ export class StructLiteralToken extends Token {
                 }
               }
             } else {
+              // continue on from previous index and handle the case of nested struct/array
+              // to remove excessive instructions
+              // TODO: Change this completely to handle nested structs/arrays correctly
               if (
                 compiler.instructions[
                   compiler.instructions.length - 2
@@ -1067,6 +1109,9 @@ export class StructLiteralToken extends Token {
                   compiler.instructions.length - 2
                 ] instanceof StoreArrayElementInstruction
               ) {
+                // continue on from previous index and handle the case of nested struct/array
+                // to remove excessive instructions
+                // TODO: Change this completely to handle nested structs/arrays correctly
                 if (
                   !(fieldType instanceof ArrayType) &&
                   !(
@@ -1101,6 +1146,8 @@ export class StructLiteralToken extends Token {
                   )
                 }
               } else {
+                // handle the case of nested struct/array to remove excessive instructions
+                // TODO: Change this completely to handle nested structs/arrays correctly
                 if (
                   !(fieldType instanceof ArrayType) &&
                   !(
@@ -1134,6 +1181,12 @@ export class StructLiteralToken extends Token {
   }
 }
 
+/**
+ * Function to count the number of primitive variables inside a StructLiteralToken.
+ * @param x StructLiteralToken to count inside of
+ * @param c accumulated count so far
+ * @returns number of primitive variables in x
+ */
 function fieldCounterStruct(x: StructLiteralToken, c: number) {
   for (let i = 0; i < x.body.elements.length; i++) {
     if (Object.values(x.body.elements[i])[1] instanceof LiteralValueToken) {
@@ -1150,6 +1203,12 @@ function fieldCounterStruct(x: StructLiteralToken, c: number) {
   return c
 }
 
+/**
+ * Function to count the number of primitive variables inside a LiteralValueToken.
+ * @param x LiteralValueToken to count inside of
+ * @param c accumulated count so far
+ * @returns number of primitive variables in x
+ */
 function fieldCounterLiteral(x: LiteralValueToken, c: number) {
   for (let i = 0; i < x.elements.length; i++) {
     const elements = x.elements[i]
@@ -1167,6 +1226,14 @@ function fieldCounterLiteral(x: LiteralValueToken, c: number) {
   return c
 }
 
+
+/**
+ * Handles the loading of instructions into the instruction set with the correct index
+ * @param compiler compiler
+ * @param type ArrayType of the array or DeclaredType of the struct
+ * @param offset accumulated offset from caller function
+ * @returns new offset after handling instructions
+ */
 function handleInstructions(
   compiler: Compiler,
   type: ArrayType | DeclaredType,
