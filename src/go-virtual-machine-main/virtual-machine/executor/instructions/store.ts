@@ -33,12 +33,12 @@ export class StoreArrayElementInstruction extends Instruction {
 
   peek(
     process: Process,
-    struct: StructNode | ArrayNode,
+    node: StructNode | ArrayNode,
     target: number,
     count: number,
   ): number | BaseNode {
-    for (let i = 0; i < struct.get_children().length; i++) {
-      const child = process.heap.get_value(struct.get_child(i))
+    for (let i = 0; i < node.get_children().length; i++) {
+      const child = process.heap.get_value(node.get_child(i))
       if (child instanceof StructNode || child instanceof ArrayNode) {
         const res = this.peek(process, child, target, count)
         if (res instanceof BaseNode) {
@@ -93,10 +93,10 @@ export class StoreArrayElementInstruction extends Instruction {
       if (process.heap.get_value(dst) instanceof ReferenceNode) {
         dst = (process.heap.get_value(dst) as ReferenceNode).get_child()
       }
-      const struct = new StructNode(process.heap, dst)
-      let fieldAddr = this.peek(process, struct, this.index, 0)
-      if (fieldAddr instanceof BaseNode) fieldAddr = fieldAddr.addr
-      process.heap.copy(fieldAddr, src)
+      const array = new ArrayNode(process.heap, dst)
+      let elemAddr = this.peek(process, array, this.index, 0)
+      if (elemAddr instanceof BaseNode) elemAddr = elemAddr.addr
+      process.heap.copy(elemAddr, src)
 
       if (process.debug_mode) {
         process.debugger.modified_buffer.add(dst)
