@@ -1,21 +1,19 @@
 import { Compiler } from '../../executor'
-import {
-  ArrayType,
-  BoolType,
-  ChannelType,
-  DeclaredType,
-  Float64Type,
-  FunctionType,
-  Int64Type,
-  NoType,
-  ParameterType,
-  ReturnType,
-  SliceType,
-  StringType,
-  StructType,
-  Type,
-} from '../../executor/typing'
-import { IdentifierToken } from './identifier'
+import { Type } from '../../executor/typing'
+import { ArrayType } from '../../executor/typing/array_type'
+import { BoolType } from '../../executor/typing/bool_type'
+import { ChannelType } from '../../executor/typing/channel_type'
+import { DeclaredType } from '../../executor/typing/declared_type'
+import { Float64Type } from '../../executor/typing/float64_type'
+import { FunctionType } from '../../executor/typing/function_type'
+import { Int64Type } from '../../executor/typing/int64_type'
+import { NoType } from '../../executor/typing/no_type'
+import { ParameterType } from '../../executor/typing/parameter_type'
+import { PointerType } from '../../executor/typing/pointer_type'
+import { ReturnType } from '../../executor/typing/return_type'
+import { SliceType } from '../../executor/typing/slice_type'
+import { StringType } from '../../executor/typing/string_type'
+import { StructType } from '../../executor/typing/struct_type'
 
 import { Token, TokenLocation } from './base'
 import { IntegerLiteralToken } from './literals'
@@ -59,7 +57,7 @@ export class PrimitiveTypeToken extends TypeToken {
     this.name = name
   }
 
-  override compileUnchecked(compiler: Compiler): Type {
+  override compileUnchecked(_compiler: Compiler): Type {
     if (this.name === 'bool') return new BoolType()
     else if (this.name === 'float64') return new Float64Type()
     else if (this.name === 'int') return new Int64Type()
@@ -78,7 +76,7 @@ export class ArrayTypeToken extends TypeToken {
     super(sourceLocation)
   }
 
-  override compileUnchecked(compiler: Compiler): ArrayType {
+  override compileUnchecked(compiler: Compiler): Type {
     return new ArrayType(this.element.compile(compiler), this.length.getValue())
   }
 }
@@ -164,7 +162,9 @@ export class DeclaredTypeToken extends TypeToken {
   }
 
   override compileUnchecked(compiler: Compiler): Type {
-    const [baseTypes, internalName] = compiler.context.env.create_type(this.name)
+    const result = compiler.context.env.create_type(this.name)
+    const internalName = Object.keys(result)[0]
+    const baseTypes = Object.values(result)[0]
     // load the underlying types
     // need to configure to use declared type if possible
     return new DeclaredType(internalName, baseTypes)
@@ -172,10 +172,7 @@ export class DeclaredTypeToken extends TypeToken {
 }
 
 export class StructTypeToken extends TypeToken {
-  constructor(
-    sourceLocation: TokenLocation,
-    public fields: Token[],
-  ) {
+  constructor(sourceLocation: TokenLocation, public fields: Token[]) {
     super(sourceLocation)
     this.fields = fields
   }
@@ -184,43 +181,29 @@ export class StructTypeToken extends TypeToken {
     // load the underlying types
     // need to configure to use declared type if possible
     // make sense of the fields to construct the structure of the struct
-    const struct = {} as Record<string, Type>
+    const struct = new Map<string, Type>()
     // this.fields.length represents the number of lines of code
     // used to declare the fields of the struct
     for (let i = 0; i < this.fields.length; i++) {
       // get type of each field line first
-      const type = (this.fields[i].type as TypeToken).compile(compiler)
-      for (let j = 0; j < this.fields[i].list.length; j++) {
+      const type = Object.values(this.fields[i])[1].compile(compiler)
+      for (let j = 0; j < Object.values(this.fields[i])[0].length; j++) {
         // link the identifier of each field line to the type
-        struct[this.fields[i].list[j].identifier] = type
+        struct.set(Object.values(this.fields[i])[0][j].identifier, type)
       }
     }
-    /*
-    for (let i = 0; i < this.fields.length; i++) {
-      for (let j = 0; j < this.fields[i].length; j++) {
-        if (this.fields[0][j] != null && this.fields[0][j][0] instanceof Array) {
-          let type = undefined
-          // get type first
-          for (let k = 0; k < this.fields[i][j][0].length; k++) {
-            if (this.fields[i][j][0][k] instanceof TypeToken) {
-              type = this.fields[i][j][0][k].compile(compiler)
-              break
-            }
-          }
-          for (let k = 0; k < this.fields[i][j][0].length; k++) {
-            if (!(this.fields[i][j][0][k] instanceof TypeToken) && this.fields[i][j][0][k].length > 0) {
-              for (let l = 0; l < this.fields[i][j][0][k].length; l++) {
-                if (this.fields[i][j][0][k][l] instanceof IdentifierToken) {
-                  var x = this.fields[i][j][0][k][l]
-                  struct[this.fields[i][j][0][k][l].identifier] = type
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    */
     return new StructType(struct)
+  }
+}
+
+export class PointerTypeToken extends TypeToken {
+  constructor(sourceLocation: TokenLocation, public pointingType: Token) {
+    super(sourceLocation)
+    this.pointingType = pointingType
+  }
+
+  override compileUnchecked(compiler: Compiler): Type {
+    const baseType = this.pointingType.compile(compiler)
+    return new PointerType(baseType)
   }
 }

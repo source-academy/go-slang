@@ -1,7 +1,19 @@
+import {} from '../executor/typing'
+import { BoolType } from '../executor/typing/bool_type'
+import { Float64Type } from '../executor/typing/float64_type'
+import { Int64Type } from '../executor/typing/int64_type'
+import { NoType } from '../executor/typing/no_type'
+import { StringType } from '../executor/typing/string_type'
 import { Debugger } from '../runtime/debugger'
 
 import { ArrayNode, SliceNode } from './types/array'
-import { ChannelArrayNode, ChannelNode, ChannelReqNode, ReqInfoNode } from './types/channel'
+import { BaseNode } from './types/base'
+import {
+  ChannelArrayNode,
+  ChannelNode,
+  ChannelReqNode,
+  ReqInfoNode,
+} from './types/channel'
 import { ContextNode } from './types/context'
 import { EnvironmentNode, FrameNode } from './types/environment'
 import { FmtPkgNode, PkgNode } from './types/fmt'
@@ -23,10 +35,12 @@ import {
   UnassignedNode,
 } from './types/primitives'
 import { QueueListNode, QueueNode } from './types/queue'
+import { ReferenceNode } from './types/reference'
 import { StackListNode, StackNode } from './types/stack'
+import { StructNode } from './types/struct'
+import { UnsafePkgNode } from './types/unsafe'
 import { WaitGroupNode } from './types/waitGroup'
 import { Memory } from './memory'
-import { StructNode } from './types/struct'
 
 export enum TAG {
   UNKNOWN = 0,
@@ -61,6 +75,8 @@ export enum TAG {
   DECLARED = 29,
   STRUCT = 30,
   CHANNEL_ARRAY = 31,
+  REFERENCE = 32,
+  UNSAFE_PKG = 33,
 }
 
 export const word_size = 4
@@ -102,7 +118,7 @@ export class Heap {
     this.contexts.push(context.addr)
   }
 
-  get_value(addr: number) {
+  get_value(addr: number): BaseNode {
     const tag = this.get_tag(addr)
     switch (tag) {
       case TAG.UNKNOWN:
@@ -167,9 +183,31 @@ export class Heap {
         return new StructNode(this, addr)
       case TAG.CHANNEL_ARRAY:
         return new ChannelArrayNode(this, addr)
+      case TAG.REFERENCE:
+        return new ReferenceNode(this, addr)
+      case TAG.UNSAFE_PKG:
+        return new UnsafePkgNode(this, addr)
       default:
         // return new UnassignedNode(this, addr)
         throw Error('Unknown Data Type')
+    }
+  }
+
+  get_type(addr: number) {
+    const tag = this.get_tag(addr)
+    switch (tag) {
+      case TAG.UNKNOWN:
+        return new NoType()
+      case TAG.NUMBER:
+        return new Int64Type()
+      case TAG.FLOAT:
+        return new Float64Type()
+      case TAG.STRING:
+        return new StringType()
+      case TAG.BOOLEAN:
+        return new BoolType()
+      default:
+        return new NoType()
     }
   }
 
@@ -400,7 +438,7 @@ export class Heap {
     for (const root of roots) {
       this.mark(root)
     }
-    for (let cur_addr = 0; cur_addr < this.size;) {
+    for (let cur_addr = 0; cur_addr < this.size; ) {
       if (!this.is_free(cur_addr) && !this.is_marked(cur_addr)) {
         cur_addr = this.free(cur_addr)
       } else {
@@ -413,7 +451,12 @@ export class Heap {
 
   copy(dst: number, src: number) {
     if (dst === -1) return
-    const sz = this.get_size(src)
+    if (dst === src) return
+    let sz = this.get_size(src)
+    if (this.get_type(src) instanceof Int64Type) sz = 4
+    if (this.get_type(src) instanceof BoolType) sz = 1
+    if (this.get_type(src) instanceof Float64Type) sz = 4
+    if (this.get_type(src) instanceof StringType) sz = 2
     for (let i = 0; i < sz; i++) {
       this.memory.set_word(this.memory.get_word(src + i), dst + i)
     }

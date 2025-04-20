@@ -1,11 +1,16 @@
 import * as seedrandom from 'seedrandom'
 
-import { DoneInstruction, Instruction } from '../executor/instructions'
+import { TokenLocation } from '../compiler/tokens'
+import {
+  DoneInstruction,
+  GoInstruction,
+  Instruction,
+} from '../executor/instructions'
 import { Heap } from '../heap'
 import { ContextNode } from '../heap/types/context'
 import { EnvironmentNode, FrameNode } from '../heap/types/environment'
+import { MethodNode } from '../heap/types/func'
 import { QueueNode } from '../heap/types/queue'
-import { TokenLocation } from '../compiler/tokens'
 
 import { Debugger, StateInfo } from './debugger'
 
@@ -65,7 +70,6 @@ export class Process {
     const time_quantum = 30
     this.runtime_count = 0
     let completed = false
-    let a = 0
     try {
       const main_context = this.contexts.peek()
       while (this.contexts.sz()) {
@@ -81,8 +85,20 @@ export class Process {
             this.contexts.push(this.context.addr)
             break
           }
+          if (this.context.OS().sz() > 0 && this.context.peekOS() === 1) {
+            // a hacky way of handling goroutines when the callee is a MethodNode instead of FuncNode
+            this.context.popOS()
+            const instr = this.instructions[
+              this.context.incr_PC()
+            ] as GoInstruction
+            const func = this.heap.get_value(
+              this.context.peekOSIdx(instr.args),
+            ) as MethodNode
+            const receiver = func.receiver()
+            receiver.handleMethodCall(this, func.identifier(), instr.args)
+            break
+          }
           const pc = this.context.PC()
-          a = pc
           const instr = this.instructions[this.context.incr_PC()]
           // console.log('ctx:', this.context.addr)
           // console.log('Instr:', instr, this.context.PC() - 1)
@@ -92,7 +108,10 @@ export class Process {
           // this.context.heap.print_freelist()
           this.runtime_count += 1
           cur_time += 1
-          if (this.context.addr !== main_context && this.context.RTS().sz() === 0) {
+          if (
+            this.context.addr !== main_context &&
+            this.context.RTS().sz() === 0
+          ) {
             // thread has completed
             break
           }

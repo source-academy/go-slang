@@ -126,7 +126,7 @@ export class QueueListNode extends BaseNode {
 
   pop() {
     const sz = this.get_sz()
-    if (sz === 0) throw Error('List Empty!')
+    if (sz === 0) throw Error('Queue Empty!')
     const node_sz = this.heap.get_size(this.addr)
     const val = this.get_idx(this.get_start())
     this.set_start((this.get_start() + 1) % this.get_cap())
@@ -137,10 +137,11 @@ export class QueueListNode extends BaseNode {
 
   randompeek() {
     const sz = this.get_sz()
-    if (sz === 0) throw Error('List Empty!')
+    if (sz === 0) throw Error('Queue Empty!')
     const rand = Math.random()
-    const next = Math.floor(this.get_start()
-        + rand * (this.get_end() - this.get_start() + 1))
+    const next = Math.floor(
+      this.get_start() + rand * (this.get_end() - this.get_start() + 1),
+    )
     const val = this.get_idx(next)
     if (sz > 1) {
       for (let i = next; i > this.get_start(); i--) {

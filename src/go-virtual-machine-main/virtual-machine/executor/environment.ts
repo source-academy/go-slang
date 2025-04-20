@@ -24,10 +24,15 @@ class CompileEnvironment {
     while (frame_sz >= frame_idx) {
       let var_idx = this.types[frame_sz - frame_idx].length - 1
       while (var_idx >= 0) {
-        var x = Object.keys(this.types[frame_sz - frame_idx][var_idx])
-        var y = name + (frame_sz - frame_idx)
-        if (Object.keys(this.types[frame_sz - frame_idx][var_idx])[0] === y)
-          return [Object.values(this.types[frame_sz - frame_idx][var_idx]), y]
+        if (
+          Object.keys(this.types[frame_sz - frame_idx][var_idx])[0] ===
+          name + (frame_sz - frame_idx).toString()
+        ) {
+          const recordToReturn = {} as Record<string, Type[]>
+          recordToReturn[name + (frame_sz - frame_idx).toString()] =
+            Object.values(this.types[frame_sz - frame_idx][var_idx])
+          return recordToReturn
+        }
         var_idx--
       }
       frame_idx++
@@ -41,10 +46,13 @@ class CompileEnvironment {
     while (frame_sz >= frame_idx) {
       let var_idx = this.types[frame_sz - frame_idx].length - 1
       while (var_idx >= 0) {
-        var x = Object.keys(this.types[frame_sz - frame_idx][var_idx])
-        var y = name
-        if (Object.keys(this.types[frame_sz - frame_idx][var_idx])[0] === y)
+        if (
+          Object.keys(this.types[frame_sz - frame_idx][var_idx])[0] === name
+        ) {
           return Object.values(this.types[frame_sz - frame_idx][var_idx])
+        } else if (this.typenames[frame_sz - frame_idx][var_idx] === name) {
+          return Object.values(this.types[frame_sz - frame_idx][var_idx])
+        }
         var_idx--
       }
       frame_idx++

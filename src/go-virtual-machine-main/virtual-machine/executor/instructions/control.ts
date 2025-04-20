@@ -1,5 +1,5 @@
-import { Process } from '../../runtime/process'
 import { BoolNode } from '../../heap/types/primitives'
+import { Process } from '../../runtime/process'
 
 import { Instruction } from './base'
 

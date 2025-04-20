@@ -1,8 +1,11 @@
-import { Heap, TAG } from '..'
 import { Type } from '../../executor/typing'
+import { ArrayType } from '../../executor/typing/array_type'
+import { DeclaredType } from '../../executor/typing/declared_type'
+import { StructType } from '../../executor/typing/struct_type'
+import { Heap, TAG } from '..'
 
 import { BaseNode } from './base'
-import { BoolNode, PrimitiveNode } from './primitives'
+import { ReferenceNode } from './reference'
 
 /**
  * Each ArrayNode occupies (2 + `length`) words.
@@ -10,9 +13,13 @@ import { BoolNode, PrimitiveNode } from './primitives'
  * Word 1: Length of array.
  * Remaining `length` words: Each word is the address of an element.
  */
-// Should bulk allocate then 
 export class ArrayNode extends BaseNode {
-  static create(length: number, heap: Heap, sizeof: number, startAddr: number): ArrayNode {
+  static create(
+    length: number,
+    heap: Heap,
+    sizeof: number,
+    startAddr: number,
+  ): ArrayNode {
     const addr = heap.allocate(2 + length)
     heap.set_tag(addr, TAG.ARRAY)
     heap.memory.set_number(length, addr + 1)
@@ -26,20 +33,52 @@ export class ArrayNode extends BaseNode {
    * `defaultCreator` is a function that allocates a default element on the heap,
    * and returns its address.
    */
-  static default(
-    length: number,
-    type: Type,
-    heap: Heap,
-  ) {
-    /*
-    const addr = heap.allocate(length * 2)
+  static default(length: number, type: Type, heap: Heap) {
+    const addr = heap.allocate(2 + length)
     heap.set_tag(addr, TAG.ARRAY)
     heap.memory.set_number(length, addr + 1)
     heap.temp_push(addr)
-    heap.memory.set_word(type.bulkDefaultNodeCreator()(heap, length), addr + 2)
+    for (let i = 0; i < length; i++) heap.memory.set_number(-1, addr + i + 2)
+    for (let i = 0; i < length; i++) {
+      heap.memory.set_word(type.defaultNodeCreator()(heap), addr + 2 + i)
+    }
     heap.temp_pop()
     return new ArrayNode(heap, addr)
-    */
+  }
+
+  static allocate(heap: Heap, addr: number, length: number, type: Type) {
+    const nodeAddr = heap.allocate(2 + length)
+    heap.set_tag(nodeAddr, TAG.ARRAY)
+    heap.memory.set_number(length, nodeAddr + 1)
+    heap.temp_push(nodeAddr)
+    for (let i = 0; i < length; i++)
+      heap.memory.set_number(-1, nodeAddr + i + 2)
+    for (let i = 0; i < length; i++) {
+      const nodeAddr2 = type.defaultNodeAllocator()(
+        heap,
+        addr + i * type.sizeof(),
+      )
+      if (
+        type instanceof ArrayType ||
+        (type instanceof DeclaredType && type.type[0] instanceof StructType)
+      ) {
+        heap.memory.set_word(nodeAddr2, nodeAddr + 2 + i)
+      } else {
+        heap.memory.set_word(addr + i * type.sizeof(), nodeAddr + 2 + i)
+      }
+    }
+    heap.temp_pop()
+    return new ArrayNode(heap, nodeAddr)
+  }
+
+  static defaultBlank(length: number, heap: Heap) {
+    const addr = heap.allocate(2 + length)
+    heap.set_tag(addr, TAG.ARRAY)
+    heap.memory.set_number(length, addr + 1)
+    heap.temp_push(addr)
+    for (let i = 0; i < length; i++) heap.memory.set_number(-1, addr + i + 2)
+    heap.temp_pop()
+    return new ArrayNode(heap, addr)
   }
 
   length(): number {
@@ -54,14 +93,14 @@ export class ArrayNode extends BaseNode {
     this.heap.memory.set_word(address, this.addr + 2 + index)
   }
 
-  sizeof() {
+  override sizeof() {
     return this.length() * this.heap.get_value(this.get_child(0)).sizeof()
   }
 
   get_child(index: number): number {
     return this.heap.memory.get_word(this.addr + 2 + index)
   }
- 
+
   override get_children(): number[] {
     return [...Array(this.length()).keys()].map((x) => this.get_child(x))
   }
@@ -73,6 +112,13 @@ export class ArrayNode extends BaseNode {
       elements.push(this.heap.get_value(this.get_child(i)).toString())
     }
     return `[${elements.join(' ')}]`
+  }
+
+  apply_unary(operator: string) {
+    if (operator === 'address') {
+      return ReferenceNode.create(this.addr, this.heap)
+    }
+    throw Error('Invalid Operation')
   }
 }
 
@@ -145,5 +191,12 @@ export class SliceNode extends BaseNode {
       elements.push(this.heap.get_value(this.get_child(i)).toString())
     }
     return `[${elements.join(' ')}]`
+  }
+
+  apply_unary(operator: string) {
+    if (operator === 'address') {
+      return ReferenceNode.create(this.addr, this.heap)
+    }
+    throw Error('Invalid Operation')
   }
 }

@@ -1,13 +1,21 @@
-import { Process } from '../../runtime/process'
 import { ArrayNode, SliceNode } from '../../heap/types/array'
 import { FmtPkgNode } from '../../heap/types/fmt'
+import { MethodNode } from '../../heap/types/func'
 import {
   BoolNode,
   FloatNode,
   IntegerNode,
   StringNode,
 } from '../../heap/types/primitives'
-import { BoolType, Float64Type, Int64Type, StringType, Type } from '../typing'
+import { ReferenceNode } from '../../heap/types/reference'
+import { StructNode } from '../../heap/types/struct'
+import { UnsafePkgNode } from '../../heap/types/unsafe'
+import { Process } from '../../runtime/process'
+import { Type } from '../typing'
+import { BoolType } from '../typing/bool_type'
+import { Float64Type } from '../typing/float64_type'
+import { Int64Type } from '../typing/int64_type'
+import { StringType } from '../typing/string_type'
 
 import { Instruction } from './base'
 
@@ -78,9 +86,9 @@ export class LoadArrayInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
-    // this is for dynamic arrays (slices) only, actual arrays are allocated 
+    // this is for dynamic arrays (slices) only, actual arrays are allocated
     // when entering function and uses a different instruction
-    const arrayNode = ArrayNode.create(this.length, process.heap)
+    const arrayNode = ArrayNode.create(this.length, process.heap, NaN, NaN)
     for (let i = this.length - 1; i >= 0; i--) {
       arrayNode.set_child(i, process.context.popOS())
     }
@@ -101,7 +109,11 @@ export class LoadArrayElementInstruction extends Instruction {
   override execute(process: Process): void {
     const indexNode = new IntegerNode(process.heap, process.context.popOS())
     const index = indexNode.get_value()
-    const array = new ArrayNode(process.heap, process.context.popOS())
+    let a = process.context.popOS()
+    if (process.heap.get_value(a) instanceof ReferenceNode) {
+      a = (process.heap.get_value(a) as ReferenceNode).get_child()
+    }
+    const array = new ArrayNode(process.heap, a)
     if (index < 0 || index >= array.length()) {
       throw new Error(
         `Index out of range [${index}] with length ${array.length()}`,
@@ -157,8 +169,10 @@ export class LoadVariableInstruction extends Instruction {
     public frame_idx: number,
     public var_idx: number,
     public id: string,
+    public type: Type,
   ) {
     super('LD')
+    this.type = type
   }
 
   override toString() {
@@ -166,9 +180,14 @@ export class LoadVariableInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
-    process.context.pushOS(
-      process.context.E().get_var(this.frame_idx, this.var_idx),
-    )
+    if (this.id === '') {
+      // handle structs and arrays without identifiers
+      const node = this.type.defaultNodeCreator()(process.heap)
+      process.context.pushOS(node)
+    } else {
+      const node = process.context.E().get_var(this.frame_idx, this.var_idx)
+      process.context.pushOS(node)
+    }
   }
 }
 
@@ -183,8 +202,49 @@ export class LoadPackageInstruction extends Instruction {
 
   override execute(process: Process): void {
     const packageName = process.context.popOSNode(StringNode).get_value()
-    if (packageName !== 'fmt') throw new Error('Unreachable')
-    const packageNode = FmtPkgNode.default(process.heap)
-    process.context.pushOS(packageNode.addr)
+    if (packageName !== 'fmt' && packageName !== 'unsafe')
+      throw new Error('Unreachable')
+    if (packageName === 'fmt') {
+      const packageNode = FmtPkgNode.default(process.heap)
+      process.context.pushOS(packageNode.addr)
+    } else if (packageName === 'unsafe') {
+      const packageNode = UnsafePkgNode.default(process.heap)
+      process.context.pushOS(packageNode.addr)
+    }
+  }
+}
+
+/** Takes the index, then struct from the heap, and loads the field at the index onto the OS.  */
+export class LoadStructFieldInstruction extends Instruction {
+  index: number
+  constructor(index: number) {
+    super('LDSF')
+    this.index = index
+  }
+
+  override toString(): string {
+    return 'LOAD STRUCT FIELD'
+  }
+
+  override execute(process: Process): void {
+    //const indexNode = new IntegerNode(process.heap, process.context.popOS())
+    let a = process.context.popOS()
+    if (process.heap.get_value(a) instanceof ReferenceNode) {
+      a = (process.heap.get_value(a) as ReferenceNode).get_child()
+    }
+    const struct = new StructNode(process.heap, a)
+    const field = struct.get_child(this.index)
+    if (
+      process.heap.get_value(process.context.peekOS()) instanceof MethodNode &&
+      (
+        process.heap.get_value(process.context.peekOS()) as MethodNode
+      ).identifier() === 'Offsetof' &&
+      !(process.heap.get_value(field) instanceof StructNode)
+    ) {
+      const offset = struct.offsetof(this.index)
+      process.context.pushOS(IntegerNode.create(offset, process.heap).addr)
+    } else {
+      process.context.pushOS(field)
+    }
   }
 }

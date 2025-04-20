@@ -3,7 +3,9 @@ import {
   BlockInstruction,
   ExitBlockInstruction,
 } from '../../executor/instructions'
-import { NoType, ReturnType, Type } from '../../executor/typing'
+import { Type } from '../../executor/typing'
+import { NoType } from '../../executor/typing/no_type'
+import { ReturnType } from '../../executor/typing/return_type'
 
 import { Token, TokenLocation } from './base'
 import { StatementToken } from './statement'

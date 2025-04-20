@@ -48,6 +48,8 @@
     LiteralValueToken,
     ArrayLiteralToken,
     SliceLiteralToken,
+    StructLiteralToken,
+    PointerTypeToken,
     QualifiedIdentifierToken,
   } from './tokens'
 
@@ -103,6 +105,7 @@ comment = "//" unicode_char* newline
 //* Identifiers
 identifier = iden:$(letter (letter / unicode_digit)*) &{ return IdentifierToken.isValidIdentifier(iden) }
              { return new IdentifierToken(location(), iden) }
+// lookahead "&" for a newline, insert a semicolon
 
 //* Integer Literals
 int_lit = number:binary_lit  { return IntegerLiteralToken.fromSource(location(), number[3], 2) }  /
@@ -144,7 +147,7 @@ interpreted_string_lit = '"' str:$[^\n"]* '"' { return StringLiteralToken.fromSo
 
 //* =============== Types ===============
 // Note: `TypeName TypeArgs?` is reduced to `TypeName` as generics are not supported.
-Type     = @TypeName / TypeLit / "(" _ Type _ ")"
+Type     = @TypeLit / TypeName / "(" _ Type _ ")"
 //! TODO (P1): Support qualified identifiers for TypeName.
 TypeName = @QualifiedIdent /
            (iden:identifier
@@ -170,7 +173,7 @@ EmbeddedField = "*"? TypeName
 Tag           = string_lit
 
 //* Pointer Types
-PointerType = "*" BaseType
+PointerType = "*" type:BaseType {return new PointerTypeToken(location(), type)}
 BaseType = Type
 
 //* Function Types
@@ -210,7 +213,8 @@ ChannelType = "chan" _ "<-" _ element:ElementType { return new ChannelTypeToken(
 
 
 //* =============== Blocks ===============
-Block = "{" _ statements:StatementList _ "}" { return new BlockToken(location(), statements) }
+CompositeLitContext = !"func" Type _ "{"
+Block = !CompositeLitContext "{" _ statements:StatementList _ "}" { return new BlockToken(location(), statements) }
 StatementList = (_ @Statement _ ";"?)*
 
 
@@ -249,16 +253,16 @@ TypeConstraint = TypeElem
 //! TODO (P5): Multiple declarations (optionally semicolon-separated) is not supported.
 VarDecl = "var" _ @VarSpec
 VarSpec = identifiers:IdentifierList _ rest:(
-            varType:Type expressions:(_ "=" _ @ExpressionList)? 
+            varType:Type expressions:(_ "=" _ @(ExpressionList / &CompositeLitContext CompositeLit))? 
             { return {varType, expressions} }
             /
-            _ "=" _ expressions:ExpressionList
+            _ "=" _ expressions:(ExpressionList / CompositeLit)
             { return {varType: undefined, expressions} }
           )
           { return new VariableDeclarationToken(location(), identifiers, rest.varType, rest.expressions) }
 
 //* Short Variable Declarations
-ShortVarDecl = identifiers:IdentifierList _ ":=" _ expressions:(ExpressionList / StructType)
+ShortVarDecl = identifiers:IdentifierList _ ":=" _ expressions:(ExpressionList / CompositeLit)
                { return new ShortVariableDeclarationToken(location(), identifiers, undefined, expressions) }
 
 //* Function Declarations
@@ -292,10 +296,14 @@ QualifiedIdent = pkg:PackageName "." iden:identifier { return new QualifiedIdent
 //* Composite Literals
 CompositeLit = type:ArrayType _ value:LiteralValue { return new ArrayLiteralToken(location(), type, value) }
              / type:SliceType _ value:LiteralValue { return new SliceLiteralToken(location(), type, value) }
-LiteralValue = "{" _ elements:(@ElementList _ ","? _)? "}" { return new LiteralValueToken(location(), elements ?? []) }
+             / type:StructType _ value:LiteralValue { return new StructLiteralToken(location(), type, value) }
+             / &CompositeLitContext type:Type _ value:LiteralValue { return new StructLiteralToken(location(), type, value) }
+LiteralValue = "{" _ elements:(@ElementList _ ","? _)? "}" ";"? { return new LiteralValueToken(location(), elements ?? []) }
 ElementList  = head:KeyedElement rest:(_ "," _ @KeyedElement)* { return [head, ...rest] }
 // Ironically, KeyedElement will not support having a key for our implementation.
-KeyedElement = Element
+KeyedElement = key:(@Key _ ":" _)? element:Element { return key === null ? element : {key, element} }
+Key          = FieldName / Expression / LiteralValue
+FieldName    = identifier
 Element      = Expression / LiteralValue
 
 //* Function Literals

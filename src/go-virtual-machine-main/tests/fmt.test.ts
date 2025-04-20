@@ -29,7 +29,9 @@ describe('fmt.Println', () => {
     fmt.Println(name, "is", age, "years old")
     fmt.Println(1, 2, 3, 4)
     `
-    expect(mainRunner(code).output).toEqual('John Doe is 17 years old\n1 2 3 4\n')
+    expect(mainRunner(code).output).toEqual(
+      'John Doe is 17 years old\n1 2 3 4\n',
+    )
   })
 })
 
@@ -60,7 +62,6 @@ describe('fmt.Print', () => {
     `
     expect(mainRunner(code).output).toEqual('John Doeis17years old1 2 3 4')
   })
-
 })
 
 describe('fmt.Printf', () => {

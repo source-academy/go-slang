@@ -2,11 +2,11 @@ import { Process } from '../../runtime/process'
 import { Heap, TAG } from '..'
 
 import { BaseNode } from './base'
+import { ChannelArrayNode } from './channel'
 import { ContextNode } from './context'
 import { MethodNode } from './func'
 import { LinkedListEntryNode } from './linkedlist'
 import { QueueNode } from './queue'
-import { ChannelArrayNode } from './channel'
 
 /**
  * Each MutexNode occupies 3 words.
@@ -72,7 +72,9 @@ export class MutexNode extends BaseNode {
   handleLock(process: Process): void {
     if (this.is_locked()) {
       this.queue().push(process.context.addr)
-      process.context.set_waitlist(ChannelArrayNode.create(1, process.heap).addr)
+      process.context.set_waitlist(
+        ChannelArrayNode.create(1, process.heap).addr,
+      )
       process.context
         .waitlist()
         .set_child(
@@ -106,6 +108,5 @@ export class MutexNode extends BaseNode {
 
   override toString(): string {
     return 'MUTEX LOCKED ' + this.is_locked().toString()
-    // throw new Error('Unimplemented')
   }
 }

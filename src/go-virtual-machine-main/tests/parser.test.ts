@@ -1,32 +1,32 @@
 import { describe, expect, test } from 'vitest'
 
-import { codeRunner, mainRunner } from './utility'
+import { codeRunner } from './utility'
 
 describe('Import statement syntax check', () => {
-    test(`Missing bracket for multiple imports with a single
+  test(`Missing bracket for multiple imports with a single
       "import" keyword should throw parsing error`, () => {
-      expect(
-        codeRunner(`
+    expect(
+      codeRunner(`
           package main
           import "fmt"; "sync"
         `).error?.type,
-      ).toEqual("parse")
-    })
-  
-    test(`Import statement with comma should throw parsing error`, () => {
-      expect(
-        codeRunner(`
+    ).toEqual('parse')
+  })
+
+  test(`Import statement with comma should throw parsing error`, () => {
+    expect(
+      codeRunner(`
           package main
           import ("fmt", "sync")
         `).error?.type,
-      ).toEqual("parse")
-    })
+    ).toEqual('parse')
   })
-  
-  describe('If statement syntax check', () => {
-    test(`Missing conditional in if statements should throw parsing error`, () => {
-      expect(
-        codeRunner(`
+})
+
+describe('If statement syntax check', () => {
+  test(`Missing conditional in if statements should throw parsing error`, () => {
+    expect(
+      codeRunner(`
           package main
           import "fmt"
   
@@ -36,13 +36,13 @@ describe('Import statement syntax check', () => {
             }
           }
         `).error?.type,
-      ).toEqual("parse")
-    })
-  
-    test(`Using a function with no boolean returned as a conditional
+    ).toEqual('parse')
+  })
+
+  test(`Using a function with no boolean returned as a conditional
       for if statements should throw compilation error`, () => {
-      expect(
-        codeRunner(`
+    expect(
+      codeRunner(`
           package main
           import "fmt"
   
@@ -55,13 +55,13 @@ describe('Import statement syntax check', () => {
             }
           }
         `).error?.type,
-      ).toEqual("compile")
-    })
-  
-    test(`Using a non-boolean as a conditional
+    ).toEqual('compile')
+  })
+
+  test(`Using a non-boolean as a conditional
       for if statements should throw compilation error`, () => {
-      expect(
-        codeRunner(`
+    expect(
+      codeRunner(`
           package main
           import "fmt"
   
@@ -72,12 +72,12 @@ describe('Import statement syntax check', () => {
             }
           }
         `).error?.type,
-      ).toEqual("compile")
-    })
-  
-    test(`Missing curly braces for if-blocks should throw parsing error`, () => {
-      expect(
-        codeRunner(`
+    ).toEqual('compile')
+  })
+
+  test(`Missing curly braces for if-blocks should throw parsing error`, () => {
+    expect(
+      codeRunner(`
           package main
           import "fmt"
   
@@ -85,12 +85,12 @@ describe('Import statement syntax check', () => {
             if true
           }
         `).error?.type,
-      ).toEqual("parse")
-    })
-  
-    test(`Else statements without if should throw parsing error`, () => {
-      expect(
-        codeRunner(`
+    ).toEqual('parse')
+  })
+
+  test(`Else statements without if should throw parsing error`, () => {
+    expect(
+      codeRunner(`
           package main
           import "fmt"
   
@@ -98,12 +98,12 @@ describe('Import statement syntax check', () => {
             else
           }
         `).error?.type,
-      ).toEqual("parse")
-    })
-  
-    test(`Declaring new variables in if should throw parsing error`, () => {
-      expect(
-        codeRunner(`
+    ).toEqual('parse')
+  })
+
+  test(`Declaring new variables in if should throw parsing error`, () => {
+    expect(
+      codeRunner(`
           package main
           import "fmt"
   
@@ -111,12 +111,12 @@ describe('Import statement syntax check', () => {
             if (var x = true) {}
           }
         `).error?.type,
-      ).toEqual("parse")
-    })
-  
-    test(`Declaring new variables in for loops should throw parsing error`, () => {
-      expect(
-        codeRunner(`
+    ).toEqual('parse')
+  })
+
+  test(`Declaring new variables in for loops should throw parsing error`, () => {
+    expect(
+      codeRunner(`
           package main
           import "fmt"
   
@@ -124,11 +124,11 @@ describe('Import statement syntax check', () => {
             for var i = 0; i < 10; i++ {}
           }
         `).error?.type,
-      ).toEqual("parse")
-    })
-    test(`Declaring hexadecimal should parse correctly`, () => {
-      expect(
-        codeRunner(`
+    ).toEqual('parse')
+  })
+  test(`Declaring hexadecimal should parse correctly`, () => {
+    expect(
+      codeRunner(`
           package main
           import "fmt"
   
@@ -139,12 +139,12 @@ describe('Import statement syntax check', () => {
             fmt.Println(b)
           }
         `).output,
-      ).toEqual("1929\n4014\n")
-    })
-  
-    test(`Declaring octal should parse correctly`, () => {
-      expect(
-        codeRunner(`
+    ).toEqual('1929\n4014\n')
+  })
+
+  test(`Declaring octal should parse correctly`, () => {
+    expect(
+      codeRunner(`
           package main
           import "fmt"
   
@@ -155,12 +155,12 @@ describe('Import statement syntax check', () => {
             fmt.Println(b)
           }
         `).output,
-      ).toEqual("477\n120\n")
-    })
-  
-    test(`Declaring binary should parse correctly`, () => {
-      expect(
-        codeRunner(`
+    ).toEqual('477\n120\n')
+  })
+
+  test(`Declaring binary should parse correctly`, () => {
+    expect(
+      codeRunner(`
           package main
           import "fmt"
   
@@ -171,7 +171,6 @@ describe('Import statement syntax check', () => {
             fmt.Println(b)
           }
         `).output,
-      ).toEqual("63\n41\n")
-    })
+    ).toEqual('63\n41\n')
   })
-  
+})

@@ -18,6 +18,10 @@ export abstract class BaseNode {
     throw new Error('Unreachable')
   }
 
+  sizeof(): number {
+    return 0
+  }
+
   // Calls the method of this node, with arguments on the OS.
   handleMethodCall(
     _process: Process,

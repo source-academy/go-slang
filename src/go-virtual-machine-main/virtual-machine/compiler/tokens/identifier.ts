@@ -1,6 +1,7 @@
 import { Compiler } from '../../executor'
 import { LoadVariableInstruction } from '../../executor/instructions'
-import { PackageType, Type } from '../../executor/typing'
+import { Type } from '../../executor/typing'
+import { PackageType } from '../../executor/typing/package_type'
 
 import { Token, TokenLocation } from './base'
 
@@ -42,11 +43,12 @@ export class IdentifierToken extends Token {
 
   override compileUnchecked(compiler: Compiler): Type {
     const [frame_idx, var_idx] = compiler.context.env.find_var(this.identifier)
+    const type = compiler.type_environment.get(this.identifier)
     this.pushInstruction(
       compiler,
-      new LoadVariableInstruction(frame_idx, var_idx, this.identifier),
+      new LoadVariableInstruction(frame_idx, var_idx, this.identifier, type),
     )
-    return compiler.type_environment.get(this.identifier)
+    return type
   }
 }
 

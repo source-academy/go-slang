@@ -25,7 +25,12 @@
       }
     }
   ],
-  "ignorePatterns": ["build/**/*", "!.storybook", "tsconfig.json"],
+  "ignorePatterns": [
+    "build/**/*",
+    "!.storybook",
+    "tsconfig.json",
+    "**/golang_parser.js"
+  ],
   "env": { "es6": true },
   "parserOptions": {
     "ecmaVersion": 2018,

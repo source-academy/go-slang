@@ -147,7 +147,8 @@ describe('Function Execution tests', () => {
             return x + y + 100
           }
           fmt.Println(f(1, 2))
-        }`,).output,
+        }`,
+      ).output,
     ).toEqual('103\n')
   })
 
@@ -166,7 +167,8 @@ describe('Function Execution tests', () => {
             }
           }
           fmt.Println(f(1, 2))
-        }`,).output,
+        }`,
+      ).output,
     ).toEqual('8\n')
   })
 
@@ -187,7 +189,8 @@ describe('Function Execution tests', () => {
             }
           }
           fmt.Println(f(1, 2))
-        }`,).output,
+        }`,
+      ).output,
     ).toEqual('103\n')
   })
 
@@ -207,7 +210,8 @@ describe('Function Execution tests', () => {
       
       func main() {
         fmt.Println(f(10))
-      }`,).output,
+      }`,
+      ).output,
     ).toEqual('10\n')
   })
 
@@ -243,7 +247,8 @@ describe('Function Execution tests', () => {
           fmt.Println(f2(2, 3))
           fmt.Println(f2(1, 1))
         }
-    `,).output,
+    `,
+      ).output,
     ).toEqual('8\n4\n5\n3\n9\n5\n')
   })
 
@@ -259,7 +264,7 @@ describe('Function Execution tests', () => {
     ).toEqual('99\n')
   })
 
-  test('Function works as first class citizens', () => {
+  test('Function works as first class citizens using lambda expression', () => {
     expect(
       mainRunner(`
         q, g := 10, func() int { return q }
@@ -268,7 +273,7 @@ describe('Function Execution tests', () => {
     ).toEqual('10\n')
   })
 
-  test('Function works as first class citizens', () => {
+  test('Return values are stored correctly for functions returning multiple values', () => {
     expect(
       codeRunner(`
         package main
@@ -295,9 +300,9 @@ describe('Function Execution tests', () => {
     ).toEqual('IUCvevfde\n1\n2\nIUCvevfde\n')
   })
 
-  test('Function works as first class citizens', () => {
+  test('Nested function calls are executed correctly', () => {
     expect(
-    codeRunner(`
+      codeRunner(`
         package main
         import "fmt"
 
@@ -319,9 +324,9 @@ describe('Function Execution tests', () => {
     ).toEqual('10\n20\nIUCvevfde\n')
   })
 
-  test('Function works as first class citizens', () => {
+  test('Arguments are handled correctly and return values are stored correctly', () => {
     expect(
-    codeRunner(`
+      codeRunner(`
         package main
         import "fmt"
 
@@ -339,9 +344,9 @@ describe('Function Execution tests', () => {
     ).toEqual('10\n20\nIUCvevfde\n')
   })
 
-  test('Function works as first class citizens', () => {
+  test('Return values are stored correctly', () => {
     expect(
-    codeRunner(`
+      codeRunner(`
         package main
         import "fmt"
 

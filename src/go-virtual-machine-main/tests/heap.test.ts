@@ -1,13 +1,15 @@
 import { describe, expect, test } from 'vitest'
+
+import { CompileData } from '../virtual-machine'
 import { Heap, TAG } from '../virtual-machine/heap'
 import { ContextNode } from '../virtual-machine/heap/types/context'
 import {
   EnvironmentNode,
   FrameNode,
 } from '../virtual-machine/heap/types/environment'
-import { CompileData, ProgramData } from '../virtual-machine'
-import { compileCode, parseCode, runCodeWithHeap } from './utility'
 import { BoolNode, IntegerNode } from '../virtual-machine/heap/types/primitives'
+
+import { compileCode, runCodeWithHeap } from './utility'
 
 describe('Heap Tests', () => {
   test('Get Set Bits', () => {
@@ -50,8 +52,7 @@ describe('Heap Tests', () => {
   })
 
   test('Array memory allocation for integers', () => {
-    const code =
-    `
+    const code = `
     package main
     import "fmt"
     func main() {
@@ -59,8 +60,8 @@ describe('Heap Tests', () => {
       fmt.Println(a)
     }
     `
-    let compiled = compileCode(code) as CompileData
-    let heap = new Heap(2048)
+    const compiled = compileCode(code) as CompileData
+    const heap = new Heap(2048)
     runCodeWithHeap(compiled, heap)
     let arrayNode = 0
     for (let i = 0; i < 2048; i++) {
@@ -69,31 +70,30 @@ describe('Heap Tests', () => {
         break
       }
     }
-    let start = heap.get_value(arrayNode).get_children()[0]
+    const start = heap.get_value(arrayNode).get_children()[0]
     expect((heap.get_value(start) as IntegerNode).get_value()).toEqual(1)
-    expect(start + 2).toEqual(heap.get_value(arrayNode).get_children()[1])
-    expect((heap.get_value(start + 2) as IntegerNode).get_value()).toEqual(25)
-    expect(start + 4).toEqual(heap.get_value(arrayNode).get_children()[2])
-    expect((heap.get_value(start + 4) as IntegerNode).get_value()).toEqual(32)
-    expect(start + 6).toEqual(heap.get_value(arrayNode).get_children()[3])
-    expect((heap.get_value(start + 6) as IntegerNode).get_value()).toEqual(43)
-    expect(start + 8).toEqual(heap.get_value(arrayNode).get_children()[4])
-    expect((heap.get_value(start + 8) as IntegerNode).get_value()).toEqual(15)
-    expect(start + 10).toEqual(heap.get_value(arrayNode).get_children()[5])
-    expect((heap.get_value(start + 10) as IntegerNode).get_value()).toEqual(46)
-    expect(start + 12).toEqual(heap.get_value(arrayNode).get_children()[6])
-    expect((heap.get_value(start + 12) as IntegerNode).get_value()).toEqual(87)
-    expect(start + 14).toEqual(heap.get_value(arrayNode).get_children()[7])
-    expect((heap.get_value(start + 14) as IntegerNode).get_value()).toEqual(83)
-    expect(start + 16).toEqual(heap.get_value(arrayNode).get_children()[8])
-    expect((heap.get_value(start + 16) as IntegerNode).get_value()).toEqual(97)
-    expect(start + 18).toEqual(heap.get_value(arrayNode).get_children()[9])
-    expect((heap.get_value(start + 18) as IntegerNode).get_value()).toEqual(610)
+    expect(start + 4).toEqual(heap.get_value(arrayNode).get_children()[1])
+    expect((heap.get_value(start + 4) as IntegerNode).get_value()).toEqual(25)
+    expect(start + 8).toEqual(heap.get_value(arrayNode).get_children()[2])
+    expect((heap.get_value(start + 8) as IntegerNode).get_value()).toEqual(32)
+    expect(start + 12).toEqual(heap.get_value(arrayNode).get_children()[3])
+    expect((heap.get_value(start + 12) as IntegerNode).get_value()).toEqual(43)
+    expect(start + 16).toEqual(heap.get_value(arrayNode).get_children()[4])
+    expect((heap.get_value(start + 16) as IntegerNode).get_value()).toEqual(15)
+    expect(start + 20).toEqual(heap.get_value(arrayNode).get_children()[5])
+    expect((heap.get_value(start + 20) as IntegerNode).get_value()).toEqual(46)
+    expect(start + 24).toEqual(heap.get_value(arrayNode).get_children()[6])
+    expect((heap.get_value(start + 24) as IntegerNode).get_value()).toEqual(87)
+    expect(start + 28).toEqual(heap.get_value(arrayNode).get_children()[7])
+    expect((heap.get_value(start + 28) as IntegerNode).get_value()).toEqual(83)
+    expect(start + 32).toEqual(heap.get_value(arrayNode).get_children()[8])
+    expect((heap.get_value(start + 32) as IntegerNode).get_value()).toEqual(97)
+    expect(start + 36).toEqual(heap.get_value(arrayNode).get_children()[9])
+    expect((heap.get_value(start + 36) as IntegerNode).get_value()).toEqual(610)
   })
 
   test('Array memory allocation for booleans', () => {
-    const code =
-    `
+    const code = `
     package main
     import "fmt"
     func main() {
@@ -101,8 +101,8 @@ describe('Heap Tests', () => {
       fmt.Println(a)
     }
     `
-    let compiled = compileCode(code) as CompileData
-    let heap = new Heap(2048)
+    const compiled = compileCode(code) as CompileData
+    const heap = new Heap(2048)
     runCodeWithHeap(compiled, heap)
     let arrayNode = 0
     for (let i = 0; i < 2048; i++) {
@@ -111,7 +111,7 @@ describe('Heap Tests', () => {
         break
       }
     }
-    let start = heap.get_value(arrayNode).get_children()[0]
+    const start = heap.get_value(arrayNode).get_children()[0]
     expect((heap.get_value(start) as BoolNode).get_value()).toEqual(true)
     expect(start + 1).toEqual(heap.get_value(arrayNode).get_children()[1])
     expect((heap.get_value(start + 1) as BoolNode).get_value()).toEqual(true)

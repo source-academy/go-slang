@@ -1,12 +1,19 @@
 import * as seedrandom from 'seedrandom'
+
 import { CompileData, runCode } from '../virtual-machine'
 import parser from '../virtual-machine/compiler/parser'
-import { SourceFileTokens, TokenLocation } from '../virtual-machine/compiler/tokens'
+import {
+  SourceFileTokens,
+  TokenLocation,
+} from '../virtual-machine/compiler/tokens'
 import { compile_tokens, CompileError } from '../virtual-machine/executor'
 import { Instruction } from '../virtual-machine/executor/instructions'
 import { Heap } from '../virtual-machine/heap'
 import { ContextNode } from '../virtual-machine/heap/types/context'
-import { EnvironmentNode, FrameNode } from '../virtual-machine/heap/types/environment'
+import {
+  EnvironmentNode,
+  FrameNode,
+} from '../virtual-machine/heap/types/environment'
 import { Debugger } from '../virtual-machine/runtime/debugger'
 import { Process } from '../virtual-machine/runtime/process'
 
@@ -19,7 +26,7 @@ export const mainRunner = (code: string) => {
     ${code}
   }
   `
-  return runCode(packagedCode, 2048, true)
+  return runCode(packagedCode, 4096, true)
 }
 
 /** Runs the code in a main function with randomised context switch */
@@ -31,21 +38,19 @@ export const mainRunnerRandom = (code: string) => {
     ${code}
   }
   `
-  return runCode(packagedCode, 2048, false)
+  return runCode(packagedCode, 4096, false)
 }
 
 /** Runs the code as a whole */
 export const codeRunner = (code: string) => {
-  return runCode(code, 2048, true)
+  return runCode(code, 4096, true)
 }
 
-export const compileCode = (
-  source_code: string,
-): CompileData => {
+export const compileCode = (source_code: string): CompileData => {
   let instructions: Instruction[] = []
   let symbols: (TokenLocation | null)[] = []
-  let message = ""
-  let err = ""
+  let message = ''
+  const err = ''
   let tokens = null
   try {
     tokens = parser.parse(source_code) as SourceFileTokens
@@ -92,9 +97,15 @@ export const runCodeWithHeap = (
   visualisation = true,
 ) => {
   // Execution.
-  let instructions = compiled.instructions
-  let symbols = compiled.symbols
-  const process = new Process(instructions, 2048, symbols, deterministic, visualisation)
+  const instructions = compiled.instructions
+  const symbols = compiled.symbols
+  const process = new Process(
+    instructions,
+    4096,
+    symbols,
+    deterministic,
+    visualisation,
+  )
   process.instructions = instructions
   process.heap = heap
   process.contexts = process.heap.contexts
@@ -143,7 +154,7 @@ export const runCodeWithHeap = (
 
 /** Runs the code as a whole with randomised context switch */
 export const codeRunnerRandom = (code: string) => {
-  return runCode(code, 2048, false)
+  return runCode(code, 4096, false)
 }
 
 export { runCode }

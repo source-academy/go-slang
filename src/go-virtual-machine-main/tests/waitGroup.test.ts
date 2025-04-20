@@ -11,9 +11,7 @@ describe('Wait Group Type Checking', () => {
       var a sync.WaitGroup
     }
     `
-    expect(codeRunner(code).error?.message).toEqual(
-      'Variable sync not found',
-    )
+    expect(codeRunner(code).error?.message).toEqual('Variable sync not found')
   })
 
   test('Assinging a variable of another type to WaitGroup should fail.', () => {

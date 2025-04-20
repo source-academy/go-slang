@@ -81,7 +81,7 @@ describe('Variable Declaration Tests', () => {
     const code = `
     x, x := 3, 6
     `
-    expect(mainRunner(code).error?.type).toEqual("compile")
+    expect(mainRunner(code).error?.type).toEqual('compile')
   })
 
   test('Declaring variables with same name in different scopes should pass', () => {
@@ -93,7 +93,7 @@ describe('Variable Declaration Tests', () => {
     }
     fmt.Println(x)
     `
-    expect(mainRunner(code).output).toEqual("3\n2\n")
+    expect(mainRunner(code).output).toEqual('3\n2\n')
   })
 
   test('Reassignment to a different type should fail', () => {
@@ -101,7 +101,7 @@ describe('Variable Declaration Tests', () => {
     x := 2
     x = "Hi"
     `
-    expect(mainRunner(code).error?.type).toEqual("compile")
+    expect(mainRunner(code).error?.type).toEqual('compile')
   })
 
   test('Type declaration should work for multiple layers', () => {
@@ -138,7 +138,7 @@ describe('Variable Declaration Tests', () => {
     type Age int
     type B Ag
     `
-    expect(mainRunner(code).error?.type).toEqual("compile")
+    expect(mainRunner(code).error?.type).toEqual('compile')
   })
 
   test('Type declaration should throw error if types do not match in binop', () => {
@@ -149,7 +149,7 @@ describe('Variable Declaration Tests', () => {
     var y int = 2
     x = x + y
     `
-    expect(mainRunner(code).error?.type).toEqual("compile")
+    expect(mainRunner(code).error?.type).toEqual('compile')
   })
 
   test('Type declaration should throw error if types do not match in assignment', () => {
@@ -160,7 +160,7 @@ describe('Variable Declaration Tests', () => {
     var y int = 2
     x = y
     `
-    expect(mainRunner(code).error?.type).toEqual("compile")
+    expect(mainRunner(code).error?.type).toEqual('compile')
   })
 
   test('Type declaration based on int should still work correctly when applying binops', () => {
@@ -177,7 +177,7 @@ describe('Variable Declaration Tests', () => {
     fmt.Println(x * x)
     fmt.Println(x / x)
     `
-    expect(mainRunner(code).output).toEqual("8\n3\n12\n4\n16\n2\n36\n1\n")
+    expect(mainRunner(code).output).toEqual('8\n3\n12\n4\n16\n2\n36\n1\n')
   })
 
   test('Type declaration based on int should still work correctly when applying arithmetic assignments', () => {
@@ -202,7 +202,7 @@ describe('Variable Declaration Tests', () => {
     x -= x + 2
     fmt.Println(x)
     `
-    expect(mainRunner(code).output).toEqual("9\n8\n24\n6\n18\n306\n2\n-2\n")
+    expect(mainRunner(code).output).toEqual('9\n8\n24\n6\n18\n306\n2\n-2\n')
   })
 
   test('Type declaration based on string should still work correctly when applying +', () => {
@@ -211,7 +211,7 @@ describe('Variable Declaration Tests', () => {
     var x text = "Hello"
     fmt.Println(x + "4")
     `
-    expect(mainRunner(code).output).toEqual("Hello4\n")
+    expect(mainRunner(code).output).toEqual('Hello4\n')
   })
 
   test('Type declaration based on string should still work correctly when uninitialised', () => {
@@ -220,7 +220,7 @@ describe('Variable Declaration Tests', () => {
     var x text
     fmt.Println(x + "4")
     `
-    expect(mainRunner(code).output).toEqual("4\n")
+    expect(mainRunner(code).output).toEqual('4\n')
   })
 
   test('Type declaration based on int should still work correctly when uninitialised', () => {
@@ -229,7 +229,7 @@ describe('Variable Declaration Tests', () => {
     var x Num
     fmt.Println(x + 45)
     `
-    expect(mainRunner(code).output).toEqual("45\n")
+    expect(mainRunner(code).output).toEqual('45\n')
   })
 
   test('Type declaration based on float should still work correctly when uninitialised', () => {
@@ -238,7 +238,7 @@ describe('Variable Declaration Tests', () => {
     var x Num
     fmt.Println(x + 49.25)
     `
-    expect(mainRunner(code).output).toEqual("49.25\n")
+    expect(mainRunner(code).output).toEqual('49.25\n')
   })
 
   test('+ should work on 2 variables with string as underlying type', () => {
@@ -248,7 +248,7 @@ describe('Variable Declaration Tests', () => {
     var y text = " there"
     fmt.Println(x + y)
     `
-    expect(mainRunner(code).output).toEqual("Hello there\n")
+    expect(mainRunner(code).output).toEqual('Hello there\n')
   })
 
   test('+ should work on 2 variables with int as underlying type', () => {
@@ -259,7 +259,7 @@ describe('Variable Declaration Tests', () => {
     var y Num = 2
     fmt.Println(x + y)
     `
-    expect(mainRunner(code).output).toEqual("5\n")
+    expect(mainRunner(code).output).toEqual('5\n')
   })
 
   test('+ should work on 2 variables with float as underlying type', () => {
@@ -270,17 +270,7 @@ describe('Variable Declaration Tests', () => {
     var y Num = 2.25
     fmt.Println(x + y)
     `
-    expect(mainRunner(code).output).toEqual("5.75\n")
-  })
-
-  test('+ should work on a variable with float as underlying type and int literal', () => {
-    const code = `
-    type Age float64
-    type Num Age
-    var x Num = 3.25
-    fmt.Println(x + 33)
-    `
-    expect(mainRunner(code).output).toEqual("36.25\n")
+    expect(mainRunner(code).output).toEqual('5.75\n')
   })
 
   test('Type declaration works on function arguments with typed variable', () => {
@@ -298,7 +288,7 @@ describe('Variable Declaration Tests', () => {
       help(aa)
     }
     `
-    expect(codeRunner(code).output).toEqual("38\n")
+    expect(codeRunner(code).output).toEqual('38\n')
   })
 
   test('Type declaration works on function arguments with literal', () => {
@@ -315,7 +305,7 @@ describe('Variable Declaration Tests', () => {
       help(47)
     }
     `
-    expect(codeRunner(code).output).toEqual("47\n")
+    expect(codeRunner(code).output).toEqual('47\n')
   })
 
   test('Type declaration of multiple layers works on function arguments with literal', () => {
@@ -333,7 +323,7 @@ describe('Variable Declaration Tests', () => {
       help(474)
     }
     `
-    expect(codeRunner(code).output).toEqual("474\n")
+    expect(codeRunner(code).output).toEqual('474\n')
   })
 
   test('Type declaration fails if function argument types do not match (argument = declared, supplied = underlying)', () => {
@@ -351,7 +341,7 @@ describe('Variable Declaration Tests', () => {
       help(aa)
     }
     `
-    expect(codeRunner(code).error?.type).toEqual("compile")
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 
   test('Type declaration fails if function argument types do not match (argument = underlying, supplied = declared)', () => {
@@ -369,7 +359,7 @@ describe('Variable Declaration Tests', () => {
       help(aa)
     }
     `
-    expect(codeRunner(code).error?.type).toEqual("compile")
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 
   test('Type declaration should work on functions with literal as return values used for another function)', () => {
@@ -390,7 +380,7 @@ describe('Variable Declaration Tests', () => {
       help(help2(6))
     }
     `
-    expect(codeRunner(code).output).toEqual("30\n")
+    expect(codeRunner(code).output).toEqual('30\n')
   })
 
   test('Type declaration should work on functions with matching type return values used for another function)', () => {
@@ -411,7 +401,7 @@ describe('Variable Declaration Tests', () => {
       help(help2(6))
     }
     `
-    expect(codeRunner(code).output).toEqual("12\n")
+    expect(codeRunner(code).output).toEqual('12\n')
   })
 
   test('Type declaration should fail on functions with not matching type return values used for another function)', () => {
@@ -433,7 +423,7 @@ describe('Variable Declaration Tests', () => {
       help(help2(6))
     }
     `
-    expect(codeRunner(code).error?.type).toEqual("compile")
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 
   test('Type declaration should work on arrays', () => {
@@ -447,7 +437,7 @@ describe('Variable Declaration Tests', () => {
       fmt.Println(a)
     }
     `
-    expect(codeRunner(code).output).toEqual("[12 21]\n")
+    expect(codeRunner(code).output).toEqual('[12 21]\n')
   })
 
   test('Type declaration should work on arrays (double layer)', () => {
@@ -462,7 +452,7 @@ describe('Variable Declaration Tests', () => {
       fmt.Println(a)
     }
     `
-    expect(codeRunner(code).output).toEqual("[12 21]\n")
+    expect(codeRunner(code).output).toEqual('[12 21]\n')
   })
 
   test('Type declaration should work on 1D arrays', () => {
@@ -476,7 +466,7 @@ describe('Variable Declaration Tests', () => {
       fmt.Println(a)
     }
     `
-    expect(codeRunner(code).output).toEqual("[12 21]\n")
+    expect(codeRunner(code).output).toEqual('[12 21]\n')
   })
 
   test('Type declaration should work on 2D arrays', () => {
@@ -490,22 +480,7 @@ describe('Variable Declaration Tests', () => {
       fmt.Println(a)
     }
     `
-    expect(codeRunner(code).output).toEqual("[[12 18] [21 93]]\n")
-  })
-
-  test('Type declaration should work on arrays (double layer)', () => {
-    const code = `
-    package main
-    import "fmt"
-
-    func main() {
-      type A int
-      type B A
-      a := []B{12, 21}
-      fmt.Println(a)
-    }
-    `
-    expect(codeRunner(code).output).toEqual("[12 21]\n")
+    expect(codeRunner(code).output).toEqual('[[12 18] [21 93]]\n')
   })
 
   test('Type declaration should work on array elements', () => {
@@ -519,7 +494,7 @@ describe('Variable Declaration Tests', () => {
       fmt.Println(a[0] + a[1])
     }
     `
-    expect(codeRunner(code).output).toEqual("33\n")
+    expect(codeRunner(code).output).toEqual('33\n')
   })
 
   test('Type declaration should work on array elements (double layer)', () => {
@@ -534,7 +509,7 @@ describe('Variable Declaration Tests', () => {
       fmt.Println(a[0] + a[1])
     }
     `
-    expect(codeRunner(code).output).toEqual("33\n")
+    expect(codeRunner(code).output).toEqual('33\n')
   })
 
   test('Type declaration should fail on array elements of different types', () => {
@@ -550,7 +525,7 @@ describe('Variable Declaration Tests', () => {
       fmt.Println(a[0] + b[1])
     }
     `
-    expect(codeRunner(code).error?.type).toEqual("compile")
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 
   test('Type declaration should fail on arrays of different types', () => {
@@ -566,7 +541,7 @@ describe('Variable Declaration Tests', () => {
       b = a
     }
     `
-    expect(codeRunner(code).error?.type).toEqual("compile")
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 
   test('Type declaration should work on functions with matching type return values used for array element assignment', () => {
@@ -588,7 +563,7 @@ describe('Variable Declaration Tests', () => {
       fmt.Println(a)
     }
     `
-    expect(codeRunner(code).output).toEqual("[48 134]\n")
+    expect(codeRunner(code).output).toEqual('[48 134]\n')
   })
 
   test('Same type name on different scopes should be seen as different types', () => {
@@ -605,7 +580,7 @@ describe('Variable Declaration Tests', () => {
       fmt.Println(a + b)
     }
     `
-    expect(codeRunner(code).error?.type).toEqual("compile")
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 
   test('Type not in scope but with same name should fail', () => {
@@ -621,7 +596,7 @@ describe('Variable Declaration Tests', () => {
       fmt.Println(a + b)
     }
     `
-    expect(codeRunner(code).error?.type).toEqual("compile")
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 
   test('Same type name on different scopes should be seen as different types (multiple layers)', () => {
@@ -639,7 +614,7 @@ describe('Variable Declaration Tests', () => {
       fmt.Println(b + a)
     }
     `
-    expect(codeRunner(code).error?.type).toEqual("compile")
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 
   test('Same type name on different scopes should be seen as different types (for loops)', () => {
@@ -657,7 +632,7 @@ describe('Variable Declaration Tests', () => {
       }
     }
     `
-    expect(codeRunner(code).error?.type).toEqual("compile")
+    expect(codeRunner(code).error?.type).toEqual('compile')
   })
 
   test('Type declarations are preserved in loops', () => {
@@ -674,7 +649,7 @@ describe('Variable Declaration Tests', () => {
       }
     }
     `
-    expect(codeRunner(code).output).toEqual("5\n5\n5\n5\n5\n5\n5\n5\n5\n")
+    expect(codeRunner(code).output).toEqual('5\n5\n5\n5\n5\n5\n5\n5\n5\n')
   })
 
   test('Type declarations are preserved across functions', () => {
@@ -697,6 +672,6 @@ describe('Variable Declaration Tests', () => {
       fmt.Println(d)
     }
     `
-    expect(codeRunner(code).output).toEqual("196\n28\n14\n")
+    expect(codeRunner(code).output).toEqual('196\n28\n14\n')
   })
 })

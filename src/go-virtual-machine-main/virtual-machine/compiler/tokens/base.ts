@@ -8,7 +8,7 @@ export type TokenLocation = {
 }
 
 export abstract class Token {
-  constructor(public type: string, public sourceLocation: TokenLocation) { }
+  constructor(public type: string, public sourceLocation: TokenLocation) {}
 
   abstract compileUnchecked(compiler: Compiler): Type
 
