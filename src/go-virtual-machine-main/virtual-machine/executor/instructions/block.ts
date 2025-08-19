@@ -16,9 +16,10 @@ import { StructType } from '../typing/struct_type'
 
 import { Instruction } from './base'
 
+/** Instruction to open a new block scope */
 export class BlockInstruction extends Instruction {
-  frame: Type[] = []
-  identifiers: string[] = []
+  frame: Type[] = [] // list of variable types declared in this block
+  identifiers: string[] = [] // names of respective variables
   constructor(public name: string, public for_block = false) {
     super('BLOCK')
   }

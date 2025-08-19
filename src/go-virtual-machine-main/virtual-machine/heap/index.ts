@@ -85,6 +85,7 @@ export class Heap {
   memory: Memory // Assume memory is an array of 8 byte words, holds actual memory
   size: number // Total number of words in memory
   UNASSIGNED: UnassignedNode // Unassigned memory
+  gray_nodes: number[] // List of addr that are marked as gray
   freelist: number[] // List of linked lists storing free blocks at that size
   max_level: number // Largest block size power of 2 supported
   temp_roots: StackNode // Temporary stack of root references
@@ -101,6 +102,7 @@ export class Heap {
     if (this.size < 34) throw Error('Insufficient Memory')
     this.memory = new Memory(size, word_size)
     this.max_level = Math.floor(Math.log2(size)) + 1
+    this.gray_nodes = []
     this.freelist = []
     for (let i = 0; i < this.max_level; i++) this.freelist.push(-1)
     let cur_addr = 0
@@ -400,6 +402,9 @@ export class Heap {
     if (addr === -1) throw Error('Ran out of memory!')
     size = this.get_size(addr)
     this.mem_left -= size
+    // Set as a gray node and add to list of gray nodes to be explored
+    this.set_gray(addr)
+    this.gray_nodes.push(addr)
     return addr
   }
 
@@ -464,6 +469,7 @@ export class Heap {
 
   /**
    * @param addr Starting Byte of the Memory
+   * @desc Plan to deprecate
    * @return whether or not the addr has been marked by gc
    */
   is_marked(addr: number) {
@@ -472,10 +478,56 @@ export class Heap {
 
   /**
    * @param addr Starting Byte of the Memory
+   * @desc Plan to deprecate
    * @param mark Whether the addr has been marked by gc
    */
   set_mark(addr: number, mark: boolean) {
     this.memory.set_bits(mark ? 1 : 0, addr, 1, 6)
+  }
+
+  /**
+   * @param addr Starting Byte of the Memory
+   * @return whether the addr has been marked by gc as white
+   */
+  is_white(addr: number) {
+    return this.memory.get_bits(addr, 2, 6) === 0
+  }
+
+  /**
+   * @param addr Starting Byte of the Memory
+   */
+  set_white(addr: number) {
+    this.memory.set_bits(0, addr, 2, 6)
+  }
+
+  /**
+   * @param addr Starting Byte of the Memory
+   * @return whether the addr has been marked by gc as gray
+   */
+  is_gray(addr: number) {
+    return this.memory.get_bits(addr, 2, 6) === 1
+  }
+
+  /**
+   * @param addr Starting Byte of the Memory
+   */
+  set_gray(addr: number) {
+    this.memory.set_bits(1, addr, 2, 6)
+  }
+
+  /**
+   * @param addr Starting Byte of the Memory
+   * @return whether the addr has been marked by gc as black
+   */
+  is_black(addr: number) {
+    return this.memory.get_bits(addr, 2, 6) === 2
+  }
+
+  /**
+   * @param addr Starting Byte of the Memory
+   */
+  set_black(addr: number) {
+    this.memory.set_bits(2, addr, 2, 6)
   }
 
   /**
@@ -546,6 +598,7 @@ export class Heap {
 
   /**
    * @param addr Starting Byte of the Memory
+   * @desc Plan to deprecate
    * @desc Mark phase of mark and sweep
    */
   mark(addr: number) {
@@ -572,16 +625,33 @@ export class Heap {
       this.temp, // Single temp pointer
     ]
     for (const root of roots) {
-      this.mark(root)
+      if (!this.is_gray(root)) {
+        this.gray_nodes.push(root)
+      }
+    }
+    while (this.gray_nodes) {
+      const addr = this.gray_nodes.shift()!
+      if (addr === -1) continue
+      if (this.is_black(addr)) continue
+      this.set_black(addr)
+      // Get the node object representation at addr
+      const val = this.get_value(addr)
+      const children = val.get_children()
+      for (const child of children) {
+        if (!this.is_gray(child)) {
+          this.set_gray(child)
+          this.gray_nodes.push(child)
+        }
+      }
     }
     // Sweep phase
     for (let cur_addr = 0; cur_addr < this.size; ) {
-      if (!this.is_free(cur_addr) && !this.is_marked(cur_addr)) {
+      if (!this.is_free(cur_addr) && this.is_white(cur_addr)) {
         // Free memory since it is used but unmarked
         cur_addr = this.free(cur_addr)
       } else {
         // Reset marking to false
-        if (this.is_marked(cur_addr)) this.set_mark(cur_addr, false)
+        if (!this.is_white(cur_addr)) this.set_white(cur_addr)
         cur_addr += this.get_size(cur_addr)
       }
     }

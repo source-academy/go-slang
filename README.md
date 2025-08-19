@@ -94,9 +94,5 @@ Heap class stores the following
 - Debugger: Determine if debugger is activated
 
 Addr stores the following
-- Free or not free (1st bit, 1 if free)
-- Which level it is at in the buddy allocation system (5 bits starting from offset 1)
-- Whether or not the node has been marked (1 bit starting from offset 6)
-- Tag representing the object type (8 bits starting from offset 8)
-- What is the previous node at its level in freelist (29 bits starting from offset 6)
-- What is the next node at its level in freelist (29 bits at offset 3 using the next word)
+- Free Node: [1 bit free bit] [5 bits Level data] [29 bits Prev Node] [29 bits Next Node]
+- Not-Free Node: [1 bit free bit] [5 bits Level data] [2 bits Mark & Sweep] [1 Byte Type Tag] [2 Bytes Payload - Depends on type]
