@@ -14,6 +14,7 @@ import { QueueNode } from '../heap/types/queue'
 
 import { Debugger, StateInfo } from './debugger'
 
+// Represents the result when a process finishes
 type ProcessOutput = {
   stdout: string
   visual_data: StateInfo[]
@@ -21,36 +22,39 @@ type ProcessOutput = {
 }
 
 export class Process {
-  instructions: Instruction[]
-  heap: Heap
-  context: ContextNode
-  contexts: QueueNode
-  stdout: string
-  generator: seedrandom.PRNG
-  debug_mode: boolean
-  debugger: Debugger
-  runtime_count = 0
-  deterministic: boolean
+  instructions: Instruction[] // Sequence of instructions
+  heap: Heap // Memory manager
+  context: ContextNode // Current execution context
+  contexts: QueueNode // Queue of contexts for managing multiple goroutines, can be thought of as ready queues
+  stdout: string // Text accumulated in program
+  generator: seedrandom.PRNG // Pseudo random number generator
+  debug_mode: boolean // True if running visual debugging mode
+  debugger: Debugger // Trace states
+  runtime_count = 0 // Counts how many instructions executed
+  deterministic: boolean // Whether execution should be deterministic or not
   constructor(
     instructions: Instruction[],
     heapsize: number,
-    symbols: (TokenLocation | null)[],
+    symbols: (TokenLocation | null)[], // metadata for debugging
     deterministic: boolean,
     visualmode = false,
   ) {
     this.instructions = instructions
     this.heap = new Heap(heapsize)
     this.contexts = this.heap.contexts
+    // Create initial execution context using the first context in the queue. This will be the main context
     this.context = new ContextNode(this.heap, this.contexts.peek())
     this.stdout = ''
     console.log(this.heap.mem_left)
+    // Base call frame at heap addr 0
     const base_frame = FrameNode.create(0, this.heap)
     const base_env = EnvironmentNode.create(
-      base_frame.addr,
-      [],
+      base_frame.addr, // tied to base frame addr
+      [], // initialise empty list of variables
       false,
       this.heap,
     )
+    // Links context's environment ptr to this new env
     this.context.set_E(base_env.addr)
     const randomSeed = Math.random().toString(36).substring(2)
     this.generator = seedrandom.default(randomSeed)
@@ -61,17 +65,19 @@ export class Process {
     if (this.debug_mode)
       this.debugger.context_id_map.set(
         this.context.addr,
-        this.debugger.context_id++,
+        this.debugger.context_id++, // increase id after storing so next context has increasing id
       )
     this.heap.debugger = this.debugger
   }
 
   start(): ProcessOutput {
+    // Each context can run up to 30 instructions
     const time_quantum = 30
     this.runtime_count = 0
     let completed = false
     try {
       const main_context = this.contexts.peek()
+      // While there are contexts in the run queue
       while (this.contexts.sz()) {
         if (this.deterministic) {
           this.context = new ContextNode(this.heap, this.contexts.peek())
@@ -79,18 +85,21 @@ export class Process {
           this.context = new ContextNode(this.heap, this.contexts.randompeek())
         }
         let cur_time = 0
+        // Execute this context until it hits a done instruction
         while (!DoneInstruction.is(this.instructions[this.context.PC()])) {
           if (cur_time >= time_quantum) {
-            // Context Switch
+            // Context Switch by pushing context to end of queue
             this.contexts.push(this.context.addr)
             break
           }
+          // OS stands for Operand Stack, 1 means treat next instruction as a goroutine method call
           if (this.context.OS().sz() > 0 && this.context.peekOS() === 1) {
             // a hacky way of handling goroutines when the callee is a MethodNode instead of FuncNode
             this.context.popOS()
             const instr = this.instructions[
               this.context.incr_PC()
             ] as GoInstruction
+            // MethodNode represents the callee
             const func = this.heap.get_value(
               this.context.peekOSIdx(instr.args),
             ) as MethodNode
@@ -98,6 +107,7 @@ export class Process {
             receiver.handleMethodCall(this, func.identifier(), instr.args)
             break
           }
+          // Save current pc and get next instruction for execution
           const pc = this.context.PC()
           const instr = this.instructions[this.context.incr_PC()]
           // console.log('ctx:', this.context.addr)
@@ -108,6 +118,7 @@ export class Process {
           // this.context.heap.print_freelist()
           this.runtime_count += 1
           cur_time += 1
+          // If this is not the main context and runtime stack is empty, goroutine is completed
           if (
             this.context.addr !== main_context &&
             this.context.RTS().sz() === 0
@@ -115,11 +126,14 @@ export class Process {
             // thread has completed
             break
           }
+          // State snapshot for debug mode
           if (this.debug_mode) this.debugger.generate_state(pc, this.stdout)
+            // Stop context if blocked
           if (this.context.is_blocked()) {
             break
           }
         }
+        // If done instruction has been hit in main context then stop all
         if (
           DoneInstruction.is(this.instructions[this.context.PC()]) &&
           this.context.addr === main_context
@@ -127,11 +141,14 @@ export class Process {
           completed = true
           break
         }
+        // Remove old head from ready queue
         this.contexts.pop()
         // console.log('%c SWITCH!', 'background: #F7FF00; color: #FF0000')
         if (this.runtime_count > 10 ** 5) throw Error('Time Limit Exceeded!')
         // console.log('PC', this.contexts.get_vals())
       }
+
+      // If main didn't complete and there are blocked goroutines with no runnable ones, throw deadlock error
       if (!completed && !this.heap.blocked_contexts.is_empty())
         throw Error('all goroutines are asleep - deadlock!')
 

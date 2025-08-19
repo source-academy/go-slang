@@ -35,12 +35,16 @@ export class Memory {
     let val = 0
     let carry = 1
     while (num_bits > 0) {
+      // number of bits read in one word
       const effective_bits = Math.min(num_bits, bits_in_int - bit_offset)
+      // mask for bits to be read, should just use effective_bits instead of num_bits
       const mask = (2 ** num_bits - 1) * 2 ** bit_offset
+      // increment value obtained so far
       val +=
         Math.floor(
           ((mask & this.view.getUint32(addr * 4)) >>> 0) / 2 ** bit_offset,
         ) * carry
+      // to accomodate bytes read from other words
       carry *= 2 ** effective_bits
       bit_offset = 0
       num_bits -= effective_bits
@@ -58,7 +62,9 @@ export class Memory {
   set_bits(val: number, addr: number, num_bits: number, bit_offset = 0) {
     this.check_valid(num_bits, bit_offset)
     while (num_bits > 0) {
+      // number of bits read in one word
       const effective_bits = Math.min(num_bits, bits_in_int - bit_offset)
+      // mask to erase bits to be replaced, should just use effective_bits instead of num_bits
       const mask = ~((2 ** effective_bits - 1) * 2 ** bit_offset)
       const val_mask =
         ((2 ** num_bits - 1) & val % 2 ** effective_bits) * 2 ** bit_offset
