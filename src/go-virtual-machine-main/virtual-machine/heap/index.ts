@@ -1,4 +1,4 @@
-import {} from '../executor/typing'
+import { } from '../executor/typing'
 import { BoolType } from '../executor/typing/bool_type'
 import { Float64Type } from '../executor/typing/float64_type'
 import { Int64Type } from '../executor/typing/int64_type'
@@ -41,6 +41,7 @@ import { StructNode } from './types/struct'
 import { UnsafePkgNode } from './types/unsafe'
 import { WaitGroupNode } from './types/waitGroup'
 import { Memory } from './memory'
+import { BitMap } from './bitmap'
 
 export enum TAG {
   UNKNOWN = 0,
@@ -79,6 +80,12 @@ export enum TAG {
   UNSAFE_PKG = 33,
 }
 
+export enum GCPHASE {
+  NONE = 0,
+  MARK = 1,
+  SWEEP = 2,
+}
+
 export const word_size = 4
 
 export class Heap {
@@ -93,6 +100,14 @@ export class Heap {
   mem_left: number // Tracks remaining memory
   temp = -1 // Temp register to hold an address
   debugger: Debugger | undefined
+  mark_stack: number[]
+  gc_phase: GCPHASE
+  bitmap: BitMap
+  save_stack: number[]
+  sweeper: number
+  GOGC: number
+  gc_heap_min: number
+  gc_target_mem: number
   constructor(size: number) {
     this.size = size
     this.mem_left = size
@@ -117,6 +132,14 @@ export class Heap {
     // Create first execution context so that it can run
     const context = ContextNode.create(this)
     this.contexts.push(context.addr)
+    this.mark_stack = []
+    this.gc_phase = GCPHASE.NONE
+    this.bitmap = new BitMap(this.size, word_size)
+    this.save_stack = [] // to initialise
+    this.sweeper = 0
+    this.GOGC = 0
+    this.gc_heap_min = 0.4
+    this.gc_target_mem = this.size * this.gc_heap_min
   }
 
   /**
@@ -394,12 +417,24 @@ export class Heap {
     let addr = try_allocate()
     // Update mark to be done concurrently while sweep be done when GOGC ratio is hit
     if (addr === -1) {
-      this.mark_and_sweep()
+      do {
+        this.tri_color_step()
+      } while (this.gc_phase !== GCPHASE.NONE)
+      //this.mark_and_sweep()
       addr = try_allocate()
     }
     if (addr === -1) throw Error('Ran out of memory!')
     size = this.get_size(addr)
     this.mem_left -= size
+    if (this.gc_phase === GCPHASE.NONE) {
+      if ((this.size - this.mem_left) >= this.gc_heap_min) {
+        // Needs to stop the world while occuring
+        this.initiate_tri_color()
+      }
+    } else {
+      // If GC cycle is underway, mark as black
+      this.bitmap.set_mark(addr, true)
+    }
     return addr
   }
 
@@ -561,6 +596,90 @@ export class Heap {
     }
   }
 
+  tri_color_step() {
+    switch (this.gc_phase) {
+      case GCPHASE.MARK:
+        // Must make it stop all other webworkers
+        this.mark_tri_color(10, 4)
+        break
+      case GCPHASE.SWEEP:
+        this.sweep_tri_color(10)
+        this.calc_target_mem()
+        break
+    }
+  }
+
+  initiate_tri_color() {
+    console.log('STOP THE WORLD')
+    // console.trace()
+    // All root references
+    const roots: number[] = [
+      this.contexts.addr, // Current running program state
+      this.blocked_contexts.addr, // Suspended goroutines
+      this.temp_roots.addr, // Stack of temporary roots
+      this.UNASSIGNED.addr, // Special global constant or object
+      this.temp, // Single temp pointer
+    ]
+    for (const root of roots) {
+      this.mark_stack.push(root)
+    }
+    this.gc_phase = GCPHASE.MARK
+    return
+  }
+
+  /**
+   * @param addr Starting Byte of the Memory
+   * @desc Plan to deprecate
+   * @desc Mark phase of mark and sweep
+   */
+  mark_tri_color(k1: number, k2: number) {
+    // Process mark stack
+    for (let i = 0; i < k1; i++) {
+      const addr = this.mark_stack.shift()
+      if (addr === undefined || addr === -1) break
+      // Get the node object representation at addr
+      const val = this.get_value(addr)
+      const children = val.get_children()
+      for (const child of children) {
+        this.mark_gray(child)
+      }
+    }
+
+    // Transfer from save stacks to mark stack
+    for (let i = 0; i < k2; i++) {
+      const addr = this.save_stack.shift()
+      if (addr === undefined || addr === -1) break
+      this.mark_gray(addr)
+    }
+
+    // Check if mark phase should be terminated
+    if (this.mark_stack.length === 0 && this.save_stack.length === 0) {
+      this.gc_phase = GCPHASE.SWEEP
+    }
+  }
+
+  sweep_tri_color(k3: number) {
+    for (let i = 0; i < k3; i++) {
+      if (this.sweeper >= this.size) {
+        this.gc_phase = GCPHASE.NONE
+        return
+      }
+      if (!this.bitmap.is_marked(this.sweeper)) {
+        this.free(this.sweeper)
+      } else {
+        this.bitmap.set_mark(this.sweeper, false)
+      }
+      // increment sweeper
+      this.sweeper += this.get_size(this.sweeper)
+    }
+  }
+
+  mark_gray(addr: number) {
+    if (this.bitmap.is_marked(addr)) return
+    this.bitmap.set_mark(addr, true)
+    this.mark_stack.push(addr)
+  }
+
   mark_and_sweep() {
     console.log('CLEAN')
     // console.trace()
@@ -576,7 +695,7 @@ export class Heap {
       this.mark(root)
     }
     // Sweep phase
-    for (let cur_addr = 0; cur_addr < this.size; ) {
+    for (let cur_addr = 0; cur_addr < this.size;) {
       if (!this.is_free(cur_addr) && this.is_marked(cur_addr)) {
         // Free memory since it is used but unmarked
         cur_addr = this.free(cur_addr)
@@ -584,10 +703,32 @@ export class Heap {
         // Reset marking to false
         if (!this.is_marked(cur_addr)) this.set_mark(cur_addr, false)
         cur_addr += this.get_size(cur_addr)
+      }
     }
+    return
   }
-  return
-}
+
+  get_roots_mem(): number {
+    // All root references
+    const roots: number[] = [
+      this.contexts.addr, // Current running program state
+      this.blocked_contexts.addr, // Suspended goroutines
+      this.temp_roots.addr, // Stack of temporary roots
+      this.UNASSIGNED.addr, // Special global constant or object
+      this.temp, // Single temp pointer
+    ]
+    let size = 0
+    for (const root of roots) {
+      size += this.get_size(root)
+    }
+    return size
+  }
+
+  calc_target_mem() {
+    const live_heap = this.size - this.mem_left
+    const res = live_heap + (live_heap + this.get_roots_mem()) * (this.GOGC / 100)
+    this.gc_target_mem = Math.max(res, this.size * this.gc_heap_min)
+  }
 
   /**
    * @param dst Starting Byte of the Memory to be copied to

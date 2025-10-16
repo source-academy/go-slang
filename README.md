@@ -95,4 +95,4 @@ Heap class stores the following
 
 Addr stores the following
 - Free Node: [1 bit free bit] [5 bits Level data] [29 bits Prev Node] [29 bits Next Node]
-- Not-Free Node: [1 bit free bit] [5 bits Level data] [2 bits Mark & Sweep] [1 Byte Type Tag] [2 Bytes Payload - Depends on type]
+- Not-Free Node: [1 bit free bit] [5 bits Level data] [1 bit Mark & Sweep] [1 Byte Type Tag] [2 Bytes Payload - Depends on type]

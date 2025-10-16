@@ -143,6 +143,10 @@ export class Memory {
     return this.view.getInt32(addr * this.word_size)
   }
 
+  /**
+   * @param val Value to be set
+   * @param addr Starting byte index
+   */
   set_number(val: number, addr: number) {
     return this.view.setInt32(addr * this.word_size, val)
   }

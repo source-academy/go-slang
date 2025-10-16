@@ -43,8 +43,6 @@ export class BlockInstruction extends Instruction {
 
   override execute(process: Process): void {
     const new_frame = FrameNode.create(this.frame.length, process.heap)
-    // Mark as gray so GC won't collect it (remove temp soon)
-    process.heap.set_gray(new_frame.addr)
     process.heap.temp_push(new_frame.addr)
     for (let i = 0; i < this.frame.length; i++) {
       const T = this.frame[i]

@@ -32,6 +32,7 @@ export class Process {
   debugger: Debugger // Trace states
   runtime_count = 0 // Counts how many instructions executed
   deterministic: boolean // Whether execution should be deterministic or not
+  save_stack: number[]
   constructor(
     instructions: Instruction[],
     heapsize: number,
@@ -59,6 +60,7 @@ export class Process {
     const randomSeed = Math.random().toString(36).substring(2)
     this.generator = seedrandom.default(randomSeed)
     this.deterministic = deterministic
+    this.save_stack = this.heap.save_stack
 
     this.debug_mode = visualmode
     this.debugger = new Debugger(this.heap, this.instructions, symbols)
@@ -87,6 +89,7 @@ export class Process {
         let cur_time = 0
         // Execute this context until it hits a done instruction
         while (!DoneInstruction.is(this.instructions[this.context.PC()])) {
+          this.heap.tri_color_step()
           if (cur_time >= time_quantum) {
             // Context Switch by pushing context to end of queue
             this.contexts.push(this.context.addr)
@@ -128,7 +131,7 @@ export class Process {
           }
           // State snapshot for debug mode
           if (this.debug_mode) this.debugger.generate_state(pc, this.stdout)
-            // Stop context if blocked
+          // Stop context if blocked
           if (this.context.is_blocked()) {
             break
           }
@@ -167,6 +170,12 @@ export class Process {
         errorMessage,
       }
     }
+  }
+
+  mark_save_stack(addr: number) {
+    if (this.heap.bitmap.is_marked(addr)) return
+    this.heap.bitmap.set_mark(addr, true)
+    this.save_stack.push(addr)
   }
 
   print(string: string) {
