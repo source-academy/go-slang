@@ -1,4 +1,4 @@
-import { } from '../executor/typing'
+import {} from '../executor/typing'
 import { BoolType } from '../executor/typing/bool_type'
 import { Float64Type } from '../executor/typing/float64_type'
 import { Int64Type } from '../executor/typing/int64_type'
@@ -40,8 +40,9 @@ import { StackListNode, StackNode } from './types/stack'
 import { StructNode } from './types/struct'
 import { UnsafePkgNode } from './types/unsafe'
 import { WaitGroupNode } from './types/waitGroup'
-import { Memory } from './memory'
 import { BitMap } from './bitmap'
+import { GCProfiler } from './gc_profiler'
+import { Memory } from './memory'
 
 export enum TAG {
   UNKNOWN = 0,
@@ -140,7 +141,7 @@ export class Heap {
     this.save_stack = [] // to initialise
     this.sweeper = 0
     this.GOGC = 0
-    this.gc_heap_min = 0.4
+    this.gc_heap_min = 0.5
     this.gc_target_mem = this.size * this.gc_heap_min
     this.gc_profiler = new GCProfiler()
   }
@@ -297,7 +298,8 @@ export class Heap {
     const lvl = this.get_level(addr)
     const prev_addr = this.get_prev(addr)
     const next_addr = this.get_next(addr)
-    if (prev_addr === addr) { // Is head
+    if (prev_addr === addr) {
+      // Is head
       // Set head to either the next address or -1 if no other addr
       this.freelist[lvl] = next_addr === addr ? -1 : next_addr
     } else {
@@ -432,10 +434,11 @@ export class Heap {
     if (addr === -1) throw Error('Ran out of memory!')
     size = this.get_size(addr)
     this.mem_left -= size
+    //console.log(size)
 
     if (is_tri_color) {
       if (this.gc_phase === GCPHASE.NONE) {
-        if ((this.size - this.mem_left) >= this.gc_heap_min) {
+        if (this.size - this.mem_left >= this.gc_heap_min) {
           // Needs to stop the world while occuring
           this.initiate_tri_color()
         }
@@ -455,6 +458,7 @@ export class Heap {
   free(addr: number) {
     let lvl = this.get_level(addr)
     this.mem_left += 2 ** lvl
+    console.log(this.get_value(addr))
     // Increase until the highest level
     while (lvl < this.freelist.length) {
       // Flipping the bit at pos lvl will go to sibling if it exists
@@ -712,7 +716,7 @@ export class Heap {
       this.mark(root)
     }
     // Sweep phase
-    for (let cur_addr = 0; cur_addr < this.size;) {
+    for (let cur_addr = 0; cur_addr < this.size; ) {
       if (!this.is_free(cur_addr) && this.is_marked(cur_addr)) {
         // Free memory since it is used but unmarked
         cur_addr = this.free(cur_addr)
@@ -745,7 +749,8 @@ export class Heap {
 
   calc_target_mem() {
     const live_heap = this.size - this.mem_left
-    const res = live_heap + (live_heap + this.get_roots_mem()) * (this.GOGC / 100)
+    const res =
+      live_heap + (live_heap + this.get_roots_mem()) * (this.GOGC / 100)
     this.gc_target_mem = Math.max(res, this.size * this.gc_heap_min)
   }
 

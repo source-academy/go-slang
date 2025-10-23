@@ -235,25 +235,51 @@ export class LiteralValueToken extends Token {
         // Ran out of literal values, use the default values.
         if (length === 0) {
           // 1D array
-          this.pushInstruction(compiler, new LoadDefaultInstruction(type.element))
+          this.pushInstruction(
+            compiler,
+            new LoadDefaultInstruction(type.element),
+          )
           // load element in actual array and then store element
           offset = handleInstructions(compiler, type, offset)
         } else {
           // more than 1 dimensional to correct the number of default instructions
           for (let j = 0; j < length; j++) {
             this.pushInstruction(compiler, new LoadDefaultInstruction(baseType))
-            this.pushInstruction(compiler, new LoadVariableInstruction(0, 0, '', type))
-            if (compiler.instructions[compiler.instructions.length - 3] instanceof StoreArrayElementInstruction) {
-              offset = 1 + (compiler.instructions[compiler.instructions.length - 3] as StoreArrayElementInstruction).index
-            } else if (compiler.instructions[compiler.instructions.length - 3] instanceof StoreStructFieldInstruction) {
-              offset = 1 + (compiler.instructions[compiler.instructions.length - 3] as StoreStructFieldInstruction).index
+            this.pushInstruction(
+              compiler,
+              new LoadVariableInstruction(0, 0, '', type),
+            )
+            if (
+              compiler.instructions[compiler.instructions.length - 3] instanceof
+              StoreArrayElementInstruction
+            ) {
+              offset =
+                1 +
+                (
+                  compiler.instructions[
+                    compiler.instructions.length - 3
+                  ] as StoreArrayElementInstruction
+                ).index
+            } else if (
+              compiler.instructions[compiler.instructions.length - 3] instanceof
+              StoreStructFieldInstruction
+            ) {
+              offset =
+                1 +
+                (
+                  compiler.instructions[
+                    compiler.instructions.length - 3
+                  ] as StoreStructFieldInstruction
+                ).index
             }
             // load element in actual array and then store element
-            this.pushInstruction(compiler, new StoreArrayElementInstruction(offset, false))
+            this.pushInstruction(
+              compiler,
+              new StoreArrayElementInstruction(offset, false),
+            )
             offset++
           }
         }
-        
       }
     } else if (type instanceof SliceType) {
       for (const element of this.elements) {
@@ -410,12 +436,18 @@ export class StructLiteralToken extends Token {
     if (this.fieldType instanceof StructTypeToken) {
       for (let i = 0; i < this.body.elements.length; i++) {
         for (let j = 0; j < this.fieldType.fields.length; j++) {
-          for (let k = 0; k < Object.values(this.fieldType.fields[j])[0].length; k++) {
+          for (
+            let k = 0;
+            k < Object.values(this.fieldType.fields[j])[0].length;
+            k++
+          ) {
             const hasKey = Object.keys(this.body.elements[i])[0] === 'key'
             const valueType = hasKey
               ? Object.values(this.body.elements[i])[1].compile(compiler)
               : this.body.elements[i].compile(compiler)
-            let fieldType = Object.values(this.fieldType.fields[j])[1].compile(compiler)
+            let fieldType = Object.values(this.fieldType.fields[j])[1].compile(
+              compiler,
+            )
             let index = j
             if (hasKey) {
               // if it is a keyed field, we find the index and type
@@ -426,7 +458,9 @@ export class StructLiteralToken extends Token {
               for (let a = 0; a < structFields.length; a++) {
                 const name = Object.values(structFields[a])[0][0].identifier
                 if (name === key) {
-                  fieldType =  Object.values(structFields[a])[1].compile(compiler)
+                  fieldType = Object.values(structFields[a])[1].compile(
+                    compiler,
+                  )
                   fieldName = name
                   index = a
                   break
@@ -506,7 +540,12 @@ export class StructLiteralToken extends Token {
                   )
                   this.pushInstruction(
                     compiler,
-                    new StoreStructFieldInstruction(index + place, i, hasKey, false),
+                    new StoreStructFieldInstruction(
+                      index + place,
+                      i,
+                      hasKey,
+                      false,
+                    ),
                   )
                 }
               } else {
@@ -726,7 +765,10 @@ export class StructLiteralToken extends Token {
                     let place = 0
                     for (let i = 0; i < index; i++) {
                       const field = [...struct.fields.values()][i]
-                      if (field instanceof DeclaredType && field.type[0] instanceof StructType) {
+                      if (
+                        field instanceof DeclaredType &&
+                        field.type[0] instanceof StructType
+                      ) {
                         place += [...field.type[0].fields.values()].length
                       } else {
                         place++
@@ -735,7 +777,8 @@ export class StructLiteralToken extends Token {
                     if (place > 0) place--
                     this.pushInstruction(
                       compiler,
-                      new StoreStructFieldInstruction(index + place,
+                      new StoreStructFieldInstruction(
+                        index + place,
                         j,
                         hasKey,
                         false,
@@ -793,8 +836,8 @@ export class StructLiteralToken extends Token {
             !hasKey &&
             this.body.elements[i] instanceof LiteralValueToken
           ) {
-          // compile struct values separately if nested struct and outer struct is not keyed
-          // TODO: Change this completely to handle nested structs/arrays correctly
+            // compile struct values separately if nested struct and outer struct is not keyed
+            // TODO: Change this completely to handle nested structs/arrays correctly
             const map = new Map<string, Type>()
             const names = [...struct.fields.values()]
             for (
@@ -934,8 +977,11 @@ export class StructLiteralToken extends Token {
                 throw new Error('Value type does not match field type.')
               }
             } else if (
-              (Object.values(this.body.elements[i])[1] as PrimaryExpressionToken)
-                .operand instanceof LiteralToken
+              (
+                Object.values(
+                  this.body.elements[i],
+                )[1] as PrimaryExpressionToken
+              ).operand instanceof LiteralToken
             ) {
               let baseType = fieldType
               while (baseType instanceof DeclaredType) {
@@ -1019,7 +1065,12 @@ export class StructLiteralToken extends Token {
                   )
                   this.pushInstruction(
                     compiler,
-                    new StoreStructFieldInstruction(index + place, i, hasKey, false),
+                    new StoreStructFieldInstruction(
+                      index + place,
+                      i,
+                      hasKey,
+                      false,
+                    ),
                   )
                 }
               } else {
@@ -1044,7 +1095,10 @@ export class StructLiteralToken extends Token {
                   let place = 0
                   for (let i = 0; i < index; i++) {
                     const field = [...struct.fields.values()][i]
-                    if (field instanceof DeclaredType && field.type[0] instanceof StructType) {
+                    if (
+                      field instanceof DeclaredType &&
+                      field.type[0] instanceof StructType
+                    ) {
                       place += [...field.type[0].fields.values()].length
                     } else {
                       place++
@@ -1058,7 +1112,12 @@ export class StructLiteralToken extends Token {
                   )
                   this.pushInstruction(
                     compiler,
-                    new StoreStructFieldInstruction(index + place, i, hasKey, false),
+                    new StoreStructFieldInstruction(
+                      index + place,
+                      i,
+                      hasKey,
+                      false,
+                    ),
                   )
                 }
               }
@@ -1226,7 +1285,6 @@ function fieldCounterLiteral(x: LiteralValueToken, c: number) {
   return c
 }
 
-
 /**
  * Handles the loading of instructions into the instruction set with the correct index
  * @param compiler compiler
@@ -1291,7 +1349,9 @@ function handleInstructions(
       )
     } else {
       compiler.instructions.push(new LoadVariableInstruction(0, 0, '', type))
-      compiler.instructions.push(new StoreArrayElementInstruction(offset, false))
+      compiler.instructions.push(
+        new StoreArrayElementInstruction(offset, false),
+      )
     }
     return offset + 1
   }

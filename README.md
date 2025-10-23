@@ -81,6 +81,7 @@ For further exploration, we can download the language Go itself [here](https://g
 ### Heap
 
 Heap class stores the following
+
 - Memory: Array of 8 byte words
 - Size: Total number of words in memory
 - Unassigned: Unassigned memory
@@ -94,5 +95,6 @@ Heap class stores the following
 - Debugger: Determine if debugger is activated
 
 Addr stores the following
+
 - Free Node: [1 bit free bit] [5 bits Level data] [29 bits Prev Node] [29 bits Next Node]
 - Not-Free Node: [1 bit free bit] [5 bits Level data] [1 bit Mark & Sweep] [1 Byte Type Tag] [2 Bytes Payload - Depends on type]

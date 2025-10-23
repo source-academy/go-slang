@@ -4,9 +4,7 @@ import { FrameNode } from '../../heap/types/environment'
 import { ReferenceNode } from '../../heap/types/reference'
 import { StructNode } from '../../heap/types/struct'
 import { Process } from '../../runtime/process'
-import {
-  Type,
-} from '../typing'
+import { Type } from '../typing'
 import { ArrayType } from '../typing/array_type'
 import { BoolType } from '../typing/bool_type'
 import { DeclaredType } from '../typing/declared_type'
@@ -113,7 +111,12 @@ export class BlockInstruction extends Instruction {
               if (dim !== undefined) {
                 const n = structNodes.length
                 for (let a = 0; a < n / dim; a++) {
-                  const array = ArrayNode.create(dim, process.heap, sizeof, addr)
+                  const array = ArrayNode.create(
+                    dim,
+                    process.heap,
+                    sizeof,
+                    addr,
+                  )
                   for (let b = 0; b < dim; b++) {
                     const node = structNodes.shift()
                     if (node !== undefined) array.set_child(b, node.addr)
@@ -129,7 +132,12 @@ export class BlockInstruction extends Instruction {
               if (dim !== undefined) {
                 const n = arrayNodes.length
                 for (let a = 0; a < n / dim; a++) {
-                  const array = ArrayNode.create(dim, process.heap, sizeof, addr)
+                  const array = ArrayNode.create(
+                    dim,
+                    process.heap,
+                    sizeof,
+                    addr,
+                  )
                   for (let b = 0; b < dim; b++) {
                     const node = arrayNodes.shift()
                     if (node !== undefined) array.set_child(b, node.addr)
@@ -168,7 +176,12 @@ export class BlockInstruction extends Instruction {
               if (dim !== undefined) {
                 const n = arrayNodes.length
                 for (let a = 0; a < n / dim; a++) {
-                  const array = ArrayNode.create(dim, process.heap, sizeof, addr)
+                  const array = ArrayNode.create(
+                    dim,
+                    process.heap,
+                    sizeof,
+                    addr,
+                  )
                   for (let b = 0; b < dim; b++) {
                     const node = arrayNodes.shift()
                     if (node !== undefined) array.set_child(b, node.addr)
@@ -189,7 +202,7 @@ export class BlockInstruction extends Instruction {
           if (next instanceof StructType) {
             new_frame.set_idx(addr, i)
           } else {
-          // in the case of 1D array of non-structs
+            // in the case of 1D array of non-structs
             const array = ArrayNode.create(T.length, process.heap, sizeof, addr)
             if (Array.isArray(addr)) {
               const length = addr.length
@@ -208,11 +221,13 @@ export class BlockInstruction extends Instruction {
           T instanceof PointerType &&
           T.type instanceof DeclaredType &&
           T.type.type[0] instanceof StructType
-        ) { // If it's a pointer to a declared type that aliases a struct, create a default struct and point to it
+        ) {
+          // If it's a pointer to a declared type that aliases a struct, create a default struct and point to it
           const structAddr = T.type.type[0].defaultNodeCreator()(process.heap)
           const node = process.heap.get_value(addr) as ReferenceNode
           node.set_child(structAddr)
-        } else if (T instanceof PointerType && T.type instanceof ArrayType) { // If it's a pointer to an array, create an array and point to it
+        } else if (T instanceof PointerType && T.type instanceof ArrayType) {
+          // If it's a pointer to an array, create an array and point to it
           // Find all dimensions of referenced array
           const dimensions = [] as number[]
           let length = T.type.length

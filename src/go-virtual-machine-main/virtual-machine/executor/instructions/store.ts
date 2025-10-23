@@ -16,7 +16,11 @@ export class StoreInstruction extends Instruction {
     const dst = process.context.popOS()
     const src = process.context.popOS()
     // Yuasa's Write Barrier, only during mark phase and when there is a dereferenced node
-    if (process.heap.gc_phase === GCPHASE.MARK && !Number.isNaN(dst) && process.heap.get_value(dst) instanceof ReferenceNode) {
+    if (
+      process.heap.gc_phase === GCPHASE.MARK &&
+      !Number.isNaN(dst) &&
+      process.heap.get_value(dst) instanceof ReferenceNode
+    ) {
       process.mark_save_stack(dst) // only adds to save stack if white
     }
     process.heap.copy(dst, src)

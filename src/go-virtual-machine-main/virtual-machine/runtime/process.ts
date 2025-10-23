@@ -158,16 +158,24 @@ export class Process {
 
       this.heap.gc_profiler.end_program()
 
-      const pause_time = (this.heap.gc_profiler.total_pause_time - this.heap.gc_profiler.partial_pause_time) / this.heap.gc_profiler.num_gc
-      const mutator_time = this.heap.gc_profiler.program_time - this.heap.gc_profiler.total_pause_time
-      const throughput_ratio = mutator_time / (mutator_time + this.heap.gc_profiler.total_gc_time)
+      const pause_time =
+        (this.heap.gc_profiler.total_pause_time -
+          this.heap.gc_profiler.partial_pause_time) /
+        this.heap.gc_profiler.num_gc
+      const mutator_time =
+        this.heap.gc_profiler.program_time -
+        this.heap.gc_profiler.total_pause_time
+      const throughput_ratio =
+        mutator_time / (mutator_time + this.heap.gc_profiler.total_gc_time)
 
       console.log('Program Time: %d', this.heap.gc_profiler.program_time)
       console.log('Avg Pause Time: %d', pause_time)
       console.log('GC Frequency: %d', this.heap.gc_profiler.num_gc)
       console.log('Pause Time: %d', this.heap.gc_profiler.total_pause_time)
       console.log('Throughput Ratio: %d', throughput_ratio)
-      
+
+      console.log("Mem Left: %d", this.heap.mem_left)
+
       return {
         stdout: this.stdout,
         visual_data: this.debug_mode ? this.debugger.data : [],

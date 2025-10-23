@@ -41,10 +41,7 @@ export class ArrayType extends Type {
     return (heap, length) => this.element.bulkDefaultNodeCreator()(heap, length)
   }
 
-  override defaultNodeAllocator(): (
-    heap: Heap,
-    addr: number,
-  ) => number {
+  override defaultNodeAllocator(): (heap: Heap, addr: number) => number {
     return (heap, addr) =>
       ArrayNode.allocate(heap, addr, this.length, this.element).addr
   }

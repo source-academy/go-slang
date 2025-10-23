@@ -45,50 +45,50 @@ const runCode = (
   // https://chatgpt.com/share/67fd2063-2c0c-800f-a830-8a1954add927
   function insertSemicolons(input: string) {
     // Tokens after which semicolons are auto-inserted in Go
-  const autoInsertTokens = [
-    /^[\*&]?[a-zA-Z_][a-zA-Z0-9_]*$/,        // identifiers including address and indirection
-    /^[0-9]+$/,                              // integer literals
-    /^[0-9]+\.[0-9]*$/,                      // float literals
-    /^0x[0-9a-fA-F]+$/,                      // hex integer literals
-    /^0b[01]+$/,                             // binary integer literals
-    /^0o[0-7]+$/,                            // octal integer literals
-    /^".*"$/, /^'.*'$/, /^`[^`]*`$/,         // string/rune literals
-    /[)\]\}]$/,                              // closing ), ], }
-    /(\+\+|--)\s*$/,                         // ++ or --
-    /\b(break|continue|fallthrough|return)$/, // specific keywords
-  ];
+    const autoInsertTokens = [
+      /^[\*&]?[a-zA-Z_][a-zA-Z0-9_]*$/, // identifiers including address and indirection
+      /^[0-9]+$/, // integer literals
+      /^[0-9]+\.[0-9]*$/, // float literals
+      /^0x[0-9a-fA-F]+$/, // hex integer literals
+      /^0b[01]+$/, // binary integer literals
+      /^0o[0-7]+$/, // octal integer literals
+      /^".*"$/,
+      /^'.*'$/,
+      /^`[^`]*`$/, // string/rune literals
+      /[)\]\}]$/, // closing ), ], }
+      /(\+\+|--)\s*$/, // ++ or --
+      /\b(break|continue|fallthrough|return)$/, // specific keywords
+    ]
 
-  const lines = input.split('\n');
-  const resultLines = lines.map((line) => {
-    const trimmed = line.trim();
+    const lines = input.split('\n')
+    const resultLines = lines.map((line) => {
+      const trimmed = line.trim()
 
-    // If it's empty or already ends with semicolon or is the last line of a block, skip it
-    if (
-      trimmed === '' ||
-      trimmed.endsWith(';') ||
-      trimmed.endsWith('{') ||
-      trimmed.startsWith('//') // comment line
-    ) {
-      return line;
-    }
+      // If it's empty or already ends with semicolon or is the last line of a block, skip it
+      if (
+        trimmed === '' ||
+        trimmed.endsWith(';') ||
+        trimmed.endsWith('{') ||
+        trimmed.startsWith('//') // comment line
+      ) {
+        return line
+      }
 
-    const tokens = trimmed.split(/\s+/);
-    const lastToken = tokens[tokens.length - 1];
+      const tokens = trimmed.split(/\s+/)
+      const lastToken = tokens[tokens.length - 1]
 
-    const shouldInsert = autoInsertTokens.some((rule) =>
-      typeof rule === 'string'
-        ? rule === lastToken
-        : rule.test(lastToken)
-    );
+      const shouldInsert = autoInsertTokens.some((rule) =>
+        typeof rule === 'string' ? rule === lastToken : rule.test(lastToken),
+      )
 
-    if (shouldInsert) {
-      return line + ';';
-    }
+      if (shouldInsert) {
+        return line + ';'
+      }
 
-    return line;
-  });
+      return line
+    })
 
-  return resultLines.join('\n');
+    return resultLines.join('\n')
   }
   const code = insertSemicolons(source_code)
   try {

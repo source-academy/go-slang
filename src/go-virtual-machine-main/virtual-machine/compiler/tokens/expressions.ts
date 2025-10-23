@@ -276,7 +276,7 @@ export class CallToken extends PrimaryExpressionModifierToken {
     }
 
     const argumentTypes = this.expressions.map((e) => {
-      const type = e.compile(compiler);
+      const type = e.compile(compiler)
       // NoInstruction is inserted to separate each argument
       // for the purposes of handling different structs or arrays
       compiler.instructions.push(new NoInstruction())
