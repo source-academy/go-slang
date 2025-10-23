@@ -6,7 +6,7 @@ export class BitMap {
         if (!Number.isInteger(Math.log(word_size) / Math.log(2)))
             throw Error('Word Size must be power of 2')
         this.word_size = word_size
-        this.bits = new Uint8Array(Math.ceil(size / word_size))
+        this.bits = new Uint8Array(size * word_size)
     }
 
     set_mark(addr: number, mark: boolean): void {

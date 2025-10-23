@@ -87,6 +87,7 @@ export enum GCPHASE {
 }
 
 export const word_size = 4
+export const is_tri_color = false
 
 export class Heap {
   memory: Memory // Assume memory is an array of 8 byte words, holds actual memory
@@ -108,6 +109,7 @@ export class Heap {
   GOGC: number
   gc_heap_min: number
   gc_target_mem: number
+  gc_profiler: GCProfiler
   constructor(size: number) {
     this.size = size
     this.mem_left = size
@@ -140,6 +142,7 @@ export class Heap {
     this.GOGC = 0
     this.gc_heap_min = 0.4
     this.gc_target_mem = this.size * this.gc_heap_min
+    this.gc_profiler = new GCProfiler()
   }
 
   /**
@@ -417,23 +420,29 @@ export class Heap {
     let addr = try_allocate()
     // Update mark to be done concurrently while sweep be done when GOGC ratio is hit
     if (addr === -1) {
-      do {
-        this.tri_color_step()
-      } while (this.gc_phase !== GCPHASE.NONE)
-      //this.mark_and_sweep()
+      if (is_tri_color) {
+        do {
+          this.tri_color_step()
+        } while (this.gc_phase !== GCPHASE.NONE)
+      } else {
+        this.mark_and_sweep()
+      }
       addr = try_allocate()
     }
     if (addr === -1) throw Error('Ran out of memory!')
     size = this.get_size(addr)
     this.mem_left -= size
-    if (this.gc_phase === GCPHASE.NONE) {
-      if ((this.size - this.mem_left) >= this.gc_heap_min) {
-        // Needs to stop the world while occuring
-        this.initiate_tri_color()
+
+    if (is_tri_color) {
+      if (this.gc_phase === GCPHASE.NONE) {
+        if ((this.size - this.mem_left) >= this.gc_heap_min) {
+          // Needs to stop the world while occuring
+          this.initiate_tri_color()
+        }
+      } else {
+        // If GC cycle is underway, mark as black
+        this.bitmap.set_mark(addr, true)
       }
-    } else {
-      // If GC cycle is underway, mark as black
-      this.bitmap.set_mark(addr, true)
     }
     return addr
   }
@@ -610,7 +619,7 @@ export class Heap {
   }
 
   initiate_tri_color() {
-    console.log('STOP THE WORLD')
+    this.gc_profiler.start_pause()
     // console.trace()
     // All root references
     const roots: number[] = [
@@ -624,6 +633,8 @@ export class Heap {
       this.mark_stack.push(root)
     }
     this.gc_phase = GCPHASE.MARK
+
+    this.gc_profiler.end_pause()
     return
   }
 
@@ -633,6 +644,7 @@ export class Heap {
    * @desc Mark phase of mark and sweep
    */
   mark_tri_color(k1: number, k2: number) {
+    this.gc_profiler.start_increment()
     // Process mark stack
     for (let i = 0; i < k1; i++) {
       const addr = this.mark_stack.shift()
@@ -656,12 +668,15 @@ export class Heap {
     if (this.mark_stack.length === 0 && this.save_stack.length === 0) {
       this.gc_phase = GCPHASE.SWEEP
     }
+    this.gc_profiler.end_increment()
   }
 
   sweep_tri_color(k3: number) {
+    this.gc_profiler.start_increment()
     for (let i = 0; i < k3; i++) {
       if (this.sweeper >= this.size) {
         this.gc_phase = GCPHASE.NONE
+        this.gc_profiler.end_gc_cycle()
         return
       }
       if (!this.bitmap.is_marked(this.sweeper)) {
@@ -672,6 +687,7 @@ export class Heap {
       // increment sweeper
       this.sweeper += this.get_size(this.sweeper)
     }
+    this.gc_profiler.end_increment()
   }
 
   mark_gray(addr: number) {
@@ -681,6 +697,7 @@ export class Heap {
   }
 
   mark_and_sweep() {
+    this.gc_profiler.start_pause()
     console.log('CLEAN')
     // console.trace()
     // All root references
@@ -705,6 +722,8 @@ export class Heap {
         cur_addr += this.get_size(cur_addr)
       }
     }
+    this.gc_profiler.end_pause()
+    this.gc_profiler.end_gc_cycle()
     return
   }
 

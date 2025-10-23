@@ -6,7 +6,7 @@ import {
   GoInstruction,
   Instruction,
 } from '../executor/instructions'
-import { Heap } from '../heap'
+import { Heap, is_tri_color } from '../heap'
 import { ContextNode } from '../heap/types/context'
 import { EnvironmentNode, FrameNode } from '../heap/types/environment'
 import { MethodNode } from '../heap/types/func'
@@ -74,6 +74,7 @@ export class Process {
 
   start(): ProcessOutput {
     // Each context can run up to 30 instructions
+    this.heap.gc_profiler.start_program()
     const time_quantum = 30
     this.runtime_count = 0
     let completed = false
@@ -89,7 +90,7 @@ export class Process {
         let cur_time = 0
         // Execute this context until it hits a done instruction
         while (!DoneInstruction.is(this.instructions[this.context.PC()])) {
-          this.heap.tri_color_step()
+          if (is_tri_color) this.heap.tri_color_step()
           if (cur_time >= time_quantum) {
             // Context Switch by pushing context to end of queue
             this.contexts.push(this.context.addr)
@@ -155,6 +156,18 @@ export class Process {
       if (!completed && !this.heap.blocked_contexts.is_empty())
         throw Error('all goroutines are asleep - deadlock!')
 
+      this.heap.gc_profiler.end_program()
+
+      const pause_time = (this.heap.gc_profiler.total_pause_time - this.heap.gc_profiler.partial_pause_time) / this.heap.gc_profiler.num_gc
+      const mutator_time = this.heap.gc_profiler.program_time - this.heap.gc_profiler.total_pause_time
+      const throughput_ratio = mutator_time / (mutator_time + this.heap.gc_profiler.total_gc_time)
+
+      console.log('Program Time: %d', this.heap.gc_profiler.program_time)
+      console.log('Avg Pause Time: %d', pause_time)
+      console.log('GC Frequency: %d', this.heap.gc_profiler.num_gc)
+      console.log('Pause Time: %d', this.heap.gc_profiler.total_pause_time)
+      console.log('Throughput Ratio: %d', throughput_ratio)
+      
       return {
         stdout: this.stdout,
         visual_data: this.debug_mode ? this.debugger.data : [],
