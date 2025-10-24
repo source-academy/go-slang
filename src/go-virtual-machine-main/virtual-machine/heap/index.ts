@@ -717,12 +717,12 @@ export class Heap {
     }
     // Sweep phase
     for (let cur_addr = 0; cur_addr < this.size; ) {
-      if (!this.is_free(cur_addr) && this.is_marked(cur_addr)) {
+      if (!this.is_free(cur_addr) && !this.is_marked(cur_addr)) {
         // Free memory since it is used but unmarked
         cur_addr = this.free(cur_addr)
       } else {
         // Reset marking to false
-        if (!this.is_marked(cur_addr)) this.set_mark(cur_addr, false)
+        if (this.is_marked(cur_addr)) this.set_mark(cur_addr, false)
         cur_addr += this.get_size(cur_addr)
       }
     }
