@@ -1,5 +1,6 @@
 import { Process } from '../../runtime/process'
 
+// Interface for all instructions
 export abstract class Instruction {
   tag: string
 
@@ -14,6 +15,7 @@ export abstract class Instruction {
   }
 }
 
+// Instruction class that marks the end of a process/program
 export class DoneInstruction extends Instruction {
   constructor() {
     super('DONE')
@@ -28,6 +30,7 @@ export class DoneInstruction extends Instruction {
   }
 }
 
+/** Instruction class for popping a value off the operand stack of the process */
 export class PopInstruction extends Instruction {
   constructor() {
     super('POP')
@@ -42,6 +45,7 @@ export class PopInstruction extends Instruction {
   }
 }
 
+/** Instruction class for no operation, used as a placeholder instruction  */
 export class NoInstruction extends Instruction {
   constructor() {
     super('NIL')

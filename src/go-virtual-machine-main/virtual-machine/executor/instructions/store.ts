@@ -1,3 +1,4 @@
+import { GCPHASE } from '../../heap'
 import { ArrayNode } from '../../heap/types/array'
 import { BaseNode } from '../../heap/types/base'
 import { ReferenceNode } from '../../heap/types/reference'
@@ -14,6 +15,14 @@ export class StoreInstruction extends Instruction {
   override execute(process: Process): void {
     const dst = process.context.popOS()
     const src = process.context.popOS()
+    // Yuasa's Write Barrier, only during mark phase and when there is a dereferenced node
+    if (
+      process.heap.gc_phase === GCPHASE.MARK &&
+      !Number.isNaN(dst) &&
+      process.heap.get_value(dst) instanceof ReferenceNode
+    ) {
+      process.mark_save_stack(dst) // only adds to save stack if white
+    }
     process.heap.copy(dst, src)
 
     if (process.debug_mode) {

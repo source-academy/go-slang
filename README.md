@@ -75,3 +75,26 @@ More features will be implemented as time passes.
 We recommend the [Tour of Go](https://go.dev/tour/welcome/1), which is written by the developers of the language themselves. It introduces the various elements of the programming language as well as their syntaxes, as the syntaxes may differ quite greatly from other programming languages.
 
 For further exploration, we can download the language Go itself [here](https://go.dev/doc/install).
+
+## Notes to self
+
+### Heap
+
+Heap class stores the following
+
+- Memory: Array of 8 byte words
+- Size: Total number of words in memory
+- Unassigned: Unassigned memory
+- Freelist: List of linked lists storing free blocks at that size
+- Max Level: Largest block size power of 2 supported
+- Temp roots: Temporary stack of root references
+- Contexts: Queue to schedule execution contexts
+- Blocked Contexts: Linked list of blocked execution contexts
+- Mem Left: Tracks remaining memory
+- Temp: Temp register to hold an address
+- Debugger: Determine if debugger is activated
+
+Addr stores the following
+
+- Free Node: [1 bit free bit] [5 bits Level data] [29 bits Prev Node] [29 bits Next Node]
+- Not-Free Node: [1 bit free bit] [5 bits Level data] [1 bit Mark & Sweep] [1 Byte Type Tag] [2 Bytes Payload - Depends on type]
