@@ -6,7 +6,7 @@ import {
   GoInstruction,
   Instruction,
 } from '../executor/instructions'
-import { Heap, is_tri_color } from '../heap'
+import { GCPHASE, Heap, is_tri_color } from '../heap'
 import { ContextNode } from '../heap/types/context'
 import { EnvironmentNode, FrameNode } from '../heap/types/environment'
 import { MethodNode } from '../heap/types/func'
@@ -90,7 +90,7 @@ export class Process {
         let cur_time = 0
         // Execute this context until it hits a done instruction
         while (!DoneInstruction.is(this.instructions[this.context.PC()])) {
-          if (is_tri_color) this.heap.tri_color_step()
+          if (is_tri_color && this.heap.gc_phase !== GCPHASE.NONE) this.heap.tri_color_step()
           if (cur_time >= time_quantum) {
             // Context Switch by pushing context to end of queue
             this.contexts.push(this.context.addr)
@@ -168,11 +168,11 @@ export class Process {
       const throughput_ratio =
         mutator_time / (mutator_time + this.heap.gc_profiler.total_gc_time)
 
-      console.log('Program Time: %d', this.heap.gc_profiler.program_time)
-      console.log('Avg Pause Time: %d', pause_time)
+      console.log('Program Time: %f', this.heap.gc_profiler.program_time)
+      console.log('Avg Pause Time: %f', pause_time)
       console.log('GC Frequency: %d', this.heap.gc_profiler.num_gc)
-      console.log('Pause Time: %d', this.heap.gc_profiler.total_pause_time)
-      console.log('Throughput Ratio: %d', throughput_ratio)
+      console.log('Pause Time: %f', this.heap.gc_profiler.total_pause_time)
+      console.log('Throughput Ratio: %f', throughput_ratio)
 
       console.log("Mem Left: %d", this.heap.mem_left)
 

@@ -82,13 +82,14 @@ export enum TAG {
 }
 
 export enum GCPHASE {
+  INVALID = -1,
   NONE = 0,
   MARK = 1,
   SWEEP = 2,
 }
 
 export const word_size = 4
-export const is_tri_color = false
+export const is_tri_color = true
 
 export class Heap {
   memory: Memory // Assume memory is an array of 8 byte words, holds actual memory
@@ -103,7 +104,7 @@ export class Heap {
   temp = -1 // Temp register to hold an address
   debugger: Debugger | undefined
   mark_stack: number[]
-  gc_phase: GCPHASE
+  gc_phase: GCPHASE = GCPHASE.INVALID
   bitmap: BitMap
   save_stack: number[]
   sweeper: number
@@ -117,6 +118,15 @@ export class Heap {
     // Size must be power of 2 for buddy allocation
     if (this.size % 2 === 1) this.size -= 1
     if (this.size < 34) throw Error('Insufficient Memory')
+    this.mark_stack = []
+    this.bitmap = new BitMap(this.size, word_size)
+    this.save_stack = [] // to initialise
+    this.sweeper = 0
+    this.GOGC = 0
+    this.gc_heap_min = 0.5
+    this.gc_target_mem = this.size * this.gc_heap_min
+    this.gc_profiler = new GCProfiler()
+    this.gc_phase = GCPHASE.NONE
     this.memory = new Memory(size, word_size)
     this.max_level = Math.floor(Math.log2(size)) + 1
     this.freelist = []
@@ -135,15 +145,6 @@ export class Heap {
     // Create first execution context so that it can run
     const context = ContextNode.create(this)
     this.contexts.push(context.addr)
-    this.mark_stack = []
-    this.gc_phase = GCPHASE.NONE
-    this.bitmap = new BitMap(this.size, word_size)
-    this.save_stack = [] // to initialise
-    this.sweeper = 0
-    this.GOGC = 0
-    this.gc_heap_min = 0.5
-    this.gc_target_mem = this.size * this.gc_heap_min
-    this.gc_profiler = new GCProfiler()
   }
 
   /**
@@ -370,6 +371,10 @@ export class Heap {
    * @return Get size using 2 to the power of the level
    */
   get_size(addr: number) {
+    // Handle case where addr is invalid
+    if (addr === -1) {
+      return 0
+    }
     return 2 ** this.get_level(addr)
   }
 
@@ -422,11 +427,11 @@ export class Heap {
     let addr = try_allocate()
     // Update mark to be done concurrently while sweep be done when GOGC ratio is hit
     if (addr === -1) {
-      if (is_tri_color) {
+      if (is_tri_color && this.gc_phase !== GCPHASE.INVALID) {
         do {
           this.tri_color_step()
         } while (this.gc_phase !== GCPHASE.NONE)
-      } else {
+      } else if (!is_tri_color) {
         this.mark_and_sweep()
       }
       addr = try_allocate()
@@ -436,15 +441,23 @@ export class Heap {
     this.mem_left -= size
     //console.log(size)
 
-    if (is_tri_color) {
-      if (this.gc_phase === GCPHASE.NONE) {
-        if (this.size - this.mem_left >= this.gc_heap_min) {
-          // Needs to stop the world while occuring
-          this.initiate_tri_color()
-        }
-      } else {
-        // If GC cycle is underway, mark as black
-        this.bitmap.set_mark(addr, true)
+    if (is_tri_color && this.gc_phase !== GCPHASE.INVALID) {
+      switch (this.gc_phase) {
+        case GCPHASE.NONE:
+          if (this.size - this.mem_left >= this.gc_target_mem) {
+            // Needs to stop the world while occuring
+            this.initiate_tri_color()
+          }
+          break
+        case GCPHASE.MARK:
+          // If GC cycle is underway, mark as black
+          this.bitmap.set_mark(addr, true)
+          break
+        case GCPHASE.SWEEP:
+          if (this.sweeper <= addr) {
+            this.bitmap.set_mark(addr, true)
+          }
+          break
       }
     }
     return addr
@@ -458,7 +471,6 @@ export class Heap {
   free(addr: number) {
     let lvl = this.get_level(addr)
     this.mem_left += 2 ** lvl
-    console.log(this.get_value(addr))
     // Increase until the highest level
     while (lvl < this.freelist.length) {
       // Flipping the bit at pos lvl will go to sibling if it exists
@@ -529,7 +541,7 @@ export class Heap {
   /**
    * @param addr Starting Byte of the Memory
    * @param index Index of child
-   * @return Child node representing child object
+   * @return Child addr representing child object
    */
   get_child(addr: number, index: number) {
     return this.memory.get_word(addr + index)
@@ -611,19 +623,22 @@ export class Heap {
 
   tri_color_step() {
     switch (this.gc_phase) {
+      case GCPHASE.NONE:
+        this.initiate_tri_color()
+        break
       case GCPHASE.MARK:
         // Must make it stop all other webworkers
         this.mark_tri_color(10, 4)
         break
       case GCPHASE.SWEEP:
         this.sweep_tri_color(10)
-        this.calc_target_mem()
         break
     }
   }
 
   initiate_tri_color() {
     this.gc_profiler.start_pause()
+    console.log("TRI COLOR START")
     // console.trace()
     // All root references
     const roots: number[] = [
@@ -634,10 +649,10 @@ export class Heap {
       this.temp, // Single temp pointer
     ]
     for (const root of roots) {
-      this.mark_stack.push(root)
+      if (root === -1) continue
+      this.mark_gray(root)
     }
     this.gc_phase = GCPHASE.MARK
-
     this.gc_profiler.end_pause()
     return
   }
@@ -651,8 +666,9 @@ export class Heap {
     this.gc_profiler.start_increment()
     // Process mark stack
     for (let i = 0; i < k1; i++) {
-      const addr = this.mark_stack.shift()
-      if (addr === undefined || addr === -1) break
+      const addr = this.mark_stack.pop()
+      if (addr === undefined) break
+      if (addr === -1) continue
       // Get the node object representation at addr
       const val = this.get_value(addr)
       const children = val.get_children()
@@ -663,8 +679,9 @@ export class Heap {
 
     // Transfer from save stacks to mark stack
     for (let i = 0; i < k2; i++) {
-      const addr = this.save_stack.shift()
-      if (addr === undefined || addr === -1) break
+      const addr = this.save_stack.pop()
+      if (addr === undefined) break
+      if (addr === -1) continue
       this.mark_gray(addr)
     }
 
@@ -679,19 +696,30 @@ export class Heap {
     this.gc_profiler.start_increment()
     for (let i = 0; i < k3; i++) {
       if (this.sweeper >= this.size) {
-        this.gc_phase = GCPHASE.NONE
-        this.gc_profiler.end_gc_cycle()
-        return
+        this.terminate_sweep()
+        break
       }
-      if (!this.bitmap.is_marked(this.sweeper)) {
-        this.free(this.sweeper)
+      // Store original addr before increasing sweeper
+      const addr = this.sweeper
+      this.sweeper += this.get_size(addr)
+      if (!this.bitmap.is_marked(addr)) {
+        this.free(addr)
       } else {
-        this.bitmap.set_mark(this.sweeper, false)
+        this.bitmap.set_mark(addr, false)
       }
-      // increment sweeper
-      this.sweeper += this.get_size(this.sweeper)
+    }
+    // check in case sweeper exceeds size only at the end
+    if (this.sweeper >= this.size) {
+      this.terminate_sweep()
     }
     this.gc_profiler.end_increment()
+  }
+  
+  terminate_sweep() {
+    this.sweeper = 0
+    this.gc_phase = GCPHASE.NONE
+    this.calc_target_mem()
+    this.gc_profiler.end_gc_cycle()
   }
 
   mark_gray(addr: number) {
@@ -757,7 +785,7 @@ export class Heap {
   /**
    * @param dst Starting Byte of the Memory to be copied to
    * @param src Starting Byte of the Memory to be copied from
-   * @desc Mark phase of mark and sweep
+   * @desc Copy value over
    */
   copy(dst: number, src: number) {
     if (dst === -1) return
