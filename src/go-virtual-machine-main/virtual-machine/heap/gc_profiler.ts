@@ -74,4 +74,12 @@ export class GCProfiler {
     this.partial_pause_time += this.pause_end - this.pause_start
     this.partial_gc_time += this.pause_end - this.pause_start
   }
+
+  increment_alloc(size: number) {
+    this.total_alloc += size * 4
+  }
+
+  increment_freed(size: number) {
+    this.total_freed += size * 4
+  }
 }

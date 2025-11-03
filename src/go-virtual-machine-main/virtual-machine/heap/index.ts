@@ -89,7 +89,7 @@ export enum GCPHASE {
 }
 
 export const word_size = 4
-export const is_tri_color = true
+export const is_tri_color = false
 
 export class Heap {
   memory: Memory // Assume memory is an array of 8 byte words, holds actual memory
@@ -438,8 +438,8 @@ export class Heap {
     }
     if (addr === -1) throw Error('Ran out of memory!')
     size = this.get_size(addr)
+    this.gc_profiler.increment_alloc(size)
     this.mem_left -= size
-    //console.log(size)
 
     if (is_tri_color && this.gc_phase !== GCPHASE.INVALID) {
       switch (this.gc_phase) {
@@ -489,6 +489,7 @@ export class Heap {
     }
     this.set_free(addr, true)
     this.add_list(addr, lvl)
+    this.gc_profiler.increment_freed(this.get_size(addr))
 
     this.debugger?.identifier_map.delete(addr)
     return addr + (1 << lvl)
@@ -663,7 +664,7 @@ export class Heap {
    * @desc Mark phase of mark and sweep
    */
   mark_tri_color(k1: number, k2: number) {
-    this.gc_profiler.start_increment()
+    this.gc_profiler.start_pause()
     // Process mark stack
     for (let i = 0; i < k1; i++) {
       const addr = this.mark_stack.pop()
@@ -689,11 +690,11 @@ export class Heap {
     if (this.mark_stack.length === 0 && this.save_stack.length === 0) {
       this.gc_phase = GCPHASE.SWEEP
     }
-    this.gc_profiler.end_increment()
+    this.gc_profiler.end_pause()
   }
 
   sweep_tri_color(k3: number) {
-    this.gc_profiler.start_increment()
+    this.gc_profiler.start_pause()
     for (let i = 0; i < k3; i++) {
       if (this.sweeper >= this.size) {
         this.terminate_sweep()
@@ -712,7 +713,7 @@ export class Heap {
     if (this.sweeper >= this.size) {
       this.terminate_sweep()
     }
-    this.gc_profiler.end_increment()
+    this.gc_profiler.end_pause()
   }
   
   terminate_sweep() {

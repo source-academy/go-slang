@@ -167,12 +167,18 @@ export class Process {
         this.heap.gc_profiler.total_pause_time
       const throughput_ratio =
         mutator_time / (mutator_time + this.heap.gc_profiler.total_gc_time)
+      const alloc_rate = this.heap.gc_profiler.total_alloc /
+        this.heap.gc_profiler.program_time
+      const free_rate = this.heap.gc_profiler.total_freed /
+        this.heap.gc_profiler.program_time
 
       console.log('Program Time: %f', this.heap.gc_profiler.program_time)
       console.log('Avg Pause Time: %f', pause_time)
       console.log('GC Frequency: %d', this.heap.gc_profiler.num_gc)
       console.log('Pause Time: %f', this.heap.gc_profiler.total_pause_time)
       console.log('Throughput Ratio: %f', throughput_ratio)
+      console.log('Alloc Rate: %f bytes/ms', alloc_rate)
+      console.log('Free Rate: %f bytes/ms', free_rate)
 
       console.log("Mem Left: %d", this.heap.mem_left)
 
