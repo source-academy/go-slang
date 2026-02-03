@@ -139,7 +139,7 @@ describe('Array Execution', () => {
       `).output,
     ).toEqual('&[false true true]\n')
   })
-  
+
   test('Array indexing with valid index works.', () => {
     expect(
       mainRunner(
@@ -648,5 +648,5 @@ describe('Array Execution', () => {
     )
   })
   /*
-  */
+   */
 })

@@ -4,9 +4,7 @@ import { FrameNode } from '../../heap/types/environment'
 import { ReferenceNode } from '../../heap/types/reference'
 import { StructNode } from '../../heap/types/struct'
 import { Process } from '../../runtime/process'
-import {
-  Type,
-} from '../typing'
+import { Type } from '../typing'
 import { ArrayType } from '../typing/array_type'
 import { BoolType } from '../typing/bool_type'
 import { DeclaredType } from '../typing/declared_type'
@@ -16,9 +14,15 @@ import { StructType } from '../typing/struct_type'
 
 import { Instruction } from './base'
 
+/** Instruction to open a new block scope */
 export class BlockInstruction extends Instruction {
-  frame: Type[] = []
-  identifiers: string[] = []
+  frame: Type[] = [] // list of variable types declared in this block
+  identifiers: string[] = [] // names of respective variables
+
+  /**
+   * @param name label for the block
+   * @param for_block mark if the block is a special for-loop block
+   */
   constructor(public name: string, public for_block = false) {
     super('BLOCK')
   }
@@ -48,8 +52,10 @@ export class BlockInstruction extends Instruction {
           actualType = nextType
           nextType = actualType.type[0]
         }
+        // Store underlying value addr in frame at index i
         new_frame.set_idx(nextType.defaultNodeCreator()(process.heap), i)
       } else if (T instanceof ArrayType) {
+        // Collect all dimensions, compute total flattenned length and find the base element type (does not support slices in arrays)
         const dimensions = [] as number[]
         let length = T.length
         let next = T.element
@@ -69,8 +75,10 @@ export class BlockInstruction extends Instruction {
           }
           next = nextType
         }
-        // handle structs elegantly
+        // Next is just the type of each array item
+        // If it's a struct, returns arraynode containing struct nodes to be extracted later
         const addr = next.bulkDefaultNodeCreator()(process.heap, length)
+        // Calculate size required for allocation
         let sizeof = 4
         if (next instanceof BoolType) sizeof = 1
         if (next instanceof StringType) sizeof = 2
@@ -81,6 +89,7 @@ export class BlockInstruction extends Instruction {
             sizeof += fields[j].sizeof()
           }
         }
+        // If multi-dimensional, rebuild nested arraynode from flat memory just allocated
         const arrayNodes = [] as ArrayNode[]
         if (T.element instanceof ArrayType) {
           if (next instanceof StructType) {
@@ -90,17 +99,24 @@ export class BlockInstruction extends Instruction {
             for (let i = 0; i < dimensions.length; i++) {
               dimensions2[i] = dimensions[i]
             }
+            // Retrieves all structs in the array, even in multi-dimensional cases
             const structs = process.heap.get_value(addr).get_children()
             const structNodes = [] as StructNode[]
             for (let i = 0; i < structs.length; i++) {
               structNodes.push(process.heap.get_value(structs[i]) as StructNode)
             }
+            // For innermost level, group base elements into ArrayNodes according to the dimension
             while (dimensions2.length > 0) {
               const dim = dimensions2.pop()
               if (dim !== undefined) {
                 const n = structNodes.length
                 for (let a = 0; a < n / dim; a++) {
-                  const array = ArrayNode.create(dim, process.heap, sizeof, addr)
+                  const array = ArrayNode.create(
+                    dim,
+                    process.heap,
+                    sizeof,
+                    addr,
+                  )
                   for (let b = 0; b < dim; b++) {
                     const node = structNodes.shift()
                     if (node !== undefined) array.set_child(b, node.addr)
@@ -110,12 +126,18 @@ export class BlockInstruction extends Instruction {
               }
             }
             dimensions.pop()
+            // From inwards to outwards, build the full nested shape of the array using arrayNodes to store the inner arrays
             while (dimensions.length > 0) {
               const dim = dimensions.pop()
               if (dim !== undefined) {
                 const n = arrayNodes.length
                 for (let a = 0; a < n / dim; a++) {
-                  const array = ArrayNode.create(dim, process.heap, sizeof, addr)
+                  const array = ArrayNode.create(
+                    dim,
+                    process.heap,
+                    sizeof,
+                    addr,
+                  )
                   for (let b = 0; b < dim; b++) {
                     const node = arrayNodes.shift()
                     if (node !== undefined) array.set_child(b, node.addr)
@@ -124,11 +146,13 @@ export class BlockInstruction extends Instruction {
                 }
               }
             }
+            // Top layer' addr should be stored as the index
             const node = arrayNodes.pop()
             if (node !== undefined) {
               new_frame.set_idx(node.addr, i)
             }
           } else {
+            // If it's an array but the base elements are not structs
             let next2 = T.element
             while (next2.element instanceof ArrayType) {
               next2 = next2.element
@@ -152,7 +176,12 @@ export class BlockInstruction extends Instruction {
               if (dim !== undefined) {
                 const n = arrayNodes.length
                 for (let a = 0; a < n / dim; a++) {
-                  const array = ArrayNode.create(dim, process.heap, sizeof, addr)
+                  const array = ArrayNode.create(
+                    dim,
+                    process.heap,
+                    sizeof,
+                    addr,
+                  )
                   for (let b = 0; b < dim; b++) {
                     const node = arrayNodes.shift()
                     if (node !== undefined) array.set_child(b, node.addr)
@@ -167,12 +196,13 @@ export class BlockInstruction extends Instruction {
             }
           }
         } else {
+          // Case where it is a 1-D array of structs or other base elements
           // in the case of array of structs, since bulk default returns an ArrayNode
           // there is no need to create a separate array
           if (next instanceof StructType) {
             new_frame.set_idx(addr, i)
           } else {
-          // in the case of 1D array
+            // in the case of 1D array of non-structs
             const array = ArrayNode.create(T.length, process.heap, sizeof, addr)
             if (Array.isArray(addr)) {
               const length = addr.length
@@ -184,6 +214,7 @@ export class BlockInstruction extends Instruction {
           }
         }
       } else {
+        // All other cases (not declared type or array)
         const addr = T.defaultNodeCreator()(process.heap)
         new_frame.set_idx(addr, i)
         if (
@@ -191,10 +222,13 @@ export class BlockInstruction extends Instruction {
           T.type instanceof DeclaredType &&
           T.type.type[0] instanceof StructType
         ) {
+          // If it's a pointer to a declared type that aliases a struct, create a default struct and point to it
           const structAddr = T.type.type[0].defaultNodeCreator()(process.heap)
           const node = process.heap.get_value(addr) as ReferenceNode
           node.set_child(structAddr)
         } else if (T instanceof PointerType && T.type instanceof ArrayType) {
+          // If it's a pointer to an array, create an array and point to it
+          // Find all dimensions of referenced array
           const dimensions = [] as number[]
           let length = T.type.length
           let next = T.type.element
@@ -226,6 +260,7 @@ export class BlockInstruction extends Instruction {
             }
           }
           const arrayNodes = [] as ArrayNode[]
+          // For multi-dimensional arrays
           if (T.type.element instanceof ArrayType) {
             let next2 = T.type.element
             while (next2.element instanceof ArrayType) {
@@ -272,6 +307,7 @@ export class BlockInstruction extends Instruction {
               pointer.set_child(node.addr)
             }
           } else {
+            // Pointer points to a 1-D array
             // in the case of array of structs, since bulk default returns an ArrayNode
             // there is no need to create a separate array
             if (next instanceof StructType) {
@@ -299,6 +335,8 @@ export class BlockInstruction extends Instruction {
         }
       }
     }
+
+    // Build new environment and push onto runtime stack
     const new_env = process.context
       .E()
       .extend_env(new_frame.addr, this.for_block).addr
@@ -316,6 +354,7 @@ export class BlockInstruction extends Instruction {
   }
 }
 
+/** Block for anonymous function with parameters */
 export class FuncBlockInstruction extends BlockInstruction {
   constructor(public args: number) {
     super('ANONY FUNC', false)
@@ -328,6 +367,7 @@ export class FuncBlockInstruction extends BlockInstruction {
 
   override execute(process: Process): void {
     super.execute(process)
+    // For each argument in Operand Stack, copy into slot i in new frame
     for (let i = this.args - 1; i >= 0; i--) {
       const src = process.context.popOS()
       const dst = process.context.E().get_frame().get_idx(i)
@@ -423,7 +463,7 @@ export class FuncBlockInstruction extends BlockInstruction {
         process.heap.copy(dst, struct.addr)
       }
     }
-    // Pop function in stack
+    // Pop callee function in stack
     const id = process.context.popOS()
     if (process.debug_mode) {
       const identifier = process.debugger.identifier_map.get(id)
@@ -434,6 +474,7 @@ export class FuncBlockInstruction extends BlockInstruction {
   }
 }
 
+// DFS traversal to collect all non-struct base nodes from a structs
 function push(process: Process, a: BaseNode[], node: StructNode) {
   const children = node.get_children()
   for (let i = 0; i < children.length; i++) {
@@ -446,6 +487,7 @@ function push(process: Process, a: BaseNode[], node: StructNode) {
   }
 }
 
+/** Instruction that leaves the current block, discarding the block's frame and restoring the previous scope */
 export class ExitBlockInstruction extends Instruction {
   constructor() {
     super('EXIT_BLOCK')

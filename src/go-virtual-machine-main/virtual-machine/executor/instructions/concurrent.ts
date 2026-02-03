@@ -16,6 +16,7 @@ import { StringType } from '../typing/string_type'
 import { Instruction } from './base'
 import { CallInstruction } from './funcs'
 
+/** Instruction to fork a goroutine */
 export class ForkInstruction extends Instruction {
   addr: number
 
@@ -41,6 +42,7 @@ export class ForkInstruction extends Instruction {
   }
 }
 
+/** Instruction to create a new goroutine */
 export class GoInstruction extends Instruction {
   addr: number
 
@@ -62,15 +64,17 @@ export class GoInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
+    // Looks under the top this.args argument values on the OS to find the callee value
     const func = process.heap.get_value(process.context.peekOSIdx(this.args))
     if (!(func instanceof FuncNode) && !(func instanceof MethodNode))
       throw Error('Stack does not contain closure')
 
     if (func instanceof FuncNode) {
       const new_context = process.context.go()
-      new_context.pushRTS(func.E())
-      new_context.set_PC(func.PC())
-      new_context.pushOS(func.addr)
+      new_context.pushRTS(func.E()) // Seed new context's RTS with closure env
+      new_context.set_PC(func.PC()) // Start executing at the function's entry PC
+      new_context.pushOS(func.addr) // Push callee function addr on new Operand Stack
+      // Store in original order
       const results = []
       for (let i = this.args - 1; i >= 0; i--) {
         const src = process.context.popOS()
@@ -179,7 +183,7 @@ export class GoInstruction extends Instruction {
         }
         new_context.pushOS(allocate)
       }
-      new_context.pushDeferStack()
+      new_context.pushDeferStack() // Initialise defer stack
       process.contexts.push(new_context.addr)
 
       if (process.debug_mode) {
@@ -194,7 +198,7 @@ export class GoInstruction extends Instruction {
       // func is a methodnode
       const new_context = process.context.go()
       new_context.pushRTS(process.context.E().addr)
-      new_context.set_PC(process.context.PC() - 1)
+      new_context.set_PC(process.context.PC() - 1) // Main loop increments PC before executing, next time this context runs will land on go instr again
       const results = []
       for (let i = this.args - 1; i >= 0; i--) {
         const src = process.context.popOS()
@@ -308,7 +312,7 @@ export class GoInstruction extends Instruction {
       }
       // a hacky way to create a "mark" to start the new goroutine after context switching
       new_context.pushOS(1)
-      new_context.pushDeferStack()
+      new_context.pushDeferStack() // Initialise defer stack
       if (process.debug_mode) {
         process.debugger.context_id_map.set(
           new_context.addr,
@@ -319,11 +323,13 @@ export class GoInstruction extends Instruction {
     }
   }
 
+  /** Factory method to create go instruction */
   static fromCallInstruction(call: CallInstruction): GoInstruction {
     return new GoInstruction(call.args)
   }
 }
 
+/** Push all children of a struct node into a */
 function push(process: Process, a: BaseNode[], node: StructNode) {
   const children = node.get_children()
   for (let i = 0; i < children.length; i++) {
@@ -336,6 +342,7 @@ function push(process: Process, a: BaseNode[], node: StructNode) {
   }
 }
 
+/** Create a new channel */
 export class LoadChannelInstruction extends Instruction {
   constructor() {
     super('LDCH')
@@ -354,6 +361,7 @@ export class LoadChannelInstruction extends Instruction {
   }
 }
 
+/** Create a channel request (send/recv) */
 export class LoadChannelReqInstruction extends Instruction {
   constructor(public recv: boolean, public PC: number) {
     super('LDCR')
@@ -383,6 +391,7 @@ export class LoadChannelReqInstruction extends Instruction {
   }
 }
 
+/** Try performing a channel request */
 export class TryChannelReqInstruction extends Instruction {
   constructor() {
     super('TRY_CHAN_REQ')
@@ -412,6 +421,7 @@ export class TryChannelReqInstruction extends Instruction {
   }
 }
 
+/** Instruction representing select */
 export class SelectInstruction extends Instruction {
   constructor(public cases: number, public default_case: boolean) {
     super('SELECT CASES')

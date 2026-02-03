@@ -80,7 +80,7 @@ describe('Struct tests', () => {
       `).output,
     ).toEqual('{{Alice 25.5} 3934}\n')
   })
- 
+
   test('Structs with 1 field work when supplied directly as arguments', () => {
     expect(
       codeRunner(`
@@ -2061,7 +2061,9 @@ describe('Struct tests', () => {
           fmt.Println(a)
         }
       `).output,
-    ).toEqual('[{[[34.25 0] [94.25 4.25]] 234} {[[11.5 34.5] [33.25 33.5]] 999}]\n')
+    ).toEqual(
+      '[{[[34.25 0] [94.25 4.25]] 234} {[[11.5 34.5] [33.25 33.5]] 999}]\n',
+    )
   })
 
   test('Array of declared structs containing 2D arrays as the later field work', () => {
@@ -2104,7 +2106,9 @@ describe('Struct tests', () => {
           fmt.Println(a)
         }
       `).output,
-    ).toEqual('[{234 [[34.25 0] [94.25 4.25]]} {999 [[11.5 34.5] [33.25 33.5]]}]\n')
+    ).toEqual(
+      '[{234 [[34.25 0] [94.25 4.25]]} {999 [[11.5 34.5] [33.25 33.5]]}]\n',
+    )
   })
 
   // Large test cases due to heavy recursion during parsing, requires PeggyJS parser optimisation
