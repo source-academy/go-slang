@@ -4,6 +4,7 @@ import { BaseNode } from '../../heap/types/base'
 import { ReferenceNode } from '../../heap/types/reference'
 import { StructNode } from '../../heap/types/struct'
 import { Process } from '../../runtime/process'
+import { ProcessV2 } from '../../runtime/processV2'
 
 import { Instruction } from './base'
 
@@ -13,6 +14,24 @@ export class StoreInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
+    const dst = process.context.popOS()
+    const src = process.context.popOS()
+    // Yuasa's Write Barrier, only during mark phase and when there is a dereferenced node
+    if (
+      process.heap.gc_phase === GCPHASE.MARK &&
+      !Number.isNaN(dst) &&
+      process.heap.get_value(dst) instanceof ReferenceNode
+    ) {
+      process.mark_save_stack(dst) // only adds to save stack if white
+    }
+    process.heap.copy(dst, src)
+
+    if (process.debug_mode) {
+      process.debugger.modified_buffer.add(dst)
+    }
+  }
+
+  override executeV2(process: ProcessV2): void {
     const dst = process.context.popOS()
     const src = process.context.popOS()
     // Yuasa's Write Barrier, only during mark phase and when there is a dereferenced node
@@ -41,7 +60,7 @@ export class StoreArrayElementInstruction extends Instruction {
   }
 
   peek(
-    process: Process,
+    process: Process | ProcessV2,
     node: StructNode | ArrayNode,
     target: number,
     count: number,
@@ -113,6 +132,55 @@ export class StoreArrayElementInstruction extends Instruction {
       process.context.pushOS(dst)
     }
   }
+
+  override executeV2(process: ProcessV2): void {
+    if (this.toPop) {
+      let dst = process.context.popOS()
+      const src = process.context.popOS()
+      if (process.heap.get_value(dst) instanceof ReferenceNode) {
+        dst = (process.heap.get_value(dst) as ReferenceNode).get_child()
+      }
+
+      const node = process.heap.get_value(dst)
+      if (node instanceof StructNode || node instanceof ArrayNode) {
+        let elemAddr = this.peek(process, node, this.index, 0)
+        if (elemAddr instanceof BaseNode) elemAddr = elemAddr.addr
+        process.heap.copy(elemAddr, src)
+      }
+
+      if (process.debug_mode) {
+        process.debugger.modified_buffer.add(dst)
+      }
+    } else {
+      // if it is not the first field and we know that it is not to be popped from OS,
+      // we have to get rid of the debris empty array and then flip the other 2 nodes around
+      // Old OS: ..., correct array, value to store in next field, residual empty array
+      // Correct version: ..., value to store in next index, correct array
+      // Since we are popping the other 2 nodes anyway, just flip the variable names around
+      let src = undefined
+      let dst = undefined
+      if (this.index > 0) {
+        process.context.popOS() // empty residual array from previous LoadVariableInstruction
+        src = process.context.popOS()
+        dst = process.context.popOS()
+      } else {
+        dst = process.context.popOS()
+        src = process.context.popOS()
+      }
+      if (process.heap.get_value(dst) instanceof ReferenceNode) {
+        dst = (process.heap.get_value(dst) as ReferenceNode).get_child()
+      }
+      const array = new ArrayNode(process.heap, dst)
+      let elemAddr = this.peek(process, array, this.index, 0)
+      if (elemAddr instanceof BaseNode) elemAddr = elemAddr.addr
+      process.heap.copy(elemAddr, src)
+
+      if (process.debug_mode) {
+        process.debugger.modified_buffer.add(dst)
+      }
+      process.context.pushOS(dst)
+    }
+  }
 }
 
 export class StoreStructFieldInstruction extends Instruction {
@@ -129,7 +197,7 @@ export class StoreStructFieldInstruction extends Instruction {
   }
 
   peek(
-    process: Process,
+    process: Process | ProcessV2,
     struct: StructNode | ArrayNode,
     target: number,
     count: number,
@@ -154,6 +222,55 @@ export class StoreStructFieldInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
+    if (this.toPop) {
+      let dst = process.context.popOS()
+      const src = process.context.popOS()
+      if (process.heap.get_value(dst) instanceof ReferenceNode) {
+        dst = (process.heap.get_value(dst) as ReferenceNode).get_child()
+      }
+      const struct = new StructNode(process.heap, dst)
+      let fieldAddr = this.peek(process, struct, this.index, 0)
+      if (fieldAddr instanceof BaseNode) fieldAddr = fieldAddr.addr
+      process.heap.copy(fieldAddr, src)
+
+      if (process.debug_mode) {
+        process.debugger.modified_buffer.add(dst)
+      }
+    } else {
+      // if it is not the first field and we know that it is not to be popped from OS,
+      // we have to get rid of the debris empty struct and then flip the other 2 nodes around
+      // Old OS: ..., correct struct, value to store in next field, residual empty struct
+      // Correct version: ..., value to store in next field, correct struct
+      // Since we are popping the other 2 nodes anyway, just flip the variable names around
+
+      // need change to check by 1st initialisation or not
+      // and a way to separate 2 structs if there are 2 structs supplied as arguments
+      let src = undefined
+      let dst = undefined
+      if (this.order > 0) {
+        process.context.popOS() // empty residual struct from previous LoadVariableInstruction
+        src = process.context.popOS()
+        dst = process.context.popOS()
+      } else {
+        dst = process.context.popOS()
+        src = process.context.popOS()
+      }
+      if (process.heap.get_value(dst) instanceof ReferenceNode) {
+        dst = (process.heap.get_value(dst) as ReferenceNode).get_child()
+      }
+      const struct = new StructNode(process.heap, dst)
+      let fieldAddr = this.peek(process, struct, this.index, 0)
+      if (fieldAddr instanceof BaseNode) fieldAddr = fieldAddr.addr
+      process.heap.copy(fieldAddr, src)
+
+      if (process.debug_mode) {
+        process.debugger.modified_buffer.add(dst)
+      }
+      process.context.pushOS(dst)
+    }
+  }
+
+  override executeV2(process: ProcessV2): void {
     if (this.toPop) {
       let dst = process.context.popOS()
       const src = process.context.popOS()

@@ -5,14 +5,17 @@ import { BaseNode } from './base'
 import { StringNode } from './primitives'
 import { ReferenceNode } from './reference'
 import { StackNode } from './stack'
+import { ProcessV2 } from '../../runtime/processV2'
 
 export class FuncNode extends BaseNode {
   static create(PC: number, env: number, heap: Heap) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(3)
 
     heap.set_tag(addr, TAG.FUNC)
     heap.memory.set_word(PC, addr + 1)
     heap.memory.set_word(env, addr + 2)
+    heap.handle_after_alloc()
     return new FuncNode(heap, addr)
   }
 
@@ -46,10 +49,12 @@ export class FuncNode extends BaseNode {
 
 export class CallRefNode extends BaseNode {
   static create(PC: number, heap: Heap) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(2)
 
     heap.set_tag(addr, TAG.CALLREF)
     heap.memory.set_word(PC, addr + 1)
+    heap.handle_after_alloc()
     return new CallRefNode(heap, addr)
   }
   PC() {
@@ -65,6 +70,7 @@ export class CallRefNode extends BaseNode {
  * */
 export class MethodNode extends BaseNode {
   static create(receiver: number, identifier: string, heap: Heap): MethodNode {
+    heap.handle_before_alloc()
     const addr = heap.allocate(3)
     heap.set_tag(addr, TAG.METHOD)
     heap.temp_push(addr)
@@ -72,6 +78,7 @@ export class MethodNode extends BaseNode {
     heap.memory.set_word(receiver, addr + 1)
     heap.memory.set_word(StringNode.create(identifier, heap).addr, addr + 2)
     heap.temp_pop()
+    heap.handle_after_alloc()
     return new MethodNode(heap, addr)
   }
 
@@ -107,7 +114,8 @@ export class MethodNode extends BaseNode {
  * Word 2: Address of a stack containing all the arguments (first argument at the top).
  */
 export class DeferFuncNode extends BaseNode {
-  static create(argCount: number, process: Process): DeferFuncNode {
+  static create(argCount: number, process: Process | ProcessV2): DeferFuncNode {
+    process.heap.handle_before_alloc()
     const addr = process.heap.allocate(3)
     process.heap.temp_push(addr)
     process.heap.set_tag(addr, TAG.DEFER_FUNC)
@@ -128,6 +136,7 @@ export class DeferFuncNode extends BaseNode {
     process.heap.memory.set_word(stack.addr, addr + 2)
     process.heap.memory.set_word(process.context.popOS(), addr + 1)
     process.heap.temp_pop()
+    process.heap.handle_after_alloc()
     return new DeferFuncNode(process.heap, addr)
   }
 
@@ -167,7 +176,8 @@ export class DeferFuncNode extends BaseNode {
  * Word 2: Address of a stack containing all the arguments (first argument at the top).
  */
 export class DeferMethodNode extends BaseNode {
-  static create(argCount: number, process: Process): DeferMethodNode {
+  static create(argCount: number, process: Process | ProcessV2): DeferMethodNode {
+    process.heap.handle_before_alloc()
     const addr = process.heap.allocate(3)
     process.heap.set_tag(addr, TAG.DEFER_METHOD)
     process.heap.temp_push(addr)
@@ -192,6 +202,7 @@ export class DeferMethodNode extends BaseNode {
     process.heap.memory.set_word(methodNode, addr + 1)
 
     process.heap.temp_pop()
+    process.heap.handle_after_alloc()
     return new DeferMethodNode(process.heap, addr)
   }
 

@@ -5,6 +5,7 @@ import {
   StringNode,
 } from '../../heap/types/primitives'
 import { Process } from '../../runtime/process'
+import { ProcessV2 } from '../../runtime/processV2'
 
 import { Instruction } from './base'
 
@@ -32,6 +33,13 @@ export class UnaryInstruction extends OpInstruction {
     ) as PrimitiveNode
     process.context.pushOS(arg1.apply_unary(this.op).addr)
   }
+
+  override executeV2(process: ProcessV2): void {
+    const arg1 = process.heap.get_value(
+      process.context.popOS(),
+    ) as PrimitiveNode
+    process.context.pushOS(arg1.apply_unary(this.op).addr)
+  }
 }
 
 export class BinaryInstruction extends OpInstruction {
@@ -44,6 +52,16 @@ export class BinaryInstruction extends OpInstruction {
   }
 
   override execute(process: Process): void {
+    const arg2 = process.heap.get_value(
+      process.context.popOS(),
+    ) as PrimitiveNode
+    const arg1 = process.heap.get_value(
+      process.context.popOS(),
+    ) as PrimitiveNode
+    process.context.pushOS(arg1.apply_binop(arg2, this.op).addr)
+  }
+
+  override executeV2(process: ProcessV2): void {
     const arg2 = process.heap.get_value(
       process.context.popOS(),
     ) as PrimitiveNode
@@ -82,8 +100,25 @@ export class SliceOperationInstruction extends Instruction {
     }
   }
 
+  override executeV2(process: ProcessV2): void {
+    const highNode = process.heap.get_value(process.context.popOS())
+    const lowNode = process.heap.get_value(process.context.popOS())
+    const node = process.heap.get_value(process.context.popOS())
+    const low = lowNode instanceof IntegerNode ? lowNode.get_value() : 0
+    // If high is not provided, its default value will be resolved later on in the code.
+    const high = highNode instanceof IntegerNode ? highNode.get_value() : null
+
+    if (node instanceof ArrayNode) {
+      process.context.pushOS(this.sliceArray(process, node, low, high))
+    } else if (node instanceof SliceNode) {
+      process.context.pushOS(this.sliceSlice(process, node, low, high))
+    } else {
+      throw new Error('Unreachable')
+    }
+  }
+
   private sliceArray(
-    process: Process,
+    process: Process | ProcessV2,
     array: ArrayNode,
     low: number,
     high: number | null,
@@ -96,7 +131,7 @@ export class SliceOperationInstruction extends Instruction {
   }
 
   private sliceSlice(
-    process: Process,
+    process: Process | ProcessV2,
     slice: SliceNode,
     low: number,
     high: number | null,
@@ -128,6 +163,12 @@ export class SelectorOperationInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
+    const identifier = process.context.popOSNode(StringNode).get_value()
+    const node = process.heap.get_value(process.context.popOS())
+    node.select(process, identifier)
+  }
+
+  override executeV2(process: ProcessV2): void {
     const identifier = process.context.popOSNode(StringNode).get_value()
     const node = process.heap.get_value(process.context.popOS())
     node.select(process, identifier)

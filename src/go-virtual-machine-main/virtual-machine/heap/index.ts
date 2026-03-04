@@ -1,4 +1,4 @@
-import {} from '../executor/typing'
+import { } from '../executor/typing'
 import { BoolType } from '../executor/typing/bool_type'
 import { Float64Type } from '../executor/typing/float64_type'
 import { Int64Type } from '../executor/typing/int64_type'
@@ -43,6 +43,9 @@ import { WaitGroupNode } from './types/waitGroup'
 import { BitMap } from './bitmap'
 import { GCProfiler } from './gc_profiler'
 import { Memory } from './memory'
+import { RunQueueNode } from './types/runqueue'
+import { CounterNode, FlagNode, LockNode } from './types/internal'
+import { local_thread } from '../runtime/worker'
 
 export enum TAG {
   UNKNOWN = 0,
@@ -79,6 +82,10 @@ export enum TAG {
   CHANNEL_ARRAY = 31,
   REFERENCE = 32,
   UNSAFE_PKG = 33,
+  RUNQUEUE = 34,
+  LOCK = 35,
+  COUNTER = 36,
+  FLAG = 37,
 }
 
 export enum GCPHASE {
@@ -112,6 +119,9 @@ export class Heap {
   gc_heap_min: number
   gc_target_mem: number
   gc_profiler: GCProfiler
+  alloc_lock_addr: number
+  alloc_count_addr: number
+  gc_flag_addr: number
   constructor(size: number) {
     this.size = size
     this.mem_left = size
@@ -138,6 +148,10 @@ export class Heap {
       this.add_list(cur_addr, lvl)
       cur_addr += 2 ** lvl
     }
+    // Create internal nodes needed for memory allocation first
+    this.alloc_lock_addr = LockNode.create(this).addr
+    this.alloc_count_addr = CounterNode.create(this).addr
+    this.gc_flag_addr = FlagNode.create(this).addr
     this.UNASSIGNED = UnassignedNode.create(this)
     this.temp_roots = StackNode.create(this)
     this.contexts = QueueNode.create(this)
@@ -220,6 +234,14 @@ export class Heap {
         return new ReferenceNode(this, addr)
       case TAG.UNSAFE_PKG:
         return new UnsafePkgNode(this, addr)
+      case TAG.RUNQUEUE:
+        return new RunQueueNode(this, addr)
+      case TAG.LOCK:
+        return new LockNode(this, addr)
+      case TAG.COUNTER:
+        return new CounterNode(this, addr)
+      case TAG.FLAG:
+        return new FlagNode(this, addr)
       default:
         // return new UnassignedNode(this, addr)
         throw Error('Unknown Data Type')
@@ -402,7 +424,8 @@ export class Heap {
    * @desc Allocates memory using buddy allocator
    */
   allocate(size: number) {
-    // Try allocating to th smallest possible available memory
+    (this.get_value(this.alloc_lock_addr) as LockNode).get_lock()
+    // Try allocating to the smallest possible available memory
     const try_allocate = () => {
       const lvl = Math.max(1, this.calc_level(size))
       for (let cur_lvl = lvl; cur_lvl < this.freelist.length; cur_lvl++) {
@@ -436,7 +459,10 @@ export class Heap {
       }
       addr = try_allocate()
     }
-    if (addr === -1) throw Error('Ran out of memory!')
+    if (addr === -1) {
+      (this.get_value(this.alloc_lock_addr) as LockNode).release_lock()
+      throw Error('Ran out of memory!')
+    }
     size = this.get_size(addr)
     this.gc_profiler.increment_alloc(size)
     this.mem_left -= size
@@ -460,6 +486,7 @@ export class Heap {
           break
       }
     }
+    (this.get_value(this.alloc_lock_addr) as LockNode).release_lock()
     return addr
   }
 
@@ -519,6 +546,28 @@ export class Heap {
    */
   temp_pop() {
     this.temp_roots.pop()
+  }
+
+  handle_before_alloc() {
+    const flag = this.get_value(this.gc_flag_addr) as FlagNode
+    if (flag.get_flag() === 1 && local_thread.alloc_depth === 0) {
+      flag.sleep_thread(1)
+    }
+
+    local_thread.alloc_depth += 1 // Done locally within same thread so no race condition
+    const total_alloc_count = this.get_value(this.alloc_count_addr) as CounterNode
+    total_alloc_count.increase_count()
+
+    // Recheck after increment
+    if (flag.get_flag() === 1 && local_thread.alloc_depth === 1) {
+      flag.sleep_thread(1)
+    }
+  }
+
+  handle_after_alloc() {
+    local_thread.alloc_depth -= 1
+    const total_alloc_count = this.get_value(this.alloc_count_addr) as CounterNode
+    total_alloc_count.decrease_count()
   }
 
   // [********** Garbage Collection: Mark and Sweep ****************]
@@ -647,6 +696,9 @@ export class Heap {
       this.blocked_contexts.addr, // Suspended goroutines
       this.temp_roots.addr, // Stack of temporary roots
       this.UNASSIGNED.addr, // Special global constant or object
+      this.alloc_lock_addr, // Heap's lock for allocating memory
+      this.alloc_count_addr, // Number of allocations occuring
+      this.gc_flag_addr, // GC flag for whether GC wants to mark
       this.temp, // Single temp pointer
     ]
     for (const root of roots) {
@@ -715,7 +767,7 @@ export class Heap {
     }
     this.gc_profiler.end_pause()
   }
-  
+
   terminate_sweep() {
     this.sweeper = 0
     this.gc_phase = GCPHASE.NONE
@@ -739,13 +791,16 @@ export class Heap {
       this.blocked_contexts.addr, // Suspended goroutines
       this.temp_roots.addr, // Stack of temporary roots
       this.UNASSIGNED.addr, // Special global constant or object
+      this.alloc_lock_addr, // Heap's lock for allocating memory
+      this.alloc_count_addr, // Number of allocations occuring
+      this.gc_flag_addr, // GC flag for whether GC wants to mark
       this.temp, // Single temp pointer
     ]
     for (const root of roots) {
       this.mark(root)
     }
     // Sweep phase
-    for (let cur_addr = 0; cur_addr < this.size; ) {
+    for (let cur_addr = 0; cur_addr < this.size;) {
       if (!this.is_free(cur_addr) && !this.is_marked(cur_addr)) {
         // Free memory since it is used but unmarked
         cur_addr = this.free(cur_addr)
@@ -767,6 +822,9 @@ export class Heap {
       this.blocked_contexts.addr, // Suspended goroutines
       this.temp_roots.addr, // Stack of temporary roots
       this.UNASSIGNED.addr, // Special global constant or object
+      this.alloc_lock_addr, // Heap's lock for allocating memory
+      this.alloc_count_addr, // Number of allocations occuring
+      this.gc_flag_addr, // GC flag for whether GC wants to mark
       this.temp, // Single temp pointer
     ]
     let size = 0

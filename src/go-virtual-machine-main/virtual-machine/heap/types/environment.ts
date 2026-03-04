@@ -4,10 +4,12 @@ import { BaseNode } from './base'
 
 export class FrameNode extends BaseNode {
   static create(frame_size: number, heap: Heap) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(frame_size + 1)
 
     heap.set_tag(addr, TAG.FRAME)
     heap.set_children(addr, Array(frame_size).fill(heap.UNASSIGNED), 1)
+    heap.handle_after_alloc()
     return new FrameNode(heap, addr)
   }
 
@@ -33,6 +35,7 @@ export class EnvironmentNode extends BaseNode {
     for_block: boolean,
     heap: Heap,
   ) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(parents.length + 2)
     heap.set_tag(addr, TAG.ENVIRONMENT)
     heap.memory.set_bits(for_block ? 1 : 0, addr, 1, 16)
@@ -41,6 +44,7 @@ export class EnvironmentNode extends BaseNode {
     }
     heap.memory.set_word(frame, addr + 1)
     heap.set_children(addr, parents, 2)
+    heap.handle_after_alloc()
     return new EnvironmentNode(heap, addr)
   }
 

@@ -15,7 +15,7 @@ import { QueueNode } from '../heap/types/queue'
 import { Debugger, StateInfo } from './debugger'
 
 // Represents the result when a process finishes
-type ProcessOutput = {
+export type ProcessOutput = {
   stdout: string
   visual_data: StateInfo[]
   errorMessage?: string

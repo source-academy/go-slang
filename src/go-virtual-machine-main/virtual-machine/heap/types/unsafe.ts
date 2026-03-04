@@ -5,14 +5,17 @@ import { BaseNode } from './base'
 import { MethodNode } from './func'
 import { IntegerNode, StringNode } from './primitives'
 import { ReferenceNode } from './reference'
+import { ProcessV2 } from '../../runtime/processV2'
 
 /**
  * This node represents the `fmt` package. It only occupies one word, its tag.
  */
 export class UnsafePkgNode extends BaseNode {
   static create(heap: Heap): UnsafePkgNode {
+    heap.handle_before_alloc()
     const addr = heap.allocate(1)
     heap.set_tag(addr, TAG.UNSAFE_PKG)
+    heap.handle_after_alloc()
     return new UnsafePkgNode(heap, addr)
   }
 
@@ -20,7 +23,7 @@ export class UnsafePkgNode extends BaseNode {
     return UnsafePkgNode.create(heap)
   }
 
-  override select(process: Process, identifier: string): void {
+  override select(process: Process | ProcessV2, identifier: string): void {
     process.context.pushOS(
       MethodNode.create(this.addr, identifier, this.heap).addr,
     )
@@ -47,7 +50,28 @@ export class UnsafePkgNode extends BaseNode {
     }
   }
 
-  handleAlignof(process: Process, argCount: number): void {
+  /** [V2] Arguments to builtin methods should be on the OS. Remember to pop the receiver from OS. */
+  override handleMethodCallV2(
+    process: ProcessV2,
+    identifier: string,
+    argCount: number,
+  ) {
+    if (identifier === 'Alignof') {
+      this.handleAlignof(process, argCount)
+    } else if (identifier === 'Offsetof') {
+      this.handleOffsetof(process, argCount)
+    } else if (identifier === 'Sizeof') {
+      this.handleSizeof(process, argCount)
+    } else if (identifier === 'String') {
+      this.handleString(process, argCount)
+    } else if (identifier === 'StringData') {
+      this.handleStringData(process, argCount)
+    } else if (identifier === 'Add') {
+      this.handleAdd(process, argCount)
+    }
+  }
+
+  handleAlignof(process: Process | ProcessV2, argCount: number): void {
     if (argCount === 1) {
       const addr = process.context.popOS() // argument
       const node = process.heap.get_value(addr)
@@ -60,7 +84,7 @@ export class UnsafePkgNode extends BaseNode {
     }
   }
 
-  handleOffsetof(process: Process, argCount: number): void {
+  handleOffsetof(process: Process | ProcessV2, argCount: number): void {
     if (argCount === 1) {
       const addr = process.context.popOS() // argument, must be field in a struct
       const node = process.heap.get_value(addr)
@@ -71,7 +95,7 @@ export class UnsafePkgNode extends BaseNode {
     }
   }
 
-  handleSizeof(process: Process, argCount: number): void {
+  handleSizeof(process: Process | ProcessV2, argCount: number): void {
     if (argCount === 1) {
       const addr = process.context.popOS() // argument
       const node = process.heap.get_value(addr)
@@ -84,7 +108,7 @@ export class UnsafePkgNode extends BaseNode {
     }
   }
 
-  handleString(process: Process, argCount: number): void {
+  handleString(process: Process | ProcessV2, argCount: number): void {
     if (argCount === 2) {
       const addr = process.context.popOS() // argument "len IntegerType"
       const addr2 = process.context.popOS() // argument "ptr *byte"
@@ -111,7 +135,7 @@ export class UnsafePkgNode extends BaseNode {
     }
   }
 
-  handleStringData(process: Process, argCount: number): void {
+  handleStringData(process: Process | ProcessV2, argCount: number): void {
     if (argCount === 1) {
       const addr = process.context.popOS() // argument
       const node = process.heap.get_value(addr) as StringNode
@@ -124,7 +148,7 @@ export class UnsafePkgNode extends BaseNode {
     }
   }
 
-  handleAdd(process: Process, argCount: number): void {
+  handleAdd(process: Process | ProcessV2, argCount: number): void {
     if (argCount === 2) {
       const addr = process.context.popOS() // argument "len IntegerType"
       const addr2 = process.context.popOS() // argument "ptr Pointer"

@@ -4,6 +4,8 @@ import { Instruction } from './executor/instructions'
 import { StateInfo } from './runtime/debugger'
 import { compile_tokens, CompileError } from './executor'
 import { execute_instructions } from './runtime'
+import { Callback } from './runtime/scheduler'
+import { ProcessOutput } from './runtime/process'
 
 interface InstructionData {
   val: string
@@ -35,6 +37,7 @@ interface CompileData {
 const runCode = (
   source_code: string,
   heapsize: number,
+  completeExecution: (result: ProgramData) => void,
   deterministic = true,
   visualisation = true,
 ): ProgramData => {
@@ -137,7 +140,33 @@ const runCode = (
     symbols,
     deterministic,
     visualisation,
+    callback,
   )
+  // Delete below
+  if (result.errorMessage) {
+    console.warn(result.errorMessage)
+    return {
+      instructions: [],
+      output: result.errorMessage,
+      error: {
+        message: result.errorMessage,
+        type: 'runtime',
+        details: result.errorMessage,
+      },
+      visualData: [],
+    }
+  }
+
+  return {
+    instructions: [],
+    output: result.stdout,
+    visualData: result.visual_data,
+    error: undefined,
+  }
+  // Delete above
+}
+
+function callback(result: ProcessOutput) {
   if (result.errorMessage) {
     console.warn(result.errorMessage)
     return {

@@ -2,6 +2,9 @@ import { TokenLocation } from '../compiler/tokens'
 import { Instruction } from '../executor/instructions'
 
 import { Process } from './process'
+import { Callback } from './scheduler'
+
+export var is_multithreaded = true
 
 const execute_instructions = (
   instrs: Instruction[],
@@ -9,6 +12,7 @@ const execute_instructions = (
   symbols: (TokenLocation | null)[],
   deterministic: boolean,
   visualisation = false,
+  callback: Callback,
 ) => {
   const process = new Process(
     instrs,

@@ -16,10 +16,12 @@ import { ReferenceNode } from './reference'
  */
 export class StructNode extends BaseNode {
   static create(length: number, heap: Heap): StructNode {
+    heap.handle_before_alloc()
     const addr = heap.allocate(2 + length)
     heap.set_tag(addr, TAG.STRUCT)
     heap.memory.set_number(length, addr + 1)
     for (let i = 0; i < length; i++) heap.memory.set_number(-1, addr + i + 2)
+    heap.handle_after_alloc()
     return new StructNode(heap, addr)
   }
 
@@ -32,6 +34,7 @@ export class StructNode extends BaseNode {
     defaultCreator: Array<(heap: Heap) => number>,
     heap: Heap,
   ) {
+    heap.handle_before_alloc()
     let size = 0
     for (let i = 0; i < [...fields.values()].length; i++) {
       size += [...fields.values()][i].sizeof()
@@ -71,6 +74,7 @@ export class StructNode extends BaseNode {
     }
     heap.set_tag(nodeAddr, TAG.STRUCT)
     heap.memory.set_number(defaultCreator.length, nodeAddr + 1)
+    heap.handle_after_alloc()
     return struct
   }
 
@@ -80,6 +84,7 @@ export class StructNode extends BaseNode {
     heap: Heap,
     length: number,
   ) {
+    heap.handle_before_alloc()
     let size = 0
     for (let i = 0; i < [...fields.values()].length; i++) {
       size += [...fields.values()][i].sizeof()
@@ -103,7 +108,7 @@ export class StructNode extends BaseNode {
         } else if (
           [...fields.values()][i] instanceof DeclaredType &&
           ([...fields.values()][i] as DeclaredType).type[0] instanceof
-            StructType
+          StructType
         ) {
           const node = (
             [...fields.values()][i] as DeclaredType
@@ -136,6 +141,7 @@ export class StructNode extends BaseNode {
         array.set_child(i, child)
       }
     }
+    heap.handle_after_alloc()
     return array
   }
 
@@ -145,6 +151,7 @@ export class StructNode extends BaseNode {
     heap: Heap,
     addr: number,
   ) {
+    heap.handle_before_alloc()
     const nodeAddr = heap.allocate(2 + defaultCreator.length)
     const struct = new StructNode(heap, nodeAddr)
     let nextAddr = addr
@@ -179,6 +186,7 @@ export class StructNode extends BaseNode {
     }
     heap.set_tag(nodeAddr, TAG.STRUCT)
     heap.memory.set_number(defaultCreator.length, nodeAddr + 1)
+    heap.handle_after_alloc()
     return struct
   }
 

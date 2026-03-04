@@ -201,6 +201,26 @@ export class Memory {
   }
 
   /**
+   * @desc Make thread sleep temporarily, only supports i32
+   * @param val Expected i32 value for thread to be put to sleep
+   * @param addr Starting word index
+   * @returns Status of thread execution
+   */
+  atomic_wait_i32(val: number, addr: number) {
+    return Atomics.wait(this.i32, addr, val | 0)
+  }
+
+  /**
+   * @desc Make waiting threads wake up, only supports i32
+   * @param addr Starting word index
+   * @param count Number of threads to be awoken, if not specified will be set to infinite
+   * @returns Number of threads awoken
+   */
+  atomic_notify_i32(addr: number, count?: number) {
+    return Atomics.notify(this.i32, addr, count)
+  }
+
+  /**
    * Print out Heap
    */
   print() {

@@ -10,6 +10,7 @@ import { StackNode } from './stack'
 export class ContextNode extends BaseNode {
   // 6 words: [metadata | blocked?] [PC - Program Counter] [OS - Operand Stack] [RTS - Runtime Stack] [WaitLists] [DeferStack]
   static create(heap: Heap) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(6)
     heap.set_tag(addr, TAG.CONTEXT)
     heap.memory.set_number(0, addr + 1) // PC initialise to 0
@@ -19,6 +20,7 @@ export class ContextNode extends BaseNode {
     heap.memory.set_word(StackNode.create(heap).addr, addr + 3) // RTS
     heap.memory.set_word(StackNode.create(heap).addr, addr + 5) // DeferStack
     heap.temp_pop()
+    heap.handle_after_alloc()
     return new ContextNode(heap, addr)
   }
 
