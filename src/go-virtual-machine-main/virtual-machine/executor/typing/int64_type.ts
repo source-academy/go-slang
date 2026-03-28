@@ -4,6 +4,10 @@ import { IntegerNode } from '../../heap/types/primitives'
 import { Type } from '.'
 
 export class Int64Type extends Type {
+  constructor() {
+    super('INT64')
+  }
+
   isPrimitive(): boolean {
     return true
   }

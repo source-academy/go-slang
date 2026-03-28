@@ -13,14 +13,29 @@ export class Memory {
    * @param size Number of bytes in memory
    * @param word_size How many bytes in a word
    */
-  constructor(size: number, word_size = 4) {
+  constructor(sab: SharedArrayBuffer, word_size = 4) {
     if (!Number.isInteger(Math.log(word_size) / Math.log(2)))
       throw Error('Word Size must be power of 2')
     this.word_size = word_size
-    this.array = new SharedArrayBuffer(size * word_size)
+    this.array = sab
     this.view = new DataView(this.array)
     this.i32 = new Int32Array(this.array)
     this.u32 = new Uint32Array(this.array)
+  }
+
+  /**
+   * Creates new instance of memory with new shared array buffer
+   * @param size Size of memory
+   * @param word_size Size of each word
+   * @returns New instance of memory with new shared array buffer
+   */
+  static create(size: number, word_size = 4) {
+    const sab = new SharedArrayBuffer(size * word_size)
+    return new Memory(sab, word_size)
+  }
+
+  static load(sab: SharedArrayBuffer, word_size = 4) {
+    return new Memory(sab, word_size)
   }
 
   check_valid(num_bits: number, bit_offset: number) {

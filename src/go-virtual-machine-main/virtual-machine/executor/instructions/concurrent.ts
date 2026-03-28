@@ -12,6 +12,7 @@ import { StructNode } from '../../heap/types/struct'
 import { MessageType, WorkerToScheduler } from '../../runtime/message'
 import { Process } from '../../runtime/process'
 import { ProcessV2 } from '../../runtime/processV2'
+import { local_thread } from '../../runtime/worker'
 import { BoolType } from '../typing/bool_type'
 import { StringType } from '../typing/string_type'
 
@@ -355,15 +356,15 @@ export class GoInstruction extends Instruction {
         results[i] = src
       }
       for (let i = 0; i < this.args; i++) {
-        // making it "pass by value" instead of by reference
+        // Making it "pass by value" instead of by reference
         const allocate = process.heap.allocate(
           process.heap.get_size(results[i]),
         )
         process.heap.copy(allocate, results[i])
-        // deepcopy if struct or array
+        // Deepcopy if struct or array
         const node = process.heap.get_value(results[i])
         if (node instanceof ArrayNode) {
-          // deepcopy if array
+          // Deepcopy if array
           const dimensions = [] as number[]
           let length = node.length()
           let next = process.heap.get_value(node.get_child(0))
@@ -380,7 +381,7 @@ export class GoInstruction extends Instruction {
           let sizeof = 4
           if (type instanceof BoolType) sizeof = 1
           if (type instanceof StringType) sizeof = 2
-          // deepcopy each element
+          // Deepcopy each element
           for (let i = 0; i < length; i++) {
             process.heap.copy(addr + sizeof * i, arrayStart + sizeof * i)
           }
@@ -482,15 +483,15 @@ export class GoInstruction extends Instruction {
       const method = process.context.popOS()
       new_context.pushOS(method)
       for (let i = 0; i < this.args; i++) {
-        // making it "pass by value" instead of by reference
+        // Making it "pass by value" instead of by reference
         const allocate = process.heap.allocate(
           process.heap.get_size(results[i]),
         )
         process.heap.copy(allocate, results[i])
-        // deepcopy if struct or array
+        // Deepcopy if struct or array
         const node = process.heap.get_value(results[i])
         if (node instanceof ArrayNode) {
-          // deepcopy if array
+          // Deepcopy if array
           const dimensions = [] as number[]
           let length = node.length()
           let next = process.heap.get_value(node.get_child(0))
@@ -507,7 +508,7 @@ export class GoInstruction extends Instruction {
           let sizeof = 4
           if (type instanceof BoolType) sizeof = 1
           if (type instanceof StringType) sizeof = 2
-          // deepcopy each element
+          // Deepcopy each element
           for (let i = 0; i < length; i++) {
             process.heap.copy(addr + sizeof * i, arrayStart + sizeof * i)
           }
@@ -560,7 +561,7 @@ export class GoInstruction extends Instruction {
             }
           }
         } else if (node instanceof StructNode) {
-          // deepcopy if struct
+          // Deepcopy if struct
           const baseNodes = [] as BaseNode[]
           let structStart = -1
           let next = process.heap.get_value(node.get_child(0))
@@ -595,6 +596,11 @@ export class GoInstruction extends Instruction {
       }
       process.contexts.push(new_context.addr)
     }
+    const message: WorkerToScheduler = {
+      type: MessageType.NEW_GOROUTINE,
+      thread_id: local_thread.thread_id
+    }
+    postMessage(message)
   }
 
   /** Factory method to create go instruction */
@@ -745,7 +751,7 @@ export class TryChannelReqInstruction extends Instruction {
         type: MessageType.BLOCK,
         thread_id: process.thread_id,
         context_addr: process.context.addr,
-        obj_addrs: [chan.addr],
+        obj_addrs: [chan.get_original_addr()],
         generations: [gen],
       }
       postMessage(message)
@@ -825,7 +831,7 @@ export class SelectInstruction extends Instruction {
       .map((a) => ({ sort: process.generator(), value: a }))
       .sort((a, b) => a.sort - b.sort)
       .map((a) => a.value)
-    const channels = cases.map((chan_req) => chan_req.channel().addr)
+    const channels = cases.map((chan_req) => chan_req.channel().get_original_addr())
     let done = false
     // Might have race condition where a checked channel is unblocked by another worker
     for (const cas of cases) {

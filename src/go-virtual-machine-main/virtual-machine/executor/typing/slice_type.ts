@@ -5,7 +5,7 @@ import { Type } from '.'
 
 export class SliceType extends Type {
   constructor(public element: Type) {
-    super()
+    super('SLICE')
   }
 
   isPrimitive(): boolean {

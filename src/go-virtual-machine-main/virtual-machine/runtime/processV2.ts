@@ -1,16 +1,15 @@
 import * as seedrandom from "seedrandom"
+
 import { DoneInstruction, GoInstruction, Instruction } from "../executor/instructions"
 import { Heap } from "../heap"
 import { ContextNode } from "../heap/types/context"
-import { ProcessOutput } from "./process"
-import { Debugger } from "./debugger"
 import { MethodNode } from "../heap/types/func"
-import { QueueNode } from "../heap/types/queue"
-import { error } from "console"
-import { MessageType } from "./message"
-import { Thread } from "./thread"
+import { FlagNode } from "../heap/types/internal"
 import { RunQueueNode } from "../heap/types/runqueue"
+import { SaveStackNode } from "../heap/types/saveStack"
+
 import { DebuggerV2 } from "./debuggerV2"
+import { MessageType } from "./message"
 
 export type ProcessV2Result = {
     status: ProcessV2Status,
@@ -37,6 +36,7 @@ export class ProcessV2 {
     debug_mode: boolean // True if running visual debugging mode
     debugger: DebuggerV2 // Trace states
     runtime_count = 0 // Counts how many instructions executed
+    save_stack: SaveStackNode
 
     constructor(
         thread_id: number,
@@ -55,6 +55,7 @@ export class ProcessV2 {
         this.context = this.heap.get_value(main_goroutine_addr) as ContextNode // Initialise context at the start to ensure not null
         this.contexts = this.heap.get_value(contexts_addr) as RunQueueNode
         this.deterministic = deterministic
+        this.save_stack = this.heap.get_value(this.heap.save_stack_addrs[0]) as SaveStackNode
         // Check use of random seed later for non-deterministic execution
         const randomSeed = Math.random().toString(36).substring(2)
         this.generator = seedrandom.default(randomSeed)
@@ -65,6 +66,7 @@ export class ProcessV2 {
     start(): ProcessV2Result {
         const time_quantum = 30
         this.runtime_count = 0
+        let need_pop = true // When trying to context switch, the scheduler should not job steal the current context before it can be removed from the runqueue
 
         try {
             while (this.contexts.sz()) {
@@ -78,7 +80,8 @@ export class ProcessV2 {
                 while (!DoneInstruction.is(this.instructions[this.context.PC()])) {
                     if (cur_time >= time_quantum) {
                         // Context Switch by pushing context to end of queue
-                        this.contexts.push(this.context.addr)
+                        this.contexts.push_and_pop(this.context.addr)
+                        need_pop = false
                         break
                     }
                     // OS stands for Operand Stack, 1 means treat next instruction as a goroutine method call
@@ -108,10 +111,7 @@ export class ProcessV2 {
                         this.context.RTS().sz() === 0
                     ) {
                         // thread has completed
-                        return {
-                            status: ProcessV2Status.EMPTY_RUNQUEUE,
-                            message: EMPTY_MSG
-                        }
+                        break
                     }
                     // State snapshot for debug mode
                     if (this.debug_mode) this.debugger.generate_state(pc)
@@ -132,11 +132,11 @@ export class ProcessV2 {
                     }
                 }
                 // Remove old head from runqueue
-                this.contexts.pop()
+                need_pop ? this.contexts.pop() : need_pop = true
                 if (this.runtime_count > 10 ** 5) throw Error('Time Limit Exceeded!')
             }
 
-            // If code somehow falls through without returning, return empty runqueue
+            // If code falls through without returning, return empty runqueue
             return {
                 status: ProcessV2Status.EMPTY_RUNQUEUE,
                 message: EMPTY_MSG
@@ -156,8 +156,11 @@ export class ProcessV2 {
     }
 
     mark_save_stack(addr: number) {
-        // Do nth for now
-        addr = addr
+        if (this.heap.bitmap.is_marked(addr)) return
+        const flag = this.heap.get_value(this.heap.save_stack_flag_addr) as FlagNode
+        flag.sleep_thread(1)
+        this.heap.bitmap.set_mark(addr, true)
+        this.save_stack.push(addr)
     }
 
     print(string: string) {

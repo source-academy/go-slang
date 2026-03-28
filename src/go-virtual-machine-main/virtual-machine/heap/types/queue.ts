@@ -141,6 +141,18 @@ export class QueueListNode extends BaseNode {
     return val
   }
 
+  pop_back() {
+    const sz = this.get_sz()
+    if (sz === 0) throw Error('Queue Empty!')
+    const node_sz = this.heap.get_size(this.addr)
+    const end = (this.get_end() - 1 + this.get_cap()) % this.get_cap()
+    const val = this.get_idx(end)
+    this.set_end(end)
+    this.set_sz(sz - 1)
+    if (4 * (sz + 3) < node_sz) this.resize(node_sz / 2)
+    return val
+  }
+
   randompeek() {
     const sz = this.get_sz()
     if (sz === 0) throw Error('Queue Empty!')

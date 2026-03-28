@@ -1,6 +1,8 @@
 // For internal structures not meant to be used by the user program
 
+import { local_thread } from "../../runtime/worker"
 import { Heap, TAG } from ".."
+
 import { BaseNode } from "./base"
 
 export class LockNode extends BaseNode {
@@ -17,6 +19,7 @@ export class LockNode extends BaseNode {
 
     get_lock() {
         while (this.heap.memory.atomic_cas_i32(this.addr + 1, 0, 1) !== 0) {
+            if (local_thread === undefined) continue // Scheduler should never sleep
             this.heap.memory.atomic_wait_i32(1, this.addr + 1)
         }
     }

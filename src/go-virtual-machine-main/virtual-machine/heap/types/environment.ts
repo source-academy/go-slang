@@ -1,4 +1,4 @@
-import { GCPHASE, Heap, TAG } from '..'
+import { Heap, TAG } from '..'
 
 import { BaseNode } from './base'
 
@@ -39,9 +39,6 @@ export class EnvironmentNode extends BaseNode {
     const addr = heap.allocate(parents.length + 2)
     heap.set_tag(addr, TAG.ENVIRONMENT)
     heap.memory.set_bits(for_block ? 1 : 0, addr, 1, 16)
-    if (heap.gc_phase === GCPHASE.MARK) {
-      heap.mark_gray(frame)
-    }
     heap.memory.set_word(frame, addr + 1)
     heap.set_children(addr, parents, 2)
     heap.handle_after_alloc()

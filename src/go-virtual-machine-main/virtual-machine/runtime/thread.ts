@@ -1,14 +1,9 @@
-import { symbol } from 'prop-types'
-import { TokenLocation } from '../compiler/tokens'
-import { DoneInstruction, GoInstruction, Instruction } from '../executor/instructions'
+import { Instruction } from '../executor/instructions'
 import { Heap } from '../heap'
-import { ContextNode } from '../heap/types/context'
-import { MessageType, WorkerToScheduler } from './message'
-import { Process, ProcessOutput } from './process'
-import { Debugger } from './debugger'
-import { ProcessV2, ProcessV2Status } from './processV2'
-import { error } from 'console'
+
 import { DebuggerV2 } from './debuggerV2'
+import { MessageType, WorkerToScheduler } from './message'
+import { ProcessV2, ProcessV2Status } from './processV2'
 
 export enum ThreadState {
     READY,
@@ -18,7 +13,6 @@ export enum ThreadState {
 
 export class Thread {
     thread_id: number
-    state: ThreadState
     heap: Heap
     process: ProcessV2
     debugger: DebuggerV2
@@ -41,7 +35,6 @@ export class Thread {
         main_goroutine_addr: number
     ) {
         this.thread_id = thread_id
-        this.state = ThreadState.READY
         this.heap = heap
         this.debugger = debug
         this.alloc_depth = 0
@@ -64,11 +57,9 @@ export class Thread {
     }
 
     run() {
-        this.state = ThreadState.RUNNING
         const result = this.process.start()
-        this.state = ThreadState.READY
         switch (result.status) {
-            case ProcessV2Status.ERROR:
+            case ProcessV2Status.ERROR: {
                 const errMsg: WorkerToScheduler = {
                     type: MessageType.ERROR,
                     thread_id: this.thread_id,
@@ -76,19 +67,22 @@ export class Thread {
                 }
                 postMessage(errMsg)
                 break;
-            case ProcessV2Status.EMPTY_RUNQUEUE:
+            }
+            case ProcessV2Status.EMPTY_RUNQUEUE: {
                 const rdyMsg: WorkerToScheduler = {
                     type: MessageType.READY,
                     thread_id: this.thread_id,
                 }
                 postMessage(rdyMsg)
                 break;
-            case ProcessV2Status.FINISHED:
+            }
+            case ProcessV2Status.FINISHED: {
                 const finishMsg: WorkerToScheduler = {
                     type: MessageType.FINISHED,
                     thread_id: this.thread_id,
                 }
                 postMessage(finishMsg)
+            }
         }
     }
 }

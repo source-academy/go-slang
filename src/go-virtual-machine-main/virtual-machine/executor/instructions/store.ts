@@ -18,7 +18,7 @@ export class StoreInstruction extends Instruction {
     const src = process.context.popOS()
     // Yuasa's Write Barrier, only during mark phase and when there is a dereferenced node
     if (
-      process.heap.gc_phase === GCPHASE.MARK &&
+      process.heap.metadata.get_gc_phase() === GCPHASE.MARK &&
       !Number.isNaN(dst) &&
       process.heap.get_value(dst) instanceof ReferenceNode
     ) {
@@ -36,7 +36,7 @@ export class StoreInstruction extends Instruction {
     const src = process.context.popOS()
     // Yuasa's Write Barrier, only during mark phase and when there is a dereferenced node
     if (
-      process.heap.gc_phase === GCPHASE.MARK &&
+      process.heap.metadata.get_gc_phase() === GCPHASE.MARK &&
       !Number.isNaN(dst) &&
       process.heap.get_value(dst) instanceof ReferenceNode
     ) {

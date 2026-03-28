@@ -1,14 +1,26 @@
-import { Heap } from "../heap"
+import { GCPHASE, Heap } from "../heap"
+
 import { MessageType, SchedulerToGC } from "./message"
 
-var heap: Heap
+let heap: Heap
 
-self.onmessage = (event: MessageEvent<SchedulerToGC>) => {
+onmessage = (event: MessageEvent<SchedulerToGC>) => {
     const type = event.data.type
     switch (type) {
-        case MessageType.GC_START:
-            heap = event.data.heap
+        case MessageType.GC_INIT: {
+            const { load_heap_config, heapsize } = event.data
+            heap = new Heap(heapsize, load_heap_config)
+            postMessage({ type: MessageType.GC_INITIALISED })
             break;
-        case MessageType.GC_RUN:
+        }
+        case MessageType.GC_RUN: {
+            do {
+                heap.tri_color_step()
+            } while (heap.metadata.get_gc_phase() !== GCPHASE.NONE)
+            heap.metadata.increment_gc_generation(1)
+            heap.metadata.notify_gc_generation()
+            postMessage({ type: MessageType.GC_RUN })
+            break;
+        }
     }
 }

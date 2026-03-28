@@ -1,4 +1,5 @@
 import { Heap, TAG } from ".."
+
 import { BaseNode } from "./base"
 import { QueueListNode } from "./queue"
 
@@ -17,23 +18,30 @@ export class RunQueueNode extends BaseNode {
     return new RunQueueNode(heap, addr)
   }
 
+  /** Scheduler cannot be put to sleep */
+  private scheduler_get_lock() {
+    let is_waiting = true
+    while (is_waiting) {
+      const val = this.heap.memory.atomic_cas_i32(this.addr + 1, 0, 1)
+      if (val === 0) is_waiting = false
+    }
+  }
+
   private get_lock() {
-    while (true) {
-      const prev = this.heap.memory.atomic_cas_i32(this.addr + 1, 0, 1)
-      if (prev === 0) {
-        return
-      }
+    while (this.heap.memory.atomic_cas_i32(this.addr + 1, 0, 1) !== 0) {
+      this.heap.memory.atomic_wait_i32(1, this.addr + 1)
     }
   }
 
   private release_lock() {
     this.heap.memory.atomic_set_word_i32(0, this.addr + 1)
+    this.heap.memory.atomic_notify_i32(this.addr + 1, 1)
   }
 
   list() {
     return new QueueListNode(
       this.heap,
-      this.heap.memory.atomic_get_word_u32(this.addr + 2),
+      this.heap.memory.get_word(this.addr + 2),
     )
   }
 
@@ -41,7 +49,7 @@ export class RunQueueNode extends BaseNode {
     this.get_lock()
     const list = this.list()
     list.push(addr)
-    this.heap.memory.atomic_set_word_u32(list.addr, this.addr + 2)
+    this.heap.memory.set_word(list.addr, this.addr + 2)
     this.release_lock()
   }
 
@@ -55,21 +63,31 @@ export class RunQueueNode extends BaseNode {
     this.get_lock()
     const list = this.list()
     const res = list.pop()
-    this.heap.memory.atomic_set_word_u32(list.addr, this.addr + 2)
+    this.heap.memory.set_word(list.addr, this.addr + 2)
+    this.release_lock()
+    return res
+  }
+
+  push_and_pop(addr: number) {
+    this.get_lock()
+    const list = this.list()
+    list.push(addr)
+    const res = list.pop()
+    this.heap.memory.set_word(list.addr, this.addr + 2)
     this.release_lock()
     return res
   }
 
   steal() {
-    this.get_lock()
+    this.scheduler_get_lock()
     // If stealing, the runqueue should have minimally 2 goroutines
-    if (this.sz() <= 1) {
+    if (this.list().get_sz() <= 1) {
       this.release_lock()
       return -1 // runqueue should only hold context addrs, -1 is invalid
     }
     const list = this.list()
-    const res = list.pop()
-    this.heap.memory.atomic_set_word_u32(list.addr, this.addr + 2)
+    const res = list.pop_back()
+    this.heap.memory.set_word(list.addr, this.addr + 2)
     this.release_lock()
     return res
   }
@@ -80,6 +98,17 @@ export class RunQueueNode extends BaseNode {
 
   peek() {
     this.get_lock()
+    const val = this.list().peek()
+    this.release_lock()
+    return val
+  }
+
+  scheduler_peek() {
+    this.scheduler_get_lock()
+    if (this.list().get_sz() <= 1) {
+      this.release_lock()
+      return -1 // runqueue should only hold context addrs, -1 is invalid
+    }
     const val = this.list().peek()
     this.release_lock()
     return val

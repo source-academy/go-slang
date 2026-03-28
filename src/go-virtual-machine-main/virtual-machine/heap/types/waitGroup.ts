@@ -1,4 +1,8 @@
+import { is_multithreaded } from '../../runtime'
+import { MessageType, WorkerToScheduler } from '../../runtime/message'
 import { Process } from '../../runtime/process'
+import { ProcessV2 } from '../../runtime/processV2'
+import { local_thread } from '../../runtime/worker'
 import { Heap, TAG } from '..'
 
 import { BaseNode } from './base'
@@ -8,10 +12,6 @@ import { MethodNode } from './func'
 import { LinkedListEntryNode } from './linkedlist'
 import { IntegerNode } from './primitives'
 import { QueueNode } from './queue'
-import { ProcessV2 } from '../../runtime/processV2'
-import { is_multithreaded } from '../../runtime'
-import { MessageType, WorkerToScheduler } from '../../runtime/message'
-import { local_thread } from '../../runtime/worker'
 
 /**
  * Each WaitGroupNode occupies 3 words.
@@ -30,8 +30,8 @@ export class WaitGroupNode extends BaseNode {
     heap.memory.set_number(-1, addr + 2)
     heap.memory.set_number(0, addr + 1)
     heap.memory.set_word(QueueNode.create(heap).addr, addr + 2)
-    heap.memory.set_number(0, addr + 3) // Represents lock where 0 is available
-    heap.memory.set_number(0, addr + 4) //Represents generation/version
+    heap.memory.atomic_set_word_i32(0, addr + 3) // Represents lock where 0 is available
+    heap.memory.atomic_set_word_i32(0, addr + 4) //Represents generation/version
     heap.temp_pop()
     heap.handle_after_alloc()
     return new WaitGroupNode(heap, addr)

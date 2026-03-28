@@ -1,7 +1,6 @@
-import { Heap } from '../heap';
-import { QueueNode } from '../heap/types/queue';
-import { ProcessOutput } from './process';
-import { Thread } from './thread';
+import { LoadHeapConfig } from '../heap';
+
+import { ThreadConfig as WorkerConfig } from './scheduler';
 
 export enum MessageType {
   // Scheduler to Worker messages
@@ -18,14 +17,16 @@ export enum MessageType {
   NEW_GOROUTINE,
   FINISHED,
   // Scheduler To GC messages
-  GC_START,
+  GC_INIT,
   GC_RUN,
+  // GC to Scheduler messages
+  GC_INITIALISED,
+  GC_COMPLETED,
 }
 
 export type SchedulerToWorker =
-  | { type: MessageType.START; new_thread: Thread; }
+  | { type: MessageType.START; thread_id: number; load_heap_config: LoadHeapConfig; worker_config: WorkerConfig }
   | { type: MessageType.RUN_PROGRAM }
-  | { type: MessageType.GC; }
 
 export type WorkerToScheduler =
   | { type: MessageType.READY; thread_id: number }
@@ -37,7 +38,9 @@ export type WorkerToScheduler =
   | { type: MessageType.GC; thread_id: number }
   | { type: MessageType.NEW_GOROUTINE; thread_id: number }
   | { type: MessageType.FINISHED; thread_id: number }
+  | { type: MessageType.GC_INITIALISED }
+  | { type: MessageType.GC_COMPLETED }
 
 export type SchedulerToGC =
-  | { type: MessageType.GC_START; heap: Heap }
+  | { type: MessageType.GC_INIT; load_heap_config: LoadHeapConfig; heapsize: number }
   | { type: MessageType.GC_RUN; }

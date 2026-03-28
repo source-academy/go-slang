@@ -133,8 +133,10 @@ export class LoadArrayInstruction extends Instruction {
 
 /** Takes the index, then array from the heap, and loads the element at the index onto the OS.  */
 export class LoadArrayElementInstruction extends Instruction {
+  clarify: string
   constructor() {
     super('LDAE')
+    this.clarify = 'LOAD ARRAY'
   }
 
   override toString(): string {
@@ -177,8 +179,10 @@ export class LoadArrayElementInstruction extends Instruction {
 }
 /** Takes the index, then array from the heap, and loads the element at the index onto the OS.  */
 export class LoadSliceElementInstruction extends Instruction {
+  clarify: string
   constructor() {
     super('LDAE')
+    this.clarify = 'LOAD SLICE'
   }
 
   override execute(process: Process): void {

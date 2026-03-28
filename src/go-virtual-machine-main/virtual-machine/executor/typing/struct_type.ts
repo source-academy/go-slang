@@ -6,7 +6,7 @@ import { Type } from '.'
 
 export class StructType extends Type {
   constructor(public fields: Map<string, Type>) {
-    super()
+    super('STRUCT')
   }
 
   override isPrimitive(): boolean {

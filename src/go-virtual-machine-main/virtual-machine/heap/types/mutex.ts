@@ -1,4 +1,6 @@
-import { Process, ProcessOutput } from '../../runtime/process'
+import { MessageType, WorkerToScheduler } from '../../runtime/message'
+import { Process } from '../../runtime/process'
+import { ProcessV2 } from '../../runtime/processV2'
 import { Heap, TAG } from '..'
 
 import { BaseNode } from './base'
@@ -7,8 +9,6 @@ import { ContextNode } from './context'
 import { MethodNode } from './func'
 import { LinkedListEntryNode } from './linkedlist'
 import { QueueNode } from './queue'
-import { ProcessV2 } from '../../runtime/processV2'
-import { MessageType, WorkerToScheduler } from '../../runtime/message'
 
 /**
  * Each MutexNode occupies 3 words.
@@ -25,10 +25,10 @@ export class MutexNode extends BaseNode {
     heap.set_tag(addr, TAG.MUTEX)
     heap.temp_push(addr)
     heap.memory.set_number(-1, addr + 2)
-    heap.memory.set_number(0, addr + 1)
+    heap.memory.atomic_set_word_i32(0, addr + 1)
     heap.memory.set_word(QueueNode.create(heap).addr, addr + 2)
-    heap.memory.set_number(0, addr + 3)
-    heap.memory.set_number(0, addr + 4)
+    heap.memory.atomic_set_word_i32(0, addr + 3)
+    heap.memory.atomic_set_word_i32(0, addr + 4)
     heap.temp_pop()
     heap.handle_after_alloc()
     return new MutexNode(heap, addr)
@@ -42,17 +42,17 @@ export class MutexNode extends BaseNode {
     return this.heap.memory.atomic_get_word_i32(this.addr + 1) < 0
   }
 
-  lock(): void {
-    this.heap.memory.set_number(-1, this.addr + 1)
-  }
+  // lock(): void {
+  //   this.heap.memory.set_number(-1, this.addr + 1)
+  // }
 
-  unlock(): void {
-    if (this.is_locked()) {
-      this.heap.memory.set_number(0, this.addr + 1)
-    } else {
-      throw new Error('sync: unlock of unlocked mutex')
-    }
-  }
+  // unlock(): void {
+  //   if (this.is_locked()) {
+  //     this.heap.memory.set_number(0, this.addr + 1)
+  //   } else {
+  //     throw new Error('sync: unlock of unlocked mutex')
+  //   }
+  // }
 
   tryLock(): boolean {
     return this.heap.memory.atomic_cas_i32(this.addr + 1, 0, -1) === 0
@@ -135,14 +135,14 @@ export class MutexNode extends BaseNode {
       ChannelArrayNode.create(1, process.heap).addr,
     )
     process.context
-      .waitlist()
-      .set_child(
-        0,
-        process.heap.blocked_contexts.push_back(process.context.addr),
-      )
+    .waitlist()
+    .set_child(
+      0,
+      process.heap.blocked_contexts.push_back(process.context.addr),
+    )
     process.context.set_blocked(true)
   }
-
+  
   handleUnlock(process: Process): void {
     if (!this.tryUnlock()) {
       throw new Error('sync: unlock of unlocked mutex')
@@ -160,12 +160,13 @@ export class MutexNode extends BaseNode {
       this.heap.contexts.push(context.addr)
     }
   }
-
+  
   handleLockV2(process: ProcessV2): void {
     if (this.tryLock()) {
       return
     }
     // If unable to lock, should block the current context and add it to the wait queue
+    process.context.set_PC(process.context.PC() - 1) // Set PC back to the Lock instruction for retry after waking up
     process.context.set_blocked(true)
     const message: WorkerToScheduler = {
       type: MessageType.BLOCK,
@@ -176,13 +177,17 @@ export class MutexNode extends BaseNode {
     }
     postMessage(message)
   }
-
+  
   handleUnlockV2(process: ProcessV2): void {
     if (!this.tryUnlock()) {
       throw new Error('sync: unlock of unlocked mutex')
     }
+    const number_awoken = this.heap.memory.atomic_notify_i32(this.addr + 1, 1)
     process.context.popOS()
     this.increment_generation()
+    if (number_awoken > 0) {
+      return
+    }
     const message: WorkerToScheduler = {
       type: MessageType.UNBLOCK,
       obj_addrs: [this.addr],

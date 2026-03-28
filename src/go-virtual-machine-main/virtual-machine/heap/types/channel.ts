@@ -1,6 +1,6 @@
-import { Heap, TAG } from '..'
 import { is_multithreaded } from '../../runtime'
 import { MessageType, WorkerToScheduler } from '../../runtime/message'
+import { Heap, TAG } from '..'
 
 import { BaseNode } from './base'
 import { ContextNode } from './context'
@@ -10,7 +10,7 @@ import { QueueNode } from './queue'
 export class ChannelNode extends BaseNode {
   static create(buffer: number, heap: Heap) {
     heap.handle_before_alloc()
-    const addr = heap.allocate(7)
+    const addr = heap.allocate(8)
     heap.set_tag(addr, TAG.CHANNEL)
     heap.memory.set_number(buffer, addr + 1)
     heap.temp_push(addr)
@@ -21,8 +21,10 @@ export class ChannelNode extends BaseNode {
     heap.memory.set_number(recv_wait_queue.addr, addr + 3)
     const send_wait_queue = LinkedListNode.create(heap)
     heap.memory.set_number(send_wait_queue.addr, addr + 4)
-    heap.memory.set_number(0, addr + 5) // Represents lock where 0 is available
-    heap.memory.set_number(0, addr + 6) // Represents the generation / version of blocking and unblocking
+    heap.memory.atomic_set_word_i32(0, addr + 5) // Represents lock where 0 is available
+    heap.memory.atomic_set_word_i32(0, addr + 6) // Represents the generation / version of blocking and unblocking
+    // Different copies of the same channel need reference to actual channel (channel declaration, actual channel etc.)
+    heap.memory.atomic_set_word_i32(addr, addr + 7) // Represents the original addr of the channel
     heap.temp_pop()
     heap.handle_after_alloc()
     return new ChannelNode(heap, addr)
@@ -35,7 +37,11 @@ export class ChannelNode extends BaseNode {
     return new QueueNode(this.heap, this.heap.memory.get_number(this.addr + 2))
   }
 
-  wait_queue(recv: boolean) {
+  wait_queue(recv: boolean): LinkedListNode {
+    if (this.addr !== this.get_original_addr()) {
+      const original_chan = this.heap.get_value(this.get_original_addr()) as ChannelNode
+      return original_chan.wait_queue(recv)
+    }
     return new LinkedListNode(
       this.heap,
       this.heap.memory.get_number(this.addr + 3 + (recv ? 0 : 1)),
@@ -63,12 +69,30 @@ export class ChannelNode extends BaseNode {
     this.heap.memory.atomic_notify_i32(this.addr + 5, 1)
   }
 
-  get_generation() {
+  get_generation(): number {
+    const original = this.get_original_addr()
+    if (original !== this.addr) {
+      const original_chan = this.heap.get_value(original) as ChannelNode
+      return original_chan.get_generation()
+    }
     return this.heap.memory.atomic_get_word_i32(this.addr + 6)
   }
 
   increment_generation() {
     this.heap.memory.atomic_add_i32(1, this.addr + 6)
+    const original = this.get_original_addr()
+    if (original !== this.addr) {
+      const original_chan = this.heap.get_value(original) as ChannelNode
+      original_chan.increment_generation()
+    }
+  }
+
+  get_original_addr() {
+    return this.heap.memory.atomic_get_word_i32(this.addr + 7)
+  }
+
+  set_original_addr(val: number) {
+    return this.heap.memory.atomic_set_word_i32(val, this.addr + 7)
   }
 
   try(req: ReqInfoNode) {
@@ -86,7 +110,7 @@ export class ChannelNode extends BaseNode {
           )
           this.buffer().push(send_req.io())
           this.increment_generation()
-          send_req.unblock(this.addr, this.get_generation())
+          send_req.unblock(this.get_original_addr(), this.get_generation())
         }
         this.release_lock()
         return true
@@ -99,7 +123,7 @@ export class ChannelNode extends BaseNode {
         )
         this.heap.copy(req.io(), send_req.io())
         this.increment_generation()
-        send_req.unblock(this.addr, this.get_generation())
+        send_req.unblock(this.get_original_addr(), this.get_generation())
         this.release_lock()
         return true
       }
@@ -112,7 +136,7 @@ export class ChannelNode extends BaseNode {
         )
         this.heap.copy(recv_req.io(), req.io())
         this.increment_generation()
-        recv_req.unblock(this.addr, this.get_generation())
+        recv_req.unblock(this.get_original_addr(), this.get_generation())
         this.release_lock()
         return true
       }
@@ -124,16 +148,22 @@ export class ChannelNode extends BaseNode {
     }
     if (is_multithreaded) {
       req.context().set_blocked(true)
-      this.wait(req)
+      this.internal_wait(req)
     }
     this.release_lock()
     return false
   }
+
   wait(req: ReqInfoNode) {
     this.get_lock()
     const val = this.wait_queue(req.is_recv()).push_back(req.addr)
     this.release_lock()
     return val
+  }
+  
+  /** Used to push into wait queue internally after lock has been retrieved */
+  private internal_wait(req: ReqInfoNode) {
+    return this.wait_queue(req.is_recv()).push_back(req.addr)
   }
 
   override get_children(): number[] {
@@ -187,14 +217,14 @@ export class ReqInfoNode extends BaseNode {
     )
   }
 
-  unblock(chan_addr: number, gen: number) {
+  unblock(original_addr: number, gen: number) {
     const context = this.context()
     context.set_PC(this.PC())
     if (this.is_recv()) context.pushOS(this.io())
     if (is_multithreaded) {
       const message: WorkerToScheduler = {
         type: MessageType.UNBLOCK,
-        obj_addrs: [chan_addr],
+        obj_addrs: [original_addr], // Pass in original channel addr
         generations: [gen]
       }
       postMessage(message)

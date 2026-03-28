@@ -4,7 +4,7 @@ import { Type } from '.'
 
 export class DeclaredType extends Type {
   constructor(public name: string, public type: Type[]) {
-    super()
+    super('DECLARED')
     this.name = name
     this.type = type
   }

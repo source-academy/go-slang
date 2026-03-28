@@ -1,6 +1,10 @@
 import { Heap } from '../../heap'
 
 export abstract class Type {
+  tag: string
+  constructor(tag: string) {
+    this.tag = tag;
+  }
   abstract isPrimitive(): boolean
   abstract toString(): string
   abstract equals(t: Type): boolean
@@ -40,6 +44,10 @@ export abstract class Type {
 
 /** This type represents arguments that don't have a fixed type. */
 export class ArbitraryType extends Type {
+  constructor() {
+    super('ARBITRARY')
+  }
+  
   isPrimitive(): boolean {
     return false
   }

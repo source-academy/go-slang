@@ -2,10 +2,10 @@ import parser from './compiler/parser'
 import { SourceFileTokens, TokenLocation } from './compiler/tokens'
 import { Instruction } from './executor/instructions'
 import { StateInfo } from './runtime/debugger'
+import { ProcessOutput } from './runtime/process'
+import { CompleteExecution } from './runtime/scheduler'
 import { compile_tokens, CompileError } from './executor'
 import { execute_instructions } from './runtime'
-import { Callback } from './runtime/scheduler'
-import { ProcessOutput } from './runtime/process'
 
 interface InstructionData {
   val: string
@@ -37,10 +37,10 @@ interface CompileData {
 const runCode = (
   source_code: string,
   heapsize: number,
-  completeExecution: (result: ProgramData) => void,
+  completeExecution: CompleteExecution,
   deterministic = true,
   visualisation = true,
-): ProgramData => {
+): void => {
   // Parsing.
   let tokens: SourceFileTokens
 
@@ -99,7 +99,7 @@ const runCode = (
     console.log(tokens)
   } catch (err) {
     const message = (err as Error).message
-    return {
+    const prog_data: ProgramData = {
       instructions: [],
       output: message,
       error: {
@@ -109,6 +109,8 @@ const runCode = (
       },
       visualData: [],
     }
+    completeExecution(prog_data)
+    return
   }
 
   // Compilation.
@@ -121,7 +123,7 @@ const runCode = (
     console.log(instructions)
   } catch (err) {
     const message = (err as CompileError).message
-    return {
+    const prog_data: ProgramData = {
       instructions: [],
       output: message,
       error: {
@@ -131,45 +133,26 @@ const runCode = (
       },
       visualData: [],
     }
+    completeExecution(prog_data)
+    return
   }
 
   // Execution.
-  const result = execute_instructions(
+  execute_instructions(
     instructions,
     heapsize,
     symbols,
     deterministic,
     visualisation,
     callback,
+    completeExecution,
   )
-  // Delete below
-  if (result.errorMessage) {
-    console.warn(result.errorMessage)
-    return {
-      instructions: [],
-      output: result.errorMessage,
-      error: {
-        message: result.errorMessage,
-        type: 'runtime',
-        details: result.errorMessage,
-      },
-      visualData: [],
-    }
-  }
-
-  return {
-    instructions: [],
-    output: result.stdout,
-    visualData: result.visual_data,
-    error: undefined,
-  }
-  // Delete above
 }
 
-function callback(result: ProcessOutput) {
+function callback(result: ProcessOutput, completeExecution: CompleteExecution) {
   if (result.errorMessage) {
     console.warn(result.errorMessage)
-    return {
+    const prog_data: ProgramData = {
       instructions: [],
       output: result.errorMessage,
       error: {
@@ -179,14 +162,16 @@ function callback(result: ProcessOutput) {
       },
       visualData: [],
     }
+    completeExecution(prog_data)
   }
 
-  return {
+  const prog_data: ProgramData = {
     instructions: [],
     output: result.stdout,
     visualData: result.visual_data,
     error: undefined,
   }
+  completeExecution(prog_data)
 }
 
 export { type CompileData, type InstructionData, type ProgramData, runCode }

@@ -30,7 +30,6 @@ export class StackNode extends BaseNode {
   }
 
   list() {
-    if (this.addr >= 256) console.log(this)
     return new StackListNode(
       this.heap,
       this.heap.memory.get_word(this.addr + 1),

@@ -1,8 +1,8 @@
 import { TokenLocation } from '../compiler/tokens'
 import { Instruction } from '../executor/instructions'
 import { Heap } from '../heap'
-import { ContextNode } from '../heap/types/context'
 import { EnvironmentNode } from '../heap/types/environment'
+
 import { Scheduler } from './scheduler'
 
 export type OSInfo = {
@@ -62,7 +62,7 @@ export class DebuggerV2 {
   private lock_buffer = new SharedArrayBuffer(4)
   private lock = new Int32Array(this.lock_buffer)
   constructor(
-    public scheduler: Scheduler,
+    public runqueues: number[],
     public heap: Heap,
     public instructions: Instruction[],
     public symbols: (TokenLocation | null)[],
@@ -144,10 +144,16 @@ export class DebuggerV2 {
     } as EnvironmentInfo
   }
 
+  /**
+   * Generates state of program
+   * [Need to fix obtaining stdout!!!]
+   * [Need to fix getting contexts for blocked contexts!!!]
+   * @param pc 
+   */
   generate_state(pc: number) {
     this.get_lock()
-    const output = this.scheduler.stdout
-    const contexts = this.scheduler.get_contexts()
+    const output = '' // Need to fix!!!
+    const contexts = Scheduler.get_contexts(this.heap, this.runqueues, [])
     const state: ContextInfo[] = []
     const prevContexts = new Set()
     let first = true
