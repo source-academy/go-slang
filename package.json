@@ -83,7 +83,7 @@
     "babel-plugin-named-exports-order": "^0.0.2",
     "chromatic": "^6.19.9",
     "concurrently": "^8.2.2",
-    "eslint": "^8.41.0",
+    "eslint": "^9.26.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-simple-import-sort": "^10.0.0",
