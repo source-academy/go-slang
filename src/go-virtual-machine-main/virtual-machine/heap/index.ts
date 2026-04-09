@@ -138,7 +138,7 @@ export class Heap {
   alloc_lock_addr: number // Lock for allocation
   alloc_count_addr: number // Total number of allocations ongoing (to sync with GC)
   gc_init_flag_addr: number // Address of GC Init Flag which indicates if GC wants to initialise
-  save_stack_flag_addr: number // [Config] Address of save stack flag to indicate if GC wants to pop from save stack
+  save_stack_flag_addr: number // Address of save stack flag to indicate if GC wants to pop from save stack
   constructor(size: number, config?: LoadHeapConfig) {
     this.size = size
     // Size must be power of 2 for buddy allocation
@@ -473,15 +473,17 @@ export class Heap {
     // Update mark to be done concurrently while sweep be done when GOGC ratio is hit
     if (addr === -1) {
       if (is_multithreaded && this.metadata.get_gc_phase() !== GCPHASE.INVALID) {
-        const gen = this.metadata.get_gc_generation()
+        this.metadata.set_out_of_mem(true)
+        const gen = this.metadata.get_gc_cycle()
         const message: WorkerToScheduler = {
           type: MessageType.GC,
           thread_id: local_thread.thread_id,
         }
         postMessage(message)
-        while (this.metadata.get_gc_generation() === gen) {
-          this.metadata.wait_gc_generation(gen)
+        while (this.metadata.get_gc_cycle() === gen) {
+          this.metadata.wait_gc_cycle(gen)
         }
+        this.metadata.set_out_of_mem(false)
       } else if (is_tri_color && this.metadata.get_gc_phase() !== GCPHASE.INVALID) {
         do {
           this.tri_color_step()
@@ -496,25 +498,28 @@ export class Heap {
       throw Error('Ran out of memory!')
     }
     size = this.get_size(addr)
-    this.gc_profiler.increment_alloc(size)
+    if (is_multithreaded) {
+      this.metadata.increment_alloc_total(size)
+    } else {
+      this.gc_profiler.increment_alloc(size)
+    }
     this.metadata.increment_mem_left(-size)
 
-    if (is_tri_color && this.metadata.get_gc_phase() !== GCPHASE.INVALID) {
+    if (is_multithreaded
+      && this.metadata.get_gc_phase() === GCPHASE.NONE
+      && (this.size - this.metadata.get_mem_left() >= this.metadata.get_gc_target_mem())) {
+      // const flag = this.get_value(this.gc_init_flag_addr) as FlagNode
+      // flag.set_flag(1)
+      const message: WorkerToScheduler = {
+        type: MessageType.GC,
+        thread_id: local_thread.thread_id,
+      }
+      postMessage(message)
+    } else if (is_tri_color && this.metadata.get_gc_phase() !== GCPHASE.INVALID) {
       switch (this.metadata.get_gc_phase()) {
         case GCPHASE.NONE:
           if (this.size - this.metadata.get_mem_left() >= this.metadata.get_gc_target_mem()) {
-            // Needs to stop the world while occuring
-            if (!is_multithreaded) {
-              this.initiate_tri_color()
-              break
-            }
-            const flag = this.get_value(this.gc_init_flag_addr) as FlagNode
-            flag.set_flag(1)
-            const message: WorkerToScheduler = {
-              type: MessageType.GC,
-              thread_id: local_thread.thread_id,
-            }
-            postMessage(message)
+            this.initiate_tri_color()
           }
           break
         case GCPHASE.MARK:
@@ -538,7 +543,7 @@ export class Heap {
    * @return End address of the merged free block
    */
   free(addr: number) {
-    (this.get_value(this.alloc_lock_addr) as LockNode).get_lock()
+    !this.metadata.get_out_of_mem() && (this.get_value(this.alloc_lock_addr) as LockNode).get_lock() // If out of memory, a worker will be holding onto the lock
     let lvl = this.get_level(addr)
     this.metadata.increment_mem_left(2 ** lvl)
     // Increase until the highest level
@@ -559,10 +564,14 @@ export class Heap {
     }
     this.set_free(addr, true)
     this.add_list(addr, lvl)
-    this.gc_profiler.increment_freed(this.get_size(addr))
+    if (is_multithreaded) {
+      this.metadata.increment_freed_total(this.get_size(addr))
+    } else {
+      this.gc_profiler.increment_freed(this.get_size(addr))
+    }
 
     this.debugger?.identifier_map.delete(addr);
-    (this.get_value(this.alloc_lock_addr) as LockNode).release_lock()
+    !this.metadata.get_out_of_mem() && (this.get_value(this.alloc_lock_addr) as LockNode).release_lock()
     return addr + (1 << lvl)
   }
 
@@ -602,11 +611,11 @@ export class Heap {
       if (flag.get_flag() === 1 && (local_thread === undefined || local_thread.alloc_depth === 0)) {
         flag.sleep_thread(1)
       }
-  
+
       if (local_thread !== undefined) local_thread.alloc_depth += 1 // Done locally within same thread so no race condition
       const total_alloc_count = this.get_value(this.alloc_count_addr) as CounterNode
       total_alloc_count.increase_count()
-  
+
       // Recheck after increment
       if (flag.get_flag() === 1 && (local_thread === undefined || local_thread.alloc_depth === 1)) {
         flag.sleep_thread(1)
@@ -723,39 +732,54 @@ export class Heap {
     }
   }
 
-  tri_color_step() {
+  tri_color_step(all_contexts: number[] = []) {
     switch (this.metadata.get_gc_phase()) {
       case GCPHASE.NONE:
-        this.initiate_tri_color()
+        this.initiate_tri_color(all_contexts)
         break
       case GCPHASE.MARK:
         // Must make it stop all other webworkers
         this.mark_tri_color(10, 4)
         break
       case GCPHASE.SWEEP:
-        this.sweep_tri_color(10)
+        this.sweep_tri_color(10, all_contexts)
         break
     }
   }
 
-  initiate_tri_color() {
+  initiate_tri_color(all_contexts: number[] = []) {
     this.gc_profiler.start_pause()
     console.log("TRI COLOR START")
-    // console.trace()
+    const lock = this.get_value(this.alloc_lock_addr) as LockNode
+    if (!is_multithreaded) {
+      all_contexts = [
+        this.contexts.addr, // Current running program state
+        this.blocked_contexts.addr, // Suspended goroutines
+      ]
+    } else {
+      if (!this.metadata.get_out_of_mem()) lock.get_lock()
+    }
     // All root references
     const roots: number[] = [
-      this.contexts.addr, // Current running program state
-      this.blocked_contexts.addr, // Suspended goroutines
+      ...all_contexts,
       this.temp_roots.addr, // Stack of temporary roots
       this.UNASSIGNED.addr, // Special global constant or object
       this.alloc_lock_addr, // Heap's lock for allocating memory
       this.alloc_count_addr, // Number of allocations occuring
       this.gc_init_flag_addr, // GC flag for whether GC wants to mark
+      this.save_stack_flag_addr,
+      ...this.save_stack_addrs,
       this.temp, // Single temp pointer
     ]
     for (const root of roots) {
       if (root === -1) continue
       this.mark_gray(root)
+    }
+    if (is_multithreaded) {
+      if (!this.metadata.get_out_of_mem()) lock.release_lock()
+      const flag = this.get_value(this.gc_init_flag_addr) as FlagNode
+      flag.set_flag(0)
+      flag.notify_threads()
     }
     this.metadata.set_gc_phase(GCPHASE.MARK)
     this.gc_profiler.end_pause()
@@ -768,7 +792,11 @@ export class Heap {
    * @desc Mark phase of mark and sweep
    */
   mark_tri_color(k1: number, k2: number) {
-    this.gc_profiler.start_pause()
+    if (is_multithreaded) {
+      this.gc_profiler.start_increment()
+    } else {
+      this.gc_profiler.start_pause()
+    }
     // Process mark stack
     for (let i = 0; i < k1; i++) {
       const addr = this.mark_stack.pop()
@@ -778,6 +806,7 @@ export class Heap {
       const val = this.get_value(addr)
       const children = val.get_children()
       for (const child of children) {
+        if (child === -1) continue
         this.mark_gray(child)
       }
     }
@@ -785,14 +814,8 @@ export class Heap {
     // Transfer from save stacks to mark stack
     const flag = this.get_value(this.save_stack_flag_addr) as FlagNode
     flag.set_flag(1)
-    for (let i = 0; i < k2; i++) {
-      const save_stack = this.get_value(this.save_stack_addrs[i % this.save_stack_addrs.length]) as SaveStackNode
-      const addr = save_stack.pop()
-      if (addr === undefined) break
-      if (addr === -1) continue
-      this.mark_gray(addr)
-    }
 
+    // If save stacks are all empty, no reason to try popping from them
     let is_save_stack_empty = true
     for (let i = 0; i < this.save_stack_addrs.length; i++) {
       const save_stack = this.get_value(this.save_stack_addrs[i % this.save_stack_addrs.length]) as SaveStackNode
@@ -802,42 +825,76 @@ export class Heap {
       }
     }
 
+    if (!is_save_stack_empty) {
+      for (let i = 0; i < k2; i++) {
+        const save_stack = this.get_value(this.save_stack_addrs[i % this.save_stack_addrs.length]) as SaveStackNode
+        const addr = save_stack.pop()
+        if (addr === undefined || addr === -1) {
+          i -= 1
+          continue
+        }
+        this.mark_gray(addr)
+      }
+
+      // Check if save stack is empty again to handle termination condition
+      for (let i = 0; i < this.save_stack_addrs.length; i++) {
+        const save_stack = this.get_value(this.save_stack_addrs[i % this.save_stack_addrs.length]) as SaveStackNode
+        if (save_stack.sz() > 0) {
+          is_save_stack_empty = false
+          break
+        }
+      }
+    }
+
+
     // Check if mark phase should be terminated
     if (this.mark_stack.length === 0 && is_save_stack_empty) {
       this.metadata.set_gc_phase(GCPHASE.SWEEP)
     }
     flag.set_flag(0)
     flag.notify_threads()
-    this.gc_profiler.end_pause()
+    if (is_multithreaded) {
+      this.gc_profiler.end_increment()
+    } else {
+      this.gc_profiler.end_pause()
+    }
   }
 
-  sweep_tri_color(k3: number) {
-    this.gc_profiler.start_pause()
+  sweep_tri_color(k3: number, all_contexts: number[] = []) {
+    if (is_multithreaded) {
+      this.gc_profiler.start_increment()
+    } else {
+      this.gc_profiler.start_pause()
+    }
     for (let i = 0; i < k3; i++) {
       if (this.metadata.get_sweeper() >= this.size) {
-        this.terminate_sweep()
+        this.terminate_sweep(all_contexts)
         break
       }
       // Store original addr before increasing sweeper
       const addr = this.metadata.get_sweeper()
-      this.metadata.increment_sweeper(this.get_size(addr))
       if (!this.bitmap.is_marked(addr)) {
-        this.free(addr)
+        this.metadata.set_sweeper(this.free(addr))
       } else {
         this.bitmap.set_mark(addr, false)
+        this.metadata.increment_sweeper(this.get_size(addr))
       }
     }
     // check in case sweeper exceeds size only at the end
     if (this.metadata.get_sweeper() >= this.size) {
-      this.terminate_sweep()
+      this.terminate_sweep(all_contexts)
     }
-    this.gc_profiler.end_pause()
+    if (is_multithreaded) {
+      this.gc_profiler.end_increment()
+    } else {
+      this.gc_profiler.end_pause()
+    }
   }
 
-  terminate_sweep() {
+  terminate_sweep(all_contexts: number[] = []) {
     this.metadata.set_sweeper(0)
     this.metadata.set_gc_phase(GCPHASE.NONE)
-    this.calc_target_mem()
+    this.calc_target_mem(all_contexts)
     this.gc_profiler.end_gc_cycle()
   }
 
@@ -845,6 +902,15 @@ export class Heap {
     if (this.bitmap.is_marked(addr)) return
     this.bitmap.set_mark(addr, true)
     this.mark_stack.push(addr)
+  }
+
+  mark_save_stack(addr: number) {
+    if (this.bitmap.is_marked(addr)) return
+    const flag = this.get_value(this.save_stack_flag_addr) as FlagNode
+    flag.sleep_thread(1)
+    this.bitmap.set_mark(addr, true)
+    const save_stack = this.get_value(this.save_stack_addrs[0]) as SaveStackNode
+    save_stack.push(addr)
   }
 
   mark_and_sweep() {
@@ -860,6 +926,8 @@ export class Heap {
       this.alloc_lock_addr, // Heap's lock for allocating memory
       this.alloc_count_addr, // Number of allocations occuring
       this.gc_init_flag_addr, // GC flag for whether GC wants to mark
+      this.save_stack_flag_addr,
+      ...this.save_stack_addrs,
       this.temp, // Single temp pointer
     ]
     for (const root of roots) {
@@ -881,16 +949,23 @@ export class Heap {
     return
   }
 
-  get_roots_mem(): number {
+  get_roots_mem(all_contexts: number[] = []): number {
+    if (!is_multithreaded) {
+      all_contexts = [
+        this.contexts.addr, // Current running program state
+        this.blocked_contexts.addr, // Suspended goroutines
+      ]
+    }
     // All root references
     const roots: number[] = [
-      this.contexts.addr, // Current running program state
-      this.blocked_contexts.addr, // Suspended goroutines
+      ...all_contexts,
       this.temp_roots.addr, // Stack of temporary roots
       this.UNASSIGNED.addr, // Special global constant or object
       this.alloc_lock_addr, // Heap's lock for allocating memory
       this.alloc_count_addr, // Number of allocations occuring
       this.gc_init_flag_addr, // GC flag for whether GC wants to mark
+      this.save_stack_flag_addr,
+      ...this.save_stack_addrs,
       this.temp, // Single temp pointer
     ]
     let size = 0
@@ -900,10 +975,10 @@ export class Heap {
     return size
   }
 
-  calc_target_mem() {
+  calc_target_mem(all_contexts: number[] = []) {
     const live_heap = this.size - this.metadata.get_mem_left()
     const res =
-      live_heap + (live_heap + this.get_roots_mem()) * (this.GOGC / 100)
+      live_heap + (live_heap + this.get_roots_mem(all_contexts)) * (this.GOGC / 100)
     this.metadata.set_gc_target_mem(Math.max(res, this.size * this.gc_heap_min))
   }
 
@@ -915,6 +990,10 @@ export class Heap {
   copy(dst: number, src: number) {
     if (dst === -1) return
     if (dst === src) return
+    if (dst === this.alloc_lock_addr) {
+        console.log("ILLEGAL COPY TO ALLOC LOCK", new Error().stack)
+        return
+    }
     let sz = this.get_size(src)
     if (this.get_type(src) instanceof Int64Type) sz = 4
     if (this.get_type(src) instanceof BoolType) sz = 1

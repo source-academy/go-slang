@@ -1,25 +1,39 @@
 import { GCPHASE, Heap } from "../heap"
 
-import { MessageType, SchedulerToGC } from "./message"
+import { MessageType, SchedulerToGC, WorkerToScheduler } from "./message"
 
-let heap: Heap
+export let gc_heap: Heap
 
 onmessage = (event: MessageEvent<SchedulerToGC>) => {
     const type = event.data.type
     switch (type) {
         case MessageType.GC_INIT: {
-            const { load_heap_config, heapsize } = event.data
-            heap = new Heap(heapsize, load_heap_config)
-            postMessage({ type: MessageType.GC_INITIALISED })
+            const { load_heap_config, heapsize, extra_roots } = event.data
+            gc_heap = new Heap(heapsize, load_heap_config)
+            do {
+                gc_heap.tri_color_step(extra_roots)
+            } while (gc_heap.metadata.get_gc_phase() !== GCPHASE.NONE)
+            gc_heap.metadata.increment_gc_cycle(1)
+            gc_heap.metadata.notify_gc_cycle()
+            const message: WorkerToScheduler = {
+                type: MessageType.GC_COMPLETED,
+                gc_profiler: gc_heap.gc_profiler,
+            }
+            postMessage(message)
             break;
         }
         case MessageType.GC_RUN: {
+            const { extra_roots } = event.data
             do {
-                heap.tri_color_step()
-            } while (heap.metadata.get_gc_phase() !== GCPHASE.NONE)
-            heap.metadata.increment_gc_generation(1)
-            heap.metadata.notify_gc_generation()
-            postMessage({ type: MessageType.GC_RUN })
+                gc_heap.tri_color_step(extra_roots)
+            } while (gc_heap.metadata.get_gc_phase() !== GCPHASE.NONE)
+            gc_heap.metadata.increment_gc_cycle(1)
+            gc_heap.metadata.notify_gc_cycle()
+            const message: WorkerToScheduler = {
+                type: MessageType.GC_COMPLETED,
+                gc_profiler: gc_heap.gc_profiler,
+            }
+            postMessage(message)
             break;
         }
     }

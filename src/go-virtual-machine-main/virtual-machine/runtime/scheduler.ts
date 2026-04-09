@@ -1,6 +1,7 @@
 import { TokenLocation } from '../compiler/tokens'
 import { Instruction } from '../executor/instructions'
 import { Heap, LoadHeapConfig } from '../heap'
+import { GCProfiler } from '../heap/gc_profiler'
 import { ChannelNode } from '../heap/types/channel'
 import { ContextNode } from '../heap/types/context'
 import { EnvironmentNode, FrameNode } from '../heap/types/environment'
@@ -44,6 +45,7 @@ export class Scheduler {
     blocking_waitlists: Map<number, BlockingContext[]> // Map of object address to Map of [context address to arr of context addresses blocked on it]
     blocked_contexts: Set<number> // Arr of goroutine addresses that are currently blocked
     GC_Worker: Worker | undefined
+    gc_profiler: GCProfiler
     is_gc_running = false
 
     main_goroutine_addr: number
@@ -81,6 +83,7 @@ export class Scheduler {
         this.idle_threads = []
         this.blocking_waitlists = new Map()
         this.blocked_contexts = new Set()
+        this.gc_profiler = new GCProfiler() // Only used to track runtime
         this.instructions = instructions
         this.heapsize = heapsize
         this.symbols = symbols
@@ -130,8 +133,10 @@ export class Scheduler {
     }
 
     init() {
+        this.gc_profiler.start_program()
         const id = this.handle_thread_creation()
         this.heap.is_alloc_ready = true
+        this.heap.calc_target_mem()
         const save_stack_addrs = [this.save_stacks[id]]
         const runqueue_addr = this.runqueues[id]
         const runqueue = this.heap.get_value(runqueue_addr) as RunQueueNode
@@ -207,6 +212,27 @@ export class Scheduler {
 
     private init_worker_gc() {
         this.GC_Worker = new Worker(new URL('workerGC.ts', import.meta.url))
+        this.GC_Worker.onmessage = (event: MessageEvent<WorkerToScheduler>) => {
+            // Handle messages coming from GC worker
+            const type = event.data.type
+            switch (type) {
+                case MessageType.GC_COMPLETED: {
+                    this.is_gc_running = false
+                    const retrieved_profiler: GCProfiler = event.data.gc_profiler
+                    this.gc_profiler.copy_over_gc_data(retrieved_profiler)
+                    // Only log and return if program has been completed and this message was received afterwards
+                    if (this.is_completed) {
+                        this.log_gc_stats()
+                    }
+                    break;
+                }
+            }
+        }
+        const extra_roots: number[] = [
+            ...this.get_contexts_addr(),
+            ...this.runqueues,
+            ...this.save_stacks,
+        ]
         const message: SchedulerToGC = {
             type: MessageType.GC_INIT,
             load_heap_config: {
@@ -214,6 +240,7 @@ export class Scheduler {
                 save_stack_addrs: this.save_stacks,
             },
             heapsize: this.heapsize,
+            extra_roots: extra_roots,
         }
         this.GC_Worker.postMessage(message)
     }
@@ -221,7 +248,7 @@ export class Scheduler {
     setup_worker(worker: Worker) {
         worker.onmessage = (event: MessageEvent<WorkerToScheduler>) => {
             // If main thread has already completed execution ignore the rest
-            if (this.is_completed) {
+            if (this.is_completed && event.data.type !== MessageType.GC_COMPLETED) {
                 return
             }
 
@@ -253,20 +280,6 @@ export class Scheduler {
                     }
                     // If not, set to idle and wait for work to be pushed to its runqueue
                     this.idle_threads.push(idle_id)
-                    break;
-                }
-                case MessageType.STDOUT: {
-                    this.stdout += event.data.message
-                    break;
-                }
-                case MessageType.ERROR: {
-                    const error_message = event.data.error_message
-                    const error_output: ProcessOutput = {
-                        stdout: this.stdout,
-                        visual_data: [],
-                        errorMessage: error_message,
-                    }
-                    this.callback(error_output, this.completeExecution)
                     break;
                 }
                 case MessageType.BLOCK: {
@@ -370,21 +383,21 @@ export class Scheduler {
                     break;
                 }
                 case MessageType.GC: {
+                    if (this.is_gc_running) break;
+                    this.is_gc_running = true
                     if (this.GC_Worker === undefined) {
                         this.init_worker_gc()
-                        break
+                        break;
                     }
-                    this.GC_Worker.postMessage({ type: MessageType.GC_RUN })
-                    this.is_gc_running = true
-                    break;
-                }
-                case MessageType.GC_INITIALISED: {
-                    this.GC_Worker?.postMessage({ type: MessageType.GC_RUN })
-                    this.is_gc_running = true
-                    break;
-                }
-                case MessageType.GC_COMPLETED: {
-                    this.is_gc_running = false
+                    const extra_roots: number[] = [
+                        ...this.get_contexts_addr(),
+                        ...this.runqueues,
+                        ...this.save_stacks,
+                    ]
+                    this.GC_Worker.postMessage({
+                        type: MessageType.GC_RUN,
+                        extra_roots: extra_roots,
+                    })
                     break;
                 }
                 case MessageType.NEW_GOROUTINE: {
@@ -406,8 +419,29 @@ export class Scheduler {
                     this.assign_goroutine_to_runqueue(popped_ctx_addr)
                     break;
                 }
+                case MessageType.STDOUT: {
+                    this.stdout += event.data.message
+                    break;
+                }
+                case MessageType.ERROR: {
+                    const error_message = event.data.error_message
+                    const error_output: ProcessOutput = {
+                        stdout: this.stdout,
+                        visual_data: [],
+                        errorMessage: error_message,
+                    }
+                    this.callback(error_output, this.completeExecution)
+                    break;
+                }
                 case MessageType.FINISHED: {
+                    this.gc_profiler.end_program()
+                    this.gc_profiler.set_alloc(this.heap.metadata.get_alloc_total())
+                    this.gc_profiler.set_freed(this.heap.metadata.get_freed_total())
                     this.is_completed = true
+                    // Only log if not waiting for gc to complete
+                    if (!this.is_gc_running) {
+                        this.log_gc_stats()
+                    }
                     const finish_output: ProcessOutput = {
                         stdout: this.stdout,
                         visual_data: [],
@@ -462,6 +496,45 @@ export class Scheduler {
             type: MessageType.RUN_PROGRAM,
         }
         worker.postMessage(message)
+    }
+
+    log_gc_stats() {
+        const pause_time =
+        (this.gc_profiler.total_pause_time -
+            this.gc_profiler.partial_pause_time) /
+        this.gc_profiler.num_gc
+        const mutator_time =
+            this.gc_profiler.program_time -
+            this.gc_profiler.total_pause_time
+        const throughput_ratio =
+            mutator_time / this.gc_profiler.program_time
+        const alloc_rate = this.gc_profiler.total_alloc /
+            this.gc_profiler.program_time
+        const free_rate = this.gc_profiler.total_freed /
+            this.gc_profiler.program_time
+
+        console.log('Program Time: %f', this.gc_profiler.program_time)
+        console.log('Throughput Ratio: %f', throughput_ratio)
+        console.log('Total GC Time: %f', this.gc_profiler.total_gc_time)
+        console.log('Avg GC Time: %f', this.gc_profiler.total_gc_time / this.gc_profiler.num_gc)
+        console.log('Total Pause Time: %f', this.gc_profiler.total_pause_time)
+        console.log('Avg Pause Time: %f', pause_time)
+        console.log('GC Frequency: %d', this.gc_profiler.num_gc)
+        console.log('Alloc Rate: %f bytes/ms', alloc_rate)
+        console.log('Free Rate: %f bytes/ms', free_rate)
+
+        console.log("Mem Left: %d", this.heap.metadata.get_mem_left())
+    }
+
+    get_contexts_addr(): number[] {
+        const running_contexts_addr = this.runqueues.map((rq_addr) => {
+            const rq = this.heap.get_value(rq_addr) as RunQueueNode
+            return rq.get_vals()
+        })
+        return [
+            ...running_contexts_addr.flat(),
+            ...this.blocked_contexts,
+        ]
     }
 
     /**

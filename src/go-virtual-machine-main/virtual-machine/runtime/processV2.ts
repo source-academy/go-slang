@@ -4,7 +4,6 @@ import { DoneInstruction, GoInstruction, Instruction } from "../executor/instruc
 import { Heap } from "../heap"
 import { ContextNode } from "../heap/types/context"
 import { MethodNode } from "../heap/types/func"
-import { FlagNode } from "../heap/types/internal"
 import { RunQueueNode } from "../heap/types/runqueue"
 import { SaveStackNode } from "../heap/types/saveStack"
 
@@ -156,11 +155,7 @@ export class ProcessV2 {
     }
 
     mark_save_stack(addr: number) {
-        if (this.heap.bitmap.is_marked(addr)) return
-        const flag = this.heap.get_value(this.heap.save_stack_flag_addr) as FlagNode
-        flag.sleep_thread(1)
-        this.heap.bitmap.set_mark(addr, true)
-        this.save_stack.push(addr)
+        this.heap.mark_save_stack(addr)
     }
 
     print(string: string) {

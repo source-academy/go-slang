@@ -2,7 +2,7 @@ import { Type } from '../../executor/typing'
 import { ArrayType } from '../../executor/typing/array_type'
 import { DeclaredType } from '../../executor/typing/declared_type'
 import { StructType } from '../../executor/typing/struct_type'
-import { Heap, TAG } from '..'
+import { GCPHASE, Heap, TAG } from '..'
 
 import { ArrayNode } from './array'
 import { BaseNode } from './base'
@@ -215,6 +215,10 @@ export class StructNode extends BaseNode {
   }
 
   set_child(index: number, address: number) {
+    // Yuasa's write barrier
+    if (this.heap.metadata.get_gc_phase() === GCPHASE.MARK) {
+      this.heap.mark_save_stack(address)
+    }
     this.heap.memory.set_word(address, this.addr + 2 + index)
   }
 

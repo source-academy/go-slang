@@ -1,4 +1,5 @@
 import { LoadHeapConfig } from '../heap';
+import { GCProfiler } from '../heap/gc_profiler';
 
 import { ThreadConfig as WorkerConfig } from './scheduler';
 
@@ -38,9 +39,8 @@ export type WorkerToScheduler =
   | { type: MessageType.GC; thread_id: number }
   | { type: MessageType.NEW_GOROUTINE; thread_id: number }
   | { type: MessageType.FINISHED; thread_id: number }
-  | { type: MessageType.GC_INITIALISED }
-  | { type: MessageType.GC_COMPLETED }
+  | { type: MessageType.GC_COMPLETED; gc_profiler: GCProfiler }
 
 export type SchedulerToGC =
-  | { type: MessageType.GC_INIT; load_heap_config: LoadHeapConfig; heapsize: number }
-  | { type: MessageType.GC_RUN; }
+  | { type: MessageType.GC_INIT; load_heap_config: LoadHeapConfig; heapsize: number; extra_roots: number[] }
+  | { type: MessageType.GC_RUN; extra_roots: number[] }

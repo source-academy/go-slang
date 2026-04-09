@@ -44,6 +44,9 @@ export class SaveStackNode extends BaseNode {
   }
   pop() {
     const list = this.list()
+    if (list.get_sz() === 0) {
+      return -1 // runqueue should only hold context addrs, -1 is invalid
+    }
     const res = list.pop()
     this.heap.memory.set_word(list.addr, this.addr + 1)
     return res

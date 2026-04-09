@@ -1,6 +1,6 @@
 import { is_multithreaded } from '../../runtime'
 import { MessageType, WorkerToScheduler } from '../../runtime/message'
-import { Heap, TAG } from '..'
+import { GCPHASE, Heap, TAG } from '..'
 
 import { BaseNode } from './base'
 import { ContextNode } from './context'
@@ -336,6 +336,10 @@ export class ChannelArrayNode extends BaseNode {
   }
 
   set_child(index: number, address: number) {
+    // Yuasa's write barrier
+    if (this.heap.metadata.get_gc_phase() === GCPHASE.MARK) {
+      this.heap.mark_save_stack(address)
+    }
     this.heap.memory.set_word(address, this.addr + 2 + index)
   }
 
