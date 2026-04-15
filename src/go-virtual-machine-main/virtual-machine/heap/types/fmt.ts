@@ -1,10 +1,10 @@
 import { Process } from '../../runtime/process'
+import { ProcessV2 } from '../../runtime/processV2'
 import { Heap, TAG } from '..'
 
 import { BaseNode } from './base'
 import { MethodNode } from './func'
 import { StringNode } from './primitives'
-import { ProcessV2 } from '../../runtime/processV2'
 
 /**
  * This node represents an uninitialized package. It only occupies one word, its tag.

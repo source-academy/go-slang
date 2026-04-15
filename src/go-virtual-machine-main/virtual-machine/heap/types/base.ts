@@ -1,6 +1,6 @@
 import { Process } from '../../runtime/process'
-import { Heap } from '..'
 import { ProcessV2 } from '../../runtime/processV2'
+import { Heap } from '..'
 
 export abstract class BaseNode {
   addr = 0

@@ -1,11 +1,11 @@
 import { Process } from '../../runtime/process'
+import { ProcessV2 } from '../../runtime/processV2'
 import { Heap, TAG } from '..'
 
 import { BaseNode } from './base'
 import { StringNode } from './primitives'
 import { ReferenceNode } from './reference'
 import { StackNode } from './stack'
-import { ProcessV2 } from '../../runtime/processV2'
 
 export class FuncNode extends BaseNode {
   static create(PC: number, env: number, heap: Heap) {

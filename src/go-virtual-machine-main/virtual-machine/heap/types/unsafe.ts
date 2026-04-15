@@ -1,11 +1,11 @@
 import { Process } from '../../runtime/process'
+import { ProcessV2 } from '../../runtime/processV2'
 import { Heap, TAG, word_size } from '..'
 
 import { BaseNode } from './base'
 import { MethodNode } from './func'
 import { IntegerNode, StringNode } from './primitives'
 import { ReferenceNode } from './reference'
-import { ProcessV2 } from '../../runtime/processV2'
 
 /**
  * This node represents the `fmt` package. It only occupies one word, its tag.
