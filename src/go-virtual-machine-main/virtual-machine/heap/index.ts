@@ -114,7 +114,7 @@ export type LoadHeapConfig = {
 }
 
 export const word_size = 4
-export const is_tri_color = false
+export const is_tri_color = true
 
 export class Heap {
   memory: Memory // Assume memory is an array of 8 byte words, holds actual memory

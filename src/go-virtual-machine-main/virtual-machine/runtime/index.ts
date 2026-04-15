@@ -5,7 +5,7 @@ import { ProgramData } from '..'
 import { Process } from './process'
 import { Callback, Scheduler } from './scheduler'
 
-export const is_multithreaded = false
+export const is_multithreaded = true
 
 const execute_instructions = (
   instrs: Instruction[],
