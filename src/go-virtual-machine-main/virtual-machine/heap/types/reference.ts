@@ -17,7 +17,7 @@ export class ReferenceNode extends BaseNode {
   set_child(address: number) {
     // Yuasa's write barrier
     if (this.heap.metadata.get_gc_phase() === GCPHASE.MARK) {
-      this.heap.mark_save_stack(address)
+      this.heap.mark_save_stack(this.get_child())
     }
     this.heap.memory.set_word(address, this.addr + 1)
   }

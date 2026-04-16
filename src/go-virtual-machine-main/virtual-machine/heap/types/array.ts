@@ -100,7 +100,7 @@ export class ArrayNode extends BaseNode {
   set_child(index: number, address: number) {
     // Yuasa's write barrier
     if (this.heap.metadata.get_gc_phase() === GCPHASE.MARK) {
-      this.heap.mark_save_stack(address)
+      this.heap.mark_save_stack(this.get_child(index))
     }
     this.heap.memory.set_word(address, this.addr + 2 + index)
   }
@@ -193,7 +193,7 @@ export class SliceNode extends BaseNode {
   set_child(index: number, address: number) {
     // Yuasa's write barrier
     if (this.heap.metadata.get_gc_phase() === GCPHASE.MARK) {
-      this.heap.mark_save_stack(address)
+      this.heap.mark_save_stack(this.get_child(index))
     }
     this.arrayNode().set_child(this.start() + index, address)
   }
