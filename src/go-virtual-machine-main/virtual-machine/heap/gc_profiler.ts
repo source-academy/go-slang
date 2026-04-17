@@ -15,20 +15,20 @@ export class GCProfiler {
   total_freed: number
 
   constructor() {
-    this.program_time = 0
+    this.program_time = 0 // Total time taken for program execution
     this.program_start = 0
     this.program_end = 0
-    this.num_gc = 0
-    this.total_gc_time = 0
-    this.partial_gc_time = 0
+    this.num_gc = 0 // Number of GC cycles
+    this.total_gc_time = 0 // Total time taken by GC for garbage collection
+    this.partial_gc_time = 0 // Time taken for current GC cycle, used for incomplete cycles when program ends
     this.increment_start = 0
     this.increment_end = 0
-    this.total_pause_time = 0
-    this.partial_pause_time = 0 // for case where gc cycle is incomplete
+    this.total_pause_time = 0 // Total time taken for GC stop the world pauses
+    this.partial_pause_time = 0 // Time taken for current GC cycle, used for incomplete cycles when program ends
     this.pause_start = 0
     this.pause_end = 0
-    this.total_alloc = 0
-    this.total_freed = 0
+    this.total_alloc = 0 // Total memory allocated in bytes
+    this.total_freed = 0 // Total memory freed in bytes
   }
 
   start_program() {
@@ -79,7 +79,24 @@ export class GCProfiler {
     this.total_alloc += size * 4
   }
 
+  set_alloc(size: number) {
+    this.total_alloc = size
+  }
+
   increment_freed(size: number) {
     this.total_freed += size * 4
+  }
+
+  set_freed(size: number) {
+    this.total_freed = size
+  }
+
+  /** Copy over garbage collection data, not including program runtime and memory data */
+  copy_over_gc_data(gc_profiler: GCProfiler) {
+    this.num_gc = gc_profiler.num_gc
+    this.total_gc_time = gc_profiler.total_gc_time
+    this.partial_gc_time = gc_profiler.partial_gc_time
+    this.total_pause_time = gc_profiler.total_pause_time
+    this.partial_pause_time = gc_profiler.partial_pause_time
   }
 }

@@ -46,6 +46,14 @@ export const builtinPackages = {
       Mutex: new MutexType(),
     })
     compiler.type_environment.addType('sync', pkg)
+    // const [frame_idx, var_idx] = compiler.context.env.declare_var('sync')
+    // compiler.instructions.push(
+    //   new LoadConstantInstruction('sync', new StringType()),
+    //   new LoadPackageInstruction(),
+    //   new LoadVariableInstruction(frame_idx, var_idx, 'sync', pkg),
+    //   new StoreInstruction(),
+    // )
+    // compiler.symbols.push(...Array(4).fill(null))
     return pkg
   },
   unsafe: (compiler: Compiler): Type => {

@@ -11,7 +11,7 @@ export class PointerType extends Type {
     throw new Error('Method not implemented.')
   }
   constructor(public type: Type) {
-    super()
+    super('POINTER')
   }
 
   override isPrimitive(): boolean {

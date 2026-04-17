@@ -1,4 +1,5 @@
 import { Process } from '../../runtime/process'
+import { ProcessV2 } from '../../runtime/processV2'
 import { Heap, TAG } from '..'
 
 import { BaseNode } from './base'
@@ -10,8 +11,10 @@ import { StringNode } from './primitives'
  */
 export class PkgNode extends BaseNode {
   static create(heap: Heap): PkgNode {
+    heap.handle_before_alloc()
     const addr = heap.allocate(1)
     heap.set_tag(addr, TAG.PKG)
+    heap.handle_after_alloc()
     return new PkgNode(heap, addr)
   }
 
@@ -29,8 +32,10 @@ export class PkgNode extends BaseNode {
  */
 export class FmtPkgNode extends BaseNode {
   static create(heap: Heap): FmtPkgNode {
+    heap.handle_before_alloc()
     const addr = heap.allocate(1)
     heap.set_tag(addr, TAG.FMT_PKG)
+    heap.handle_after_alloc()
     return new FmtPkgNode(heap, addr)
   }
 
@@ -38,7 +43,7 @@ export class FmtPkgNode extends BaseNode {
     return FmtPkgNode.create(heap)
   }
 
-  override select(process: Process, identifier: string): void {
+  override select(process: Process | ProcessV2, identifier: string): void {
     process.context.pushOS(
       MethodNode.create(this.addr, identifier, this.heap).addr,
     )
@@ -59,7 +64,22 @@ export class FmtPkgNode extends BaseNode {
     }
   }
 
-  handlePrintln(process: Process, argCount: number): void {
+  /** [V2] Arguments to builtin methods should be on the OS. Remember to pop the receiver from OS. */
+  override handleMethodCallV2(
+    process: ProcessV2,
+    identifier: string,
+    argCount: number,
+  ) {
+    if (identifier === 'Println') {
+      this.handlePrintln(process, argCount)
+    } else if (identifier === 'Print') {
+      this.handlePrint(process, argCount)
+    } else if (identifier === 'Printf') {
+      this.handlePrintf(process, argCount)
+    }
+  }
+
+  handlePrintln(process: Process | ProcessV2, argCount: number): void {
     const argAddresses = []
     for (let i = 0; i < argCount; i++) {
       argAddresses.push(process.context.popOS())
@@ -73,7 +93,7 @@ export class FmtPkgNode extends BaseNode {
     process.context.popOS()
   }
 
-  handlePrint(process: Process, argCount: number): void {
+  handlePrint(process: Process | ProcessV2, argCount: number): void {
     const argAddresses = []
     for (let i = 0; i < argCount; i++) {
       argAddresses.push(process.context.popOS())
@@ -87,7 +107,7 @@ export class FmtPkgNode extends BaseNode {
           process.heap.get_value(argAddresses[i]) instanceof StringNode ||
           (i < argCount - 1 &&
             process.heap.get_value(argAddresses[i + 1]) instanceof
-              StringNode) ||
+            StringNode) ||
           (i > 0 &&
             process.heap.get_value(argAddresses[i - 1]) instanceof StringNode)
         ) {
@@ -100,7 +120,7 @@ export class FmtPkgNode extends BaseNode {
     process.context.popOS()
   }
 
-  handlePrintf(process: Process, argCount: number): void {
+  handlePrintf(process: Process | ProcessV2, argCount: number): void {
     const argAddresses = []
     for (let i = 0; i < argCount; i++) {
       argAddresses.push(process.context.popOS())
@@ -116,7 +136,7 @@ export class FmtPkgNode extends BaseNode {
           process.heap.get_value(argAddresses[i]) instanceof StringNode ||
           (i < argCount - 1 &&
             process.heap.get_value(argAddresses[i + 1]) instanceof
-              StringNode) ||
+            StringNode) ||
           (i > 0 &&
             process.heap.get_value(argAddresses[i - 1]) instanceof StringNode)
         ) {

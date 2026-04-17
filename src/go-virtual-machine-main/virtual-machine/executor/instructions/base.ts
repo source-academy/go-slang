@@ -1,4 +1,5 @@
 import { Process } from '../../runtime/process'
+import { ProcessV2 } from '../../runtime/processV2'
 
 // Interface for all instructions
 export abstract class Instruction {
@@ -9,6 +10,8 @@ export abstract class Instruction {
   }
 
   abstract execute(process: Process): void
+
+  abstract executeV2(process: ProcessV2): void
 
   toString(): string {
     return this.tag
@@ -28,6 +31,10 @@ export class DoneInstruction extends Instruction {
   override execute(_process: Process): void {
     // Do nothing.
   }
+
+  override executeV2(_process: ProcessV2): void {
+    // Do nothing.
+  }
 }
 
 /** Instruction class for popping a value off the operand stack of the process */
@@ -43,6 +50,10 @@ export class PopInstruction extends Instruction {
   override execute(process: Process): void {
     process.context.popOS()
   }
+
+  override executeV2(process: ProcessV2): void {
+    process.context.popOS()
+  }
 }
 
 /** Instruction class for no operation, used as a placeholder instruction  */
@@ -56,6 +67,10 @@ export class NoInstruction extends Instruction {
   }
 
   override execute(_process: Process): void {
+    // Do nothing.
+  }
+
+  override executeV2(_process: ProcessV2): void {
     // Do nothing.
   }
 }

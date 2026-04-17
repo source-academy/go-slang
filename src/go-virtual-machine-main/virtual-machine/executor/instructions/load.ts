@@ -11,6 +11,7 @@ import { ReferenceNode } from '../../heap/types/reference'
 import { StructNode } from '../../heap/types/struct'
 import { UnsafePkgNode } from '../../heap/types/unsafe'
 import { Process } from '../../runtime/process'
+import { ProcessV2 } from '../../runtime/processV2'
 import { Type } from '../typing'
 import { BoolType } from '../typing/bool_type'
 import { Float64Type } from '../typing/float64_type'
@@ -54,6 +55,25 @@ export class LoadConstantInstruction extends Instruction {
       )
     }
   }
+
+  override executeV2(process: ProcessV2): void {
+    if (this.data_type instanceof BoolType) {
+      process.context.pushOS(
+        BoolNode.create(this.val as boolean, process.heap).addr,
+      )
+    } else if (this.data_type instanceof Float64Type) {
+      process.context.pushOS(
+        FloatNode.create(this.val as number, process.heap).addr,
+      )
+    } else if (this.data_type instanceof Int64Type) {
+      const temp = IntegerNode.create(this.val as number, process.heap).addr
+      process.context.pushOS(temp)
+    } else if (this.data_type instanceof StringType) {
+      process.context.pushOS(
+        StringNode.create(this.val as string, process.heap).addr,
+      )
+    }
+  }
 }
 
 /** Loads a default value of the given type onto the OS. */
@@ -67,6 +87,11 @@ export class LoadDefaultInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
+    const defaultNodeAddress = this.dataType.defaultNodeCreator()(process.heap)
+    process.context.pushOS(defaultNodeAddress)
+  }
+
+  override executeV2(process: ProcessV2): void {
     const defaultNodeAddress = this.dataType.defaultNodeCreator()(process.heap)
     process.context.pushOS(defaultNodeAddress)
   }
@@ -94,12 +119,24 @@ export class LoadArrayInstruction extends Instruction {
     }
     process.context.pushOS(arrayNode.addr)
   }
+
+  override executeV2(process: ProcessV2): void {
+    // this is for dynamic arrays (slices) only, actual arrays are allocated
+    // when entering function and uses a different instruction
+    const arrayNode = ArrayNode.create(this.length, process.heap, NaN, NaN)
+    for (let i = this.length - 1; i >= 0; i--) {
+      arrayNode.set_child(i, process.context.popOS())
+    }
+    process.context.pushOS(arrayNode.addr)
+  }
 }
 
 /** Takes the index, then array from the heap, and loads the element at the index onto the OS.  */
 export class LoadArrayElementInstruction extends Instruction {
+  clarify: string
   constructor() {
     super('LDAE')
+    this.clarify = 'LOAD ARRAY'
   }
 
   override toString(): string {
@@ -122,14 +159,46 @@ export class LoadArrayElementInstruction extends Instruction {
     const element = array.get_child(index)
     process.context.pushOS(element)
   }
+
+  override executeV2(process: ProcessV2): void {
+    const indexNode = new IntegerNode(process.heap, process.context.popOS())
+    const index = indexNode.get_value()
+    let a = process.context.popOS()
+    if (process.heap.get_value(a) instanceof ReferenceNode) {
+      a = (process.heap.get_value(a) as ReferenceNode).get_child()
+    }
+    const array = new ArrayNode(process.heap, a)
+    if (index < 0 || index >= array.length()) {
+      throw new Error(
+        `Index out of range [${index}] with length ${array.length()}`,
+      )
+    }
+    const element = array.get_child(index)
+    process.context.pushOS(element)
+  }
 }
 /** Takes the index, then array from the heap, and loads the element at the index onto the OS.  */
 export class LoadSliceElementInstruction extends Instruction {
+  clarify: string
   constructor() {
     super('LDAE')
+    this.clarify = 'LOAD SLICE'
   }
 
   override execute(process: Process): void {
+    const index = process.context.popOSNode(IntegerNode).get_value()
+    const slice = process.context.popOSNode(SliceNode)
+    const array = slice.arrayNode()
+    if (index < 0 || index >= array.length()) {
+      throw new Error(
+        `Index out of range [${index}] with length ${array.length()}`,
+      )
+    }
+    const element = array.get_child(index)
+    process.context.pushOS(element)
+  }
+
+  override executeV2(process: ProcessV2): void {
     const index = process.context.popOSNode(IntegerNode).get_value()
     const slice = process.context.popOSNode(SliceNode)
     const array = slice.arrayNode()
@@ -156,6 +225,14 @@ export class LoadSliceInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
+    const end = process.context.popOSNode(IntegerNode).get_value()
+    const start = process.context.popOSNode(IntegerNode).get_value()
+    const array = process.context.popOS()
+    const sliceNode = SliceNode.create(array, start, end, process.heap)
+    process.context.pushOS(sliceNode.addr)
+  }
+
+  override executeV2(process: ProcessV2): void {
     const end = process.context.popOSNode(IntegerNode).get_value()
     const start = process.context.popOSNode(IntegerNode).get_value()
     const array = process.context.popOS()
@@ -189,6 +266,17 @@ export class LoadVariableInstruction extends Instruction {
       process.context.pushOS(node)
     }
   }
+
+  override executeV2(process: ProcessV2): void {
+    if (this.id === '') {
+      // handle structs and arrays without identifiers
+      const node = this.type.defaultNodeCreator()(process.heap)
+      process.context.pushOS(node)
+    } else {
+      const node = process.context.E().get_var(this.frame_idx, this.var_idx)
+      process.context.pushOS(node)
+    }
+  }
 }
 
 /**
@@ -201,6 +289,19 @@ export class LoadPackageInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
+    const packageName = process.context.popOSNode(StringNode).get_value()
+    if (packageName !== 'fmt' && packageName !== 'unsafe')
+      throw new Error('Unreachable')
+    if (packageName === 'fmt') {
+      const packageNode = FmtPkgNode.default(process.heap)
+      process.context.pushOS(packageNode.addr)
+    } else if (packageName === 'unsafe') {
+      const packageNode = UnsafePkgNode.default(process.heap)
+      process.context.pushOS(packageNode.addr)
+    }
+  }
+
+  override executeV2(process: ProcessV2): void {
     const packageName = process.context.popOSNode(StringNode).get_value()
     if (packageName !== 'fmt' && packageName !== 'unsafe')
       throw new Error('Unreachable')
@@ -227,6 +328,28 @@ export class LoadStructFieldInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
+    //const indexNode = new IntegerNode(process.heap, process.context.popOS())
+    let a = process.context.popOS()
+    if (process.heap.get_value(a) instanceof ReferenceNode) {
+      a = (process.heap.get_value(a) as ReferenceNode).get_child()
+    }
+    const struct = new StructNode(process.heap, a)
+    const field = struct.get_child(this.index)
+    if (
+      process.heap.get_value(process.context.peekOS()) instanceof MethodNode &&
+      (
+        process.heap.get_value(process.context.peekOS()) as MethodNode
+      ).identifier() === 'Offsetof' &&
+      !(process.heap.get_value(field) instanceof StructNode)
+    ) {
+      const offset = struct.offsetof(this.index)
+      process.context.pushOS(IntegerNode.create(offset, process.heap).addr)
+    } else {
+      process.context.pushOS(field)
+    }
+  }
+
+  override executeV2(process: ProcessV2): void {
     //const indexNode = new IntegerNode(process.heap, process.context.popOS())
     let a = process.context.popOS()
     if (process.heap.get_value(a) instanceof ReferenceNode) {

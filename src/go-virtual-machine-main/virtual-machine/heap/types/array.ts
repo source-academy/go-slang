@@ -2,7 +2,7 @@ import { Type } from '../../executor/typing'
 import { ArrayType } from '../../executor/typing/array_type'
 import { DeclaredType } from '../../executor/typing/declared_type'
 import { StructType } from '../../executor/typing/struct_type'
-import { Heap, TAG } from '..'
+import { GCPHASE, Heap, TAG } from '..'
 
 import { BaseNode } from './base'
 import { ReferenceNode } from './reference'
@@ -20,12 +20,14 @@ export class ArrayNode extends BaseNode {
     sizeof: number,
     startAddr: number,
   ): ArrayNode {
+    heap.handle_before_alloc()
     const addr = heap.allocate(2 + length)
     heap.set_tag(addr, TAG.ARRAY)
     heap.memory.set_number(length, addr + 1)
     for (let i = 0; i < length; i++) {
       heap.memory.set_word(startAddr + sizeof * i, addr + 2 + i)
     }
+    heap.handle_after_alloc()
     return new ArrayNode(heap, addr)
   }
 
@@ -34,6 +36,7 @@ export class ArrayNode extends BaseNode {
    * and returns its address.
    */
   static default(length: number, type: Type, heap: Heap) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(2 + length)
     heap.set_tag(addr, TAG.ARRAY)
     heap.memory.set_number(length, addr + 1)
@@ -43,10 +46,12 @@ export class ArrayNode extends BaseNode {
       heap.memory.set_word(type.defaultNodeCreator()(heap), addr + 2 + i)
     }
     heap.temp_pop()
+    heap.handle_after_alloc()
     return new ArrayNode(heap, addr)
   }
 
   static allocate(heap: Heap, addr: number, length: number, type: Type) {
+    heap.handle_before_alloc()
     const nodeAddr = heap.allocate(2 + length)
     heap.set_tag(nodeAddr, TAG.ARRAY)
     heap.memory.set_number(length, nodeAddr + 1)
@@ -68,16 +73,19 @@ export class ArrayNode extends BaseNode {
       }
     }
     heap.temp_pop()
+    heap.handle_after_alloc()
     return new ArrayNode(heap, nodeAddr)
   }
 
   static defaultBlank(length: number, heap: Heap) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(2 + length)
     heap.set_tag(addr, TAG.ARRAY)
     heap.memory.set_number(length, addr + 1)
     heap.temp_push(addr)
     for (let i = 0; i < length; i++) heap.memory.set_number(-1, addr + i + 2)
     heap.temp_pop()
+    heap.handle_after_alloc()
     return new ArrayNode(heap, addr)
   }
 
@@ -90,6 +98,10 @@ export class ArrayNode extends BaseNode {
   }
 
   set_child(index: number, address: number) {
+    // Yuasa's write barrier
+    if (this.heap.metadata.get_gc_phase() === GCPHASE.MARK) {
+      this.heap.mark_save_stack(this.get_child(index))
+    }
     this.heap.memory.set_word(address, this.addr + 2 + index)
   }
 
@@ -136,11 +148,13 @@ export class SliceNode extends BaseNode {
     end: number,
     heap: Heap,
   ): SliceNode {
+    heap.handle_before_alloc()
     const addr = heap.allocate(5)
     heap.set_tag(addr, TAG.SLICE)
     heap.memory.set_word(array, addr + 1)
     heap.memory.set_number(start, addr + 2)
     heap.memory.set_number(end, addr + 3)
+    heap.handle_after_alloc()
     return new SliceNode(heap, addr)
   }
 
@@ -177,6 +191,10 @@ export class SliceNode extends BaseNode {
   }
 
   set_child(index: number, address: number) {
+    // Yuasa's write barrier
+    if (this.heap.metadata.get_gc_phase() === GCPHASE.MARK) {
+      this.heap.mark_save_stack(this.get_child(index))
+    }
     this.arrayNode().set_child(this.start() + index, address)
   }
 

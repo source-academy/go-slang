@@ -4,7 +4,7 @@ import { Type, TypeUtility } from '.'
 
 export class ReturnType extends Type {
   constructor(public types: Type[]) {
-    super()
+    super('RETURN')
   }
 
   override isPrimitive(): boolean {

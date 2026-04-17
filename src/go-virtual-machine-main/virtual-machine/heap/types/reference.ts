@@ -1,4 +1,4 @@
-import { Heap, TAG } from '..'
+import { GCPHASE, Heap, TAG } from '..'
 
 import { ArrayNode, SliceNode } from './array'
 import { BaseNode } from './base'
@@ -6,13 +6,19 @@ import { StructNode } from './struct'
 
 export class ReferenceNode extends BaseNode {
   static create(nodeAddr: number, heap: Heap): ReferenceNode {
+    heap.handle_before_alloc()
     const addr = heap.allocate(2)
     heap.set_tag(addr, TAG.REFERENCE)
     heap.memory.set_number(nodeAddr, addr + 1)
+    heap.handle_after_alloc()
     return new ReferenceNode(heap, addr)
   }
 
   set_child(address: number) {
+    // Yuasa's write barrier
+    if (this.heap.metadata.get_gc_phase() === GCPHASE.MARK) {
+      this.heap.mark_save_stack(this.get_child())
+    }
     this.heap.memory.set_word(address, this.addr + 1)
   }
 

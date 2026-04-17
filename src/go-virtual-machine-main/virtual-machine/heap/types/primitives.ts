@@ -23,9 +23,11 @@ export abstract class PrimitiveNode extends BaseNode {
 
 export class IntegerNode extends PrimitiveNode {
   static create(num: number, heap: Heap) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(IntegerNode.sizeof())
     heap.set_tag(addr, TAG.NUMBER)
     heap.memory.set_number(num, addr + 1)
+    heap.handle_after_alloc()
     return new IntegerNode(heap, addr)
   }
   static default(heap: Heap) {
@@ -33,17 +35,21 @@ export class IntegerNode extends PrimitiveNode {
   }
 
   static bulkDefault(heap: Heap, length: number) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(IntegerNode.sizeof() * length)
     for (let i = 0; i < length; i++) {
       heap.set_tag(addr + IntegerNode.sizeof() * i, TAG.NUMBER)
       heap.memory.set_number(0, addr + 1 + IntegerNode.sizeof() * i)
     }
+    heap.handle_after_alloc()
     return new IntegerNode(heap, addr)
   }
 
   static allocate(heap: Heap, addr: number) {
+    heap.handle_before_alloc()
     heap.set_tag(addr, TAG.NUMBER)
     heap.memory.set_number(0, addr + 1)
+    heap.handle_after_alloc()
     return new IntegerNode(heap, addr)
   }
 
@@ -90,9 +96,11 @@ export class IntegerNode extends PrimitiveNode {
 
 export class FloatNode extends PrimitiveNode {
   static create(num: number, heap: Heap) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(FloatNode.sizeof())
     heap.set_tag(addr, TAG.FLOAT)
     heap.memory.set_float(num, addr + 1)
+    heap.handle_after_alloc()
     return new FloatNode(heap, addr)
   }
 
@@ -109,17 +117,21 @@ export class FloatNode extends PrimitiveNode {
   }
 
   static bulkDefault(heap: Heap, length: number) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(FloatNode.sizeof() * length)
     for (let i = 0; i < length; i++) {
       heap.set_tag(addr + FloatNode.sizeof() * i, TAG.FLOAT)
       heap.memory.set_float(0.0, addr + 1 + FloatNode.sizeof() * i)
     }
+    heap.handle_after_alloc()
     return new FloatNode(heap, addr)
   }
 
   static allocate(heap: Heap, addr: number) {
+    heap.handle_before_alloc()
     heap.set_tag(addr, TAG.FLOAT)
     heap.memory.set_float(0.0, addr + 1)
+    heap.handle_after_alloc()
     return new FloatNode(heap, addr)
   }
 
@@ -154,9 +166,11 @@ export class FloatNode extends PrimitiveNode {
 
 export class BoolNode extends PrimitiveNode {
   static create(val: boolean, heap: Heap) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(BoolNode.sizeof())
     heap.set_tag(addr, TAG.BOOLEAN)
     heap.memory.set_bits(val ? 1 : 0, addr, 1, 16)
+    heap.handle_after_alloc()
     return new BoolNode(heap, addr)
   }
 
@@ -173,17 +187,21 @@ export class BoolNode extends PrimitiveNode {
   }
 
   static allocate(heap: Heap, addr: number) {
+    heap.handle_before_alloc()
     heap.set_tag(addr, TAG.BOOLEAN)
     heap.memory.set_bits(0, addr, 1, 16)
+    heap.handle_after_alloc()
     return new BoolNode(heap, addr)
   }
 
   static bulkDefault(heap: Heap, length: number) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(BoolNode.sizeof() * length)
     for (let i = 0; i < length; i++) {
       heap.set_tag(addr + i, TAG.BOOLEAN)
       heap.memory.set_bits(0, addr + i, 1, 16)
     }
+    heap.handle_after_alloc()
     return new BoolNode(heap, addr)
   }
 
@@ -211,6 +229,7 @@ export class BoolNode extends PrimitiveNode {
 
 export class StringNode extends PrimitiveNode {
   static create(str: string, heap: Heap) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(StringNode.sizeof())
     heap.set_tag(addr, TAG.STRING)
     heap.temp_push(addr)
@@ -229,6 +248,7 @@ export class StringNode extends PrimitiveNode {
         i % word_size,
       )
     }
+    heap.handle_after_alloc()
     return new StringNode(heap, addr)
   }
 
@@ -245,6 +265,7 @@ export class StringNode extends PrimitiveNode {
   }
 
   static bulkDefault(heap: Heap, length: number) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(StringNode.sizeof() * length)
     for (let i = 0; i < length; i++) {
       heap.set_tag(addr + StringNode.sizeof() * i, TAG.STRING)
@@ -267,10 +288,12 @@ export class StringNode extends PrimitiveNode {
         )
       }
     }
+    heap.handle_after_alloc()
     return new StringNode(heap, addr)
   }
 
   static allocate(heap: Heap, addr: number) {
+    heap.handle_before_alloc()
     heap.set_tag(addr, TAG.STRING)
     heap.temp_push(addr)
     heap.memory.set_number(-1, addr + 1)
@@ -288,6 +311,7 @@ export class StringNode extends PrimitiveNode {
         i % word_size,
       )
     }
+    heap.handle_after_alloc()
     return new StringNode(heap, addr)
   }
 
@@ -338,12 +362,14 @@ export class StringNode extends PrimitiveNode {
     throw Error('Invalid Opeartion')
   }
 }
-export class StringListNode extends BaseNode {}
+export class StringListNode extends BaseNode { }
 
 export class UnassignedNode extends BaseNode {
   static create(heap: Heap) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(1)
     heap.set_tag(addr, TAG.UNKNOWN)
+    heap.handle_after_alloc()
     return new UnassignedNode(heap, addr)
   }
 }

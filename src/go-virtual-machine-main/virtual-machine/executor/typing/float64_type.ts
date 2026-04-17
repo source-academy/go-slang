@@ -4,6 +4,10 @@ import { FloatNode } from '../../heap/types/primitives'
 import { Type } from '.'
 
 export class Float64Type extends Type {
+  constructor() {
+    super('FLOAT')
+  }
+
   isPrimitive(): boolean {
     return true
   }

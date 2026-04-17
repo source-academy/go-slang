@@ -4,7 +4,7 @@ import { Type } from '.'
 
 export class ParameterType extends Type {
   constructor(public identifier: string | null, public type: Type) {
-    super()
+    super('PARAM')
   }
 
   override isPrimitive(): boolean {

@@ -4,6 +4,10 @@ import { Type } from '.'
 
 /** This type represents things that don't have an associated type, like statements. */
 export class NoType extends Type {
+  constructor() {
+    super('NO TYPE')
+  }
+
   isPrimitive(): boolean {
     return false
   }

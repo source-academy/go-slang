@@ -4,6 +4,7 @@ import { BaseNode } from './base'
 
 export class StackNode extends BaseNode {
   static create(heap: Heap) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(2)
     heap.set_tag(addr, TAG.STACK)
     if (heap.temp_roots) heap.temp_push(addr)
@@ -11,10 +12,12 @@ export class StackNode extends BaseNode {
     const list = StackListNode.create(heap)
     if (heap.temp_roots) heap.temp_pop()
     heap.memory.set_word(list.addr, addr + 1)
+    heap.handle_after_alloc()
     return new StackNode(heap, addr)
   }
 
   static clone(heap: Heap) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(2)
     heap.set_tag(addr, TAG.STACK)
     if (heap.temp_roots) heap.temp_push(addr)
@@ -22,11 +25,11 @@ export class StackNode extends BaseNode {
     const list = StackListNode.clone(heap)
     if (heap.temp_roots) heap.temp_pop()
     heap.memory.set_word(heap.clone(list.addr), addr + 1)
+    heap.handle_after_alloc()
     return new StackNode(heap, addr)
   }
 
   list() {
-    if (this.addr >= 256) console.log(this)
     return new StackListNode(
       this.heap,
       this.heap.memory.get_word(this.addr + 1),
@@ -61,20 +64,25 @@ export class StackNode extends BaseNode {
 export class StackListNode extends BaseNode {
   static init_sz = 4
   static create(heap: Heap) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(this.init_sz)
     heap.set_tag(addr, TAG.STACK_LIST)
     heap.memory.set_number(0, addr + 1)
+    heap.handle_after_alloc()
     return new StackListNode(heap, addr)
   }
 
   static clone(heap: Heap) {
+    heap.handle_before_alloc()
     const addr = heap.clone(this.init_sz)
     heap.set_tag(addr, TAG.STACK_LIST)
     heap.memory.set_number(0, addr + 1)
+    heap.handle_after_alloc()
     return new StackListNode(heap, addr)
   }
 
   resize(new_size: number) {
+    this.heap.handle_before_alloc()
     const new_pos = this.heap.allocate(new_size)
     this.heap.set_tag(new_pos, TAG.STACK_LIST)
     const new_list = new StackListNode(this.heap, new_pos)
@@ -84,6 +92,7 @@ export class StackListNode extends BaseNode {
       new_list.set_idx(this.get_idx(i), i)
     }
     this.addr = new_pos
+    this.heap.handle_after_alloc()
   }
 
   get_sz() {

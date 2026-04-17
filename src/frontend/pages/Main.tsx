@@ -10,8 +10,9 @@ import {
 } from '@chakra-ui/react'
 import Cookies from 'js-cookie'
 
-import { runCode } from '../../go-virtual-machine-main/tests/utility'
+import { ProgramData, runCode } from '../../go-virtual-machine-main/virtual-machine'
 import { CompileError } from '../../go-virtual-machine-main/virtual-machine/executor/index'
+import { CompleteExecution } from '../../go-virtual-machine-main/virtual-machine/runtime/scheduler'
 import {
   CodeIDE,
   CodeIDEButtons,
@@ -130,6 +131,52 @@ export const Main = () => {
   const resetMarking = () => {
     setLocation(null)
   }
+
+  const completeExecution: CompleteExecution = (result: ProgramData) => {
+    const {
+      error,
+      output: newOutput,
+      visualData
+    } = result
+    if (error) {
+      const errorTitle = {
+        parse: 'Syntax Error',
+        compile: 'Compile Error',
+        runtime: 'Runtime Error',
+      }[error.type]
+      setLoading(false)
+      makeToast(error.message, errorTitle)
+
+      if (error.type === 'compile') {
+        // Highlight compile error in source code.
+        const details = error.details as CompileError
+        const startLine = details.sourceLocation.start.line
+        let endLine = details.sourceLocation.end.line
+        if (details.sourceLocation.end.column === 1) {
+          // When parsing, the token's end location may spill into the next line.
+          // If so, then we should ignore the last line.
+          endLine--
+        }
+        setLineHighlight([[startLine, endLine]])
+      }
+    } else {
+      resetErrors()
+    }
+    console.log(error, !error, error?.type === 'runtime')
+    if (!error || error.type === 'runtime') {
+      setEditing(!editing)
+
+      // Set instructions and update components to start playing mode
+      setVisualData(visualData)
+      if (visualData.length === 0) setOutput(newOutput || '')
+      setPlaying(true)
+      setWasPlaying(false)
+      setTimeout(function () {
+        setLoading(false)
+      }, 500)
+    }
+  }
+
   const toggleEditing = async () => {
     if (editing) {
       // Start playing
@@ -141,48 +188,7 @@ export const Main = () => {
       }
       // Retrieve instructions from endpoint
       setOutput('Compiling and Running your code...')
-      const {
-        error,
-        output: newOutput,
-        visualData,
-      } = runCode(code, heapsize, true, visualMode)
-      if (error) {
-        const errorTitle = {
-          parse: 'Syntax Error',
-          compile: 'Compile Error',
-          runtime: 'Runtime Error',
-        }[error.type]
-        setLoading(false)
-        makeToast(error.message, errorTitle)
-
-        if (error.type === 'compile') {
-          // Highlight compile error in source code.
-          const details = error.details as CompileError
-          const startLine = details.sourceLocation.start.line
-          let endLine = details.sourceLocation.end.line
-          if (details.sourceLocation.end.column === 1) {
-            // When parsing, the token's end location may spill into the next line.
-            // If so, then we should ignore the last line.
-            endLine--
-          }
-          setLineHighlight([[startLine, endLine]])
-        }
-      } else {
-        resetErrors()
-      }
-      console.log(error, !error, error?.type === 'runtime')
-      if (!error || error.type === 'runtime') {
-        setEditing(!editing)
-
-        // Set instructions and update components to start playing mode
-        setVisualData(visualData)
-        if (visualData.length === 0) setOutput(newOutput || '')
-        setPlaying(true)
-        setWasPlaying(false)
-        setTimeout(function () {
-          setLoading(false)
-        }, 500)
-      }
+      runCode(code, heapsize, completeExecution, true, visualMode)
     } else {
       // Stop playing
       setPlaying(false)

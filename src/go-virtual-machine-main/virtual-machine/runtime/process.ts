@@ -11,11 +11,12 @@ import { ContextNode } from '../heap/types/context'
 import { EnvironmentNode, FrameNode } from '../heap/types/environment'
 import { MethodNode } from '../heap/types/func'
 import { QueueNode } from '../heap/types/queue'
+import { SaveStackNode } from '../heap/types/saveStack'
 
 import { Debugger, StateInfo } from './debugger'
 
 // Represents the result when a process finishes
-type ProcessOutput = {
+export type ProcessOutput = {
   stdout: string
   visual_data: StateInfo[]
   errorMessage?: string
@@ -32,7 +33,7 @@ export class Process {
   debugger: Debugger // Trace states
   runtime_count = 0 // Counts how many instructions executed
   deterministic: boolean // Whether execution should be deterministic or not
-  save_stack: number[]
+  save_stack: SaveStackNode
   constructor(
     instructions: Instruction[],
     heapsize: number,
@@ -46,7 +47,6 @@ export class Process {
     // Create initial execution context using the first context in the queue. This will be the main context
     this.context = new ContextNode(this.heap, this.contexts.peek())
     this.stdout = ''
-    console.log(this.heap.mem_left)
     // Base call frame at heap addr 0
     const base_frame = FrameNode.create(0, this.heap)
     const base_env = EnvironmentNode.create(
@@ -60,7 +60,7 @@ export class Process {
     const randomSeed = Math.random().toString(36).substring(2)
     this.generator = seedrandom.default(randomSeed)
     this.deterministic = deterministic
-    this.save_stack = this.heap.save_stack
+    this.save_stack = this.heap.get_value(this.heap.save_stack_addrs[0]) as SaveStackNode
 
     this.debug_mode = visualmode
     this.debugger = new Debugger(this.heap, this.instructions, symbols)
@@ -90,7 +90,7 @@ export class Process {
         let cur_time = 0
         // Execute this context until it hits a done instruction
         while (!DoneInstruction.is(this.instructions[this.context.PC()])) {
-          if (is_tri_color && this.heap.gc_phase !== GCPHASE.NONE) this.heap.tri_color_step()
+          if (is_tri_color && this.heap.metadata.get_gc_phase() !== GCPHASE.NONE) this.heap.tri_color_step()
           if (cur_time >= time_quantum) {
             // Context Switch by pushing context to end of queue
             this.contexts.push(this.context.addr)
@@ -180,7 +180,7 @@ export class Process {
       console.log('Alloc Rate: %f bytes/ms', alloc_rate)
       console.log('Free Rate: %f bytes/ms', free_rate)
 
-      console.log("Mem Left: %d", this.heap.mem_left)
+      console.log("Mem Left: %d", this.heap.metadata.get_mem_left())
 
       return {
         stdout: this.stdout,

@@ -3,20 +3,39 @@ const bits_in_byte = 8 // Number of bits in byte
 const bits_in_int = bytes_in_int * bits_in_byte
 
 export class Memory {
-  array: ArrayBuffer
+  array: SharedArrayBuffer
   view: DataView
   word_size: number
+  i32: Int32Array // used for atomic operations
+  u32: Uint32Array // used for atomic operations
   /**
    * Constructor for memory
    * @param size Number of bytes in memory
    * @param word_size How many bytes in a word
    */
-  constructor(size: number, word_size = 4) {
+  constructor(sab: SharedArrayBuffer, word_size = 4) {
     if (!Number.isInteger(Math.log(word_size) / Math.log(2)))
       throw Error('Word Size must be power of 2')
     this.word_size = word_size
-    this.array = new ArrayBuffer(size * word_size)
+    this.array = sab
     this.view = new DataView(this.array)
+    this.i32 = new Int32Array(this.array)
+    this.u32 = new Uint32Array(this.array)
+  }
+
+  /**
+   * Creates new instance of memory with new shared array buffer
+   * @param size Size of memory
+   * @param word_size Size of each word
+   * @returns New instance of memory with new shared array buffer
+   */
+  static create(size: number, word_size = 4) {
+    const sab = new SharedArrayBuffer(size * word_size)
+    return new Memory(sab, word_size)
+  }
+
+  static load(sab: SharedArrayBuffer, word_size = 4) {
+    return new Memory(sab, word_size)
   }
 
   check_valid(num_bits: number, bit_offset: number) {
@@ -116,6 +135,104 @@ export class Memory {
    */
   get_word(addr: number) {
     return this.view.getInt32(addr * 4)
+  }
+
+  /**
+   * @param val Value to update
+   * @param addr Starting word index
+   */
+  atomic_set_word_i32(val: number, addr: number) {
+    Atomics.store(this.i32, addr, val | 0)
+  }
+
+  /**
+   * @param val Value to update
+   * @param addr Starting word index
+   */
+  atomic_set_word_u32(val: number, addr: number) {
+    Atomics.store(this.u32, addr, val >>> 0)
+  }
+
+  /**
+   * @param addr Starting word index
+   */
+  atomic_get_word_i32(addr: number) {
+    return Atomics.load(this.i32, addr)
+  }
+
+  /**
+   * @param addr Starting word index
+   */
+  atomic_get_word_u32(addr: number) {
+    return Atomics.load(this.u32, addr)
+  }
+
+  /**
+   * @param val Value to add
+   * @param addr Starting word index
+   */
+  atomic_add_i32(val: number, addr: number) {
+    return Atomics.add(this.i32, addr, val | 0)
+  }
+
+  /**
+   * @param val Value to add
+   * @param addr Starting word index
+   */
+  atomic_add_u32(val: number, addr: number) {
+    return Atomics.add(this.u32, addr, val >>> 0)
+  }
+
+  /**
+   * @desc Compare and swap for int32
+   * @param expected Expected value
+   * @param value Value to set
+   * @param addr Starting word index
+   * @return The old value at the address
+   */
+  atomic_cas_i32(addr: number, expected: number, value: number) {
+    return Atomics.compareExchange(
+      this.i32,
+      addr,
+      expected | 0,
+      value | 0
+    )
+  }
+
+  /**
+   * @desc Compare and swap for uint32
+   * @param expected Expected value
+   * @param value Value to set
+   * @param addr Starting word index
+   * @return The old value at the address
+   */
+  atomic_cas_u32(addr: number, expected: number, value: number) {
+    return Atomics.compareExchange(
+      this.u32,
+      addr,
+      expected >>> 0,
+      value >>> 0
+    )
+  }
+
+  /**
+   * @desc Make thread sleep temporarily, only supports i32
+   * @param val Expected i32 value for thread to be put to sleep
+   * @param addr Starting word index
+   * @returns Status of thread execution
+   */
+  atomic_wait_i32(val: number, addr: number) {
+    return Atomics.wait(this.i32, addr, val | 0)
+  }
+
+  /**
+   * @desc Make waiting threads wake up, only supports i32
+   * @param addr Starting word index
+   * @param count Number of threads to be awoken, if not specified will be set to infinite
+   * @returns Number of threads awoken
+   */
+  atomic_notify_i32(addr: number, count?: number) {
+    return Atomics.notify(this.i32, addr, count)
   }
 
   /**

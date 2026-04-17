@@ -1,5 +1,6 @@
 import { BoolNode } from '../../heap/types/primitives'
 import { Process } from '../../runtime/process'
+import { ProcessV2 } from '../../runtime/processV2'
 
 import { Instruction } from './base'
 
@@ -22,6 +23,10 @@ export class JumpInstruction extends Instruction {
   override execute(process: Process): void {
     process.context.set_PC(this.addr)
   }
+
+  override executeV2(process: ProcessV2): void {
+    process.context.set_PC(this.addr)
+  }
 }
 
 export class JumpIfFalseInstruction extends JumpInstruction {
@@ -36,6 +41,13 @@ export class JumpIfFalseInstruction extends JumpInstruction {
     ).get_value()
     if (!pred) process.context.set_PC(this.addr)
   }
+
+  override executeV2(process: ProcessV2): void {
+    const pred = (
+      process.heap.get_value(process.context.popOS()) as BoolNode
+    ).get_value()
+    if (!pred) process.context.set_PC(this.addr)
+  }
 }
 
 export class ExitLoopInstruction extends JumpInstruction {
@@ -45,6 +57,13 @@ export class ExitLoopInstruction extends JumpInstruction {
   }
 
   override execute(process: Process): void {
+    while (!process.context.E().if_for_block()) {
+      process.context.popRTS()
+    }
+    process.context.set_PC(this.addr)
+  }
+
+  override executeV2(process: ProcessV2): void {
     while (!process.context.E().if_for_block()) {
       process.context.popRTS()
     }

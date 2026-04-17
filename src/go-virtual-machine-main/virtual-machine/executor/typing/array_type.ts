@@ -10,7 +10,7 @@ export class ArrayType extends Type {
    * @param length Number of element in the array
    */
   constructor(public element: Type, public length: number) {
-    super()
+    super('ARRAY')
   }
 
   isPrimitive(): boolean {
