@@ -122,7 +122,7 @@ export class RunQueueNode extends BaseNode {
   }
 
   get_vals() {
-    this.get_lock()
+    this.scheduler_get_lock()
     const vals = this.list().get_children()
     this.release_lock()
     return vals

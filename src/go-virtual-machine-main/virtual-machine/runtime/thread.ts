@@ -1,5 +1,5 @@
 import { Instruction } from '../executor/instructions'
-import { Heap } from '../heap'
+import { GCPHASE, Heap } from '../heap'
 
 import { DebuggerV2 } from './debuggerV2'
 import { MessageType, WorkerToScheduler } from './message'
@@ -23,6 +23,9 @@ export class Thread {
 
     deterministic: boolean
     visual_mode: boolean
+ 
+    // Per-worker free cache: block_size -> list of free addresses. Lets this worker re-use freed blocks on the next allocation without competing for alloc_lock.
+    local_free_cache: Map<number, number[]>
 
     constructor(
         thread_id: number,
@@ -53,7 +56,26 @@ export class Thread {
             this.visual_mode,
             this.debugger
         )
-
+        this.local_free_cache = new Map()
+    }
+ 
+    // Return all cached blocks to the global buddy allocator so other workers can allocate them.
+    flush_cache() {
+        for (const [_, addrs] of this.local_free_cache) {
+            for (const addr of addrs) {
+                // free_to_global sets is_free, so the sweeper will skip this block from this point on.
+                this.heap.free_to_global(addr)
+                // Preserve SATB only while a GC cycle is underway; unconditional marking would
+                // prevent reclamation of these blocks in future cycles.
+                if (this.heap.metadata.get_gc_phase() !== GCPHASE.NONE) {
+                    this.heap.gc_bitmap.set_mark(addr, true)
+                }
+                // Release from cache last — is_free already protects the block, but this keeps
+                // the bitmap consistent for any future sweep that checks it.
+                this.heap.cache_bitmap.set_mark(addr, false)
+            }
+        }
+        this.local_free_cache.clear()
     }
 
     run() {
@@ -69,6 +91,7 @@ export class Thread {
                 break;
             }
             case ProcessV2Status.EMPTY_RUNQUEUE: {
+                this.flush_cache()
                 const rdyMsg: WorkerToScheduler = {
                     type: MessageType.READY,
                     thread_id: this.thread_id,

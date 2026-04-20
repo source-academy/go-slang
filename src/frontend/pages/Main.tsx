@@ -45,7 +45,7 @@ export const Main = () => {
   const [speed, setSpeed] = useState<number>(1)
   const [loading, setLoading] = useState(false)
   const [code, setCode] = useState('')
-  const [heapsize, setHeapsize] = useState(4096)
+  const [heapsize, setHeapsize] = useState(4096) // Maximum seems to be 2 ** 28 since the SAB has a max size of 2 ** 32
   const [visualMode, setVisualMode] = useState(false)
 
   useEffect(() => {

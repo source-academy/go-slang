@@ -112,13 +112,15 @@ export class Scheduler {
             mem_sab: this.heap.memory.array,
             metadata_sab: this.heap.metadata.array,
             freelist_sab: this.heap.freelist.array,
-            bitmap_sab: this.heap.bitmap.array,
+            bitmap_sab: this.heap.gc_bitmap.array,
+            cache_bitmap_sab: this.heap.cache_bitmap.array,
             unassigned: this.heap.UNASSIGNED.addr,
             save_stack_addrs: [], // Fill manually each time
             alloc_lock_addr: this.heap.alloc_lock_addr,
             alloc_count_addr: this.heap.alloc_count_addr,
             gc_init_flag_addr: this.heap.gc_init_flag_addr,
             save_stack_flag_addr: this.heap.save_stack_flag_addr,
+            max_threads: this.MAX_THREADS,
         }
         this.thread_config = {
             runqueue: -1, // Fill manually each time
@@ -223,6 +225,7 @@ export class Scheduler {
                     // Only log and return if program has been completed and this message was received afterwards
                     if (this.is_completed) {
                         this.log_gc_stats()
+                        this.terminate_workers()
                     }
                     break;
                 }
@@ -442,6 +445,7 @@ export class Scheduler {
                     if (!this.is_gc_running) {
                         this.log_gc_stats()
                     }
+                    this.terminate_workers()
                     const finish_output: ProcessOutput = {
                         stdout: this.stdout,
                         visual_data: [],
@@ -500,9 +504,9 @@ export class Scheduler {
 
     log_gc_stats() {
         const pause_time =
-        (this.gc_profiler.total_pause_time -
-            this.gc_profiler.partial_pause_time) /
-        this.gc_profiler.num_gc
+            (this.gc_profiler.total_pause_time -
+                this.gc_profiler.partial_pause_time) /
+            this.gc_profiler.num_gc
         const mutator_time =
             this.gc_profiler.program_time -
             this.gc_profiler.total_pause_time
@@ -535,6 +539,17 @@ export class Scheduler {
             ...running_contexts_addr.flat(),
             ...this.blocked_contexts,
         ]
+    }
+
+    terminate_workers() {
+        for (let i = 0; i < this.workers.length; i++) {
+            const worker = this.workers[i]
+            worker.terminate()
+        }
+        this.workers = []
+        if (!this.is_gc_running && this.GC_Worker !== undefined) {
+            this.GC_Worker.terminate()
+        }
     }
 
     /**

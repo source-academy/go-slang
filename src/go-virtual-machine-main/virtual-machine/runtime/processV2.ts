@@ -63,7 +63,7 @@ export class ProcessV2 {
     }
 
     start(): ProcessV2Result {
-        const time_quantum = 30
+        const time_quantum = 1000
         this.runtime_count = 0
         let need_pop = true // When trying to context switch, the scheduler should not job steal the current context before it can be removed from the runqueue
 
@@ -132,7 +132,7 @@ export class ProcessV2 {
                 }
                 // Remove old head from runqueue
                 need_pop ? this.contexts.pop() : need_pop = true
-                if (this.runtime_count > 10 ** 5) throw Error('Time Limit Exceeded!')
+                if (this.runtime_count > 10 ** 8) throw Error('Time Limit Exceeded!')
             }
 
             // If code falls through without returning, return empty runqueue

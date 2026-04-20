@@ -137,7 +137,6 @@ export class ContextNode extends BaseNode {
     for (let i = 0; i < this.OS().sz(); i++) {
       const val = this.heap.get_value(this.OS().get_idx(i)) as PrimitiveNode
       console.log(val)
-      // console.log(val.get_value())
     }
   }
 
@@ -175,7 +174,6 @@ export class ContextNode extends BaseNode {
     for (let i = 0; i < this.RTS().sz(); i++) {
       const addr = this.RTS().get_idx(i)
       const val = addr === -1 ? -1 : this.heap.get_value(addr)
-      //   console.log(val)
       let for_block = false
       if (val instanceof EnvironmentNode && val.if_for_block()) for_block = true
       console.log(

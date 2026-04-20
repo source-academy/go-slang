@@ -1,4 +1,4 @@
-import { Heap, TAG } from '..'
+import { GCPHASE, Heap, TAG } from '..'
 
 import { BaseNode } from './base'
 
@@ -14,6 +14,9 @@ export class FrameNode extends BaseNode {
   }
 
   set_idx(addr: number, index: number) {
+    if (this.heap.metadata.get_gc_phase() === GCPHASE.MARK) {
+      this.heap.mark_save_stack(this.heap.get_child(this.addr + 1, index))
+    }
     this.heap.set_child(addr, this.addr + 1, index)
   }
 

@@ -75,7 +75,7 @@ export class Process {
   start(): ProcessOutput {
     // Each context can run up to 30 instructions
     this.heap.gc_profiler.start_program()
-    const time_quantum = 30
+    const time_quantum = 1000
     this.runtime_count = 0
     let completed = false
     try {
@@ -148,7 +148,7 @@ export class Process {
         // Remove old head from ready queue
         this.contexts.pop()
         // console.log('%c SWITCH!', 'background: #F7FF00; color: #FF0000')
-        if (this.runtime_count > 10 ** 5) throw Error('Time Limit Exceeded!')
+        if (this.runtime_count > 10 ** 8) throw Error('Time Limit Exceeded!')
         // console.log('PC', this.contexts.get_vals())
       }
 
@@ -200,8 +200,8 @@ export class Process {
   }
 
   mark_save_stack(addr: number) {
-    if (this.heap.bitmap.is_marked(addr)) return
-    this.heap.bitmap.set_mark(addr, true)
+    if (this.heap.gc_bitmap.is_marked(addr)) return
+    this.heap.gc_bitmap.set_mark(addr, true)
     this.save_stack.push(addr)
   }
 
