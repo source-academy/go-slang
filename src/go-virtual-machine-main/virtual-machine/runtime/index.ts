@@ -5,8 +5,6 @@ import { ProgramData } from '..'
 import { Process } from './process'
 import { Callback, Scheduler } from './scheduler'
 
-export const is_multithreaded = true
-
 const execute_instructions = (
   instrs: Instruction[],
   heapsize: number,
@@ -14,9 +12,11 @@ const execute_instructions = (
   deterministic: boolean,
   visualisation = false,
   callback: Callback,
-  completeExecution: (result: ProgramData) => void
+  completeExecution: (result: ProgramData) => void,
+  isMultithreaded = true,
+  isTriColor = true,
 ) => {
-  if (is_multithreaded) {
+  if (isMultithreaded) {
     const scheduler = new Scheduler(
       instrs,
       heapsize,
@@ -24,7 +24,7 @@ const execute_instructions = (
       deterministic,
       visualisation,
       callback,
-      completeExecution
+      completeExecution,
     )
     scheduler.init()
   } else {
@@ -34,6 +34,7 @@ const execute_instructions = (
       symbols,
       deterministic,
       visualisation,
+      isTriColor,
     )
     callback(process.start(), completeExecution)
   }

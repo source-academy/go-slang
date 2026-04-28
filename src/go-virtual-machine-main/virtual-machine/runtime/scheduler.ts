@@ -89,7 +89,7 @@ export class Scheduler {
         this.symbols = symbols
         this.deterministic = deterministic
         this.visualmode = visualmode
-        this.heap = new Heap(heapsize)
+        this.heap = new Heap(heapsize, true, true)
         this.main_goroutine_addr = this.create_main_goroutine()
         this.callback = callback
         this.completeExecution = completeExecution

@@ -1,4 +1,3 @@
-import { is_multithreaded } from '../../runtime'
 import { MessageType, WorkerToScheduler } from '../../runtime/message'
 import { Process } from '../../runtime/process'
 import { ProcessV2 } from '../../runtime/processV2'
@@ -130,7 +129,7 @@ export class WaitGroupNode extends BaseNode {
     this.get_lock()
     this.set_count(this.count() - 1)
     if (this.count() === 0) {
-      if (is_multithreaded) {
+      if (this.heap.is_multithreaded) {
         this.increment_generation()
         const message: WorkerToScheduler = {
           type: MessageType.UNBLOCK_ALL,
@@ -162,7 +161,7 @@ export class WaitGroupNode extends BaseNode {
       return
     }
     process.context.set_blocked(true)
-    if (is_multithreaded) {
+    if (this.heap.is_multithreaded) {
       const message: WorkerToScheduler = {
         type: MessageType.BLOCK,
         thread_id: local_thread.thread_id, // Use local_thread to obtain since we are keeping 2 versions of Process temporarily

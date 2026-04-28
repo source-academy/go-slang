@@ -1,6 +1,5 @@
 // For internal structures not meant to be used by the user program
 
-import { is_multithreaded } from "../../runtime"
 import { local_thread } from "../../runtime/worker"
 import { gc_heap } from "../../runtime/workerGC"
 import { Heap, TAG } from ".."
@@ -20,7 +19,7 @@ export class LockNode extends BaseNode {
     }
 
     get_lock() {
-        if (!is_multithreaded) return
+        if (!this.heap.is_multithreaded) return
         while (this.heap.memory.atomic_cas_i32(this.addr + 1, 0, 1) !== 0) {
             if (local_thread === undefined && gc_heap === undefined) continue // Scheduler should never sleep
             // GC Worker doesn't need lock if out of mem, this handles race condition in free during sweep
@@ -33,7 +32,7 @@ export class LockNode extends BaseNode {
     }
 
     release_lock() {
-        if (!is_multithreaded) return
+        if (!this.heap.is_multithreaded) return
         this.heap.memory.atomic_set_word_i32(0, this.addr + 1)
         this.heap.memory.atomic_notify_i32(this.addr + 1, 1)
     }

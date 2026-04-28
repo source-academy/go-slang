@@ -86,6 +86,7 @@ export class GoInstruction extends Instruction {
 
     if (func instanceof FuncNode) {
       const new_context = process.context.go()
+      process.heap.temp_push(new_context.addr)
       new_context.pushRTS(func.E()) // Seed new context's RTS with closure env
       new_context.set_PC(func.PC()) // Start executing at the function's entry PC
       new_context.pushOS(func.addr) // Push callee function addr on new Operand Stack
@@ -200,6 +201,7 @@ export class GoInstruction extends Instruction {
       }
       new_context.pushDeferStack() // Initialise defer stack
       process.contexts.push(new_context.addr)
+      process.heap.temp_pop()
 
       if (process.debug_mode) {
         process.debugger.context_id_map.set(
@@ -212,6 +214,7 @@ export class GoInstruction extends Instruction {
       // create the frame for function, put arguments in frame
       // func is a methodnode
       const new_context = process.context.go()
+      process.heap.temp_push(new_context.addr)
       new_context.pushRTS(process.context.E().addr)
       new_context.set_PC(process.context.PC() - 1) // Main loop increments PC before executing, next time this context runs will land on go instr again
       const results = []
@@ -335,6 +338,7 @@ export class GoInstruction extends Instruction {
         )
       }
       process.contexts.push(new_context.addr)
+      process.heap.temp_pop()
     }
   }
 

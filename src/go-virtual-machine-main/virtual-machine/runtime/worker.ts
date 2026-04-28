@@ -28,7 +28,7 @@ import { Thread } from "./thread"
 
 export let local_thread: Thread
 
-onmessage = (event: MessageEvent<SchedulerToWorker>) => {
+(globalThis as any).onmessage = (event: MessageEvent<SchedulerToWorker>) => {
     const type = event.data.type
     switch (type) {
         case MessageType.START: {
@@ -56,7 +56,7 @@ onmessage = (event: MessageEvent<SchedulerToWorker>) => {
                 symbs.push(object_to_token_location(sym))
             }
 
-            const heap = new Heap(heapsize, load_heap_config)
+            const heap = new Heap(heapsize, true, true, load_heap_config)
             const debug = new DebuggerV2(runqueues, heap, instrs, symbs)
             if (visualmode) {
                 debug.context_id_map.set(

@@ -1,4 +1,3 @@
-import { is_multithreaded } from '../../runtime'
 import { MessageType, WorkerToScheduler } from '../../runtime/message'
 import { GCPHASE, Heap, TAG } from '..'
 
@@ -146,7 +145,7 @@ export class ChannelNode extends BaseNode {
         return true
       }
     }
-    if (is_multithreaded) {
+    if (this.heap.is_multithreaded) {
       req.context().set_blocked(true)
       this.internal_wait(req)
     }
@@ -171,6 +170,7 @@ export class ChannelNode extends BaseNode {
       this.buffer().addr,
       this.wait_queue(true).addr,
       this.wait_queue(false).addr,
+      this.get_original_addr(),
     ]
   }
 
@@ -221,7 +221,7 @@ export class ReqInfoNode extends BaseNode {
     const context = this.context()
     context.set_PC(this.PC())
     if (this.is_recv()) context.pushOS(this.io())
-    if (is_multithreaded) {
+    if (this.heap.is_multithreaded) {
       const message: WorkerToScheduler = {
         type: MessageType.UNBLOCK,
         obj_addrs: [original_addr], // Pass in original channel addr

@@ -40,6 +40,8 @@ const runCode = (
   completeExecution: CompleteExecution,
   deterministic = true,
   visualisation = true,
+  isMultithreaded = true,
+  isTriColor = true,
 ): void => {
   // Parsing.
   let tokens: SourceFileTokens
@@ -146,6 +148,8 @@ const runCode = (
     visualisation,
     callback,
     completeExecution,
+    isMultithreaded,
+    isTriColor,
   )
 }
 

@@ -4,7 +4,6 @@ import { Float64Type } from '../executor/typing/float64_type'
 import { Int64Type } from '../executor/typing/int64_type'
 import { NoType } from '../executor/typing/no_type'
 import { StringType } from '../executor/typing/string_type'
-import { is_multithreaded } from '../runtime'
 import { Debugger } from '../runtime/debugger'
 import { MessageType, WorkerToScheduler } from '../runtime/message'
 import { local_thread } from '../runtime/worker'
@@ -116,7 +115,6 @@ export type LoadHeapConfig = {
 }
 
 export const word_size = 4
-export const is_tri_color = true
 
 export class Heap {
   memory: Memory // Assume memory is an array of 8 byte words, holds actual memory
@@ -138,12 +136,16 @@ export class Heap {
   gc_heap_min: number // Minimum ratio (decimals) of total memory to be used for GOGC to be checked
   gc_profiler: GCProfiler // [Only GC Thread] Get stats for GC
   is_alloc_ready = false // Set to true only after allocation occurs in memory
+  is_multithreaded: boolean
+  is_tri_color: boolean
   alloc_lock_addr: number // Lock for allocation
   alloc_count_addr: number // Total number of allocations ongoing (to sync with GC)
   gc_init_flag_addr: number // Address of GC Init Flag which indicates if GC wants to initialise
   save_stack_flag_addr: number // Address of save stack flag to indicate if GC wants to pop from save stack
   max_threads: number // Number of worker threads, used to bound total cache memory
-  constructor(size: number, config?: LoadHeapConfig) {
+  constructor(size: number, multithreaded = true, tri_color = true, config?: LoadHeapConfig) {
+    this.is_multithreaded = multithreaded
+    this.is_tri_color = tri_color
     this.size = size
     // Size must be power of 2 for buddy allocation
     if (this.size % 2 === 1) this.size -= 1
@@ -177,11 +179,11 @@ export class Heap {
     this.save_stack_flag_addr = initialise_heap ? FlagNode.create(this).addr : config.save_stack_flag_addr
     this.UNASSIGNED = initialise_heap ? UnassignedNode.create(this) : this.get_value(config.unassigned) as UnassignedNode
     // --- For single threaded ---
-    this.temp_roots = is_multithreaded ? new StackNode(this, 0) : StackNode.create(this) // Only used for single threaded
-    this.contexts = is_multithreaded ? new QueueNode(this, 0) : QueueNode.create(this) // Only used for single threaded
-    this.blocked_contexts = is_multithreaded ? new LinkedListNode(this, 0) : LinkedListNode.create(this) // Only used for single threaded
+    this.temp_roots = this.is_multithreaded ? new StackNode(this, 0) : StackNode.create(this) // Only used for single threaded
+    this.contexts = this.is_multithreaded ? new QueueNode(this, 0) : QueueNode.create(this) // Only used for single threaded
+    this.blocked_contexts = this.is_multithreaded ? new LinkedListNode(this, 0) : LinkedListNode.create(this) // Only used for single threaded
     // Create first execution context so that it can run (only single threaded)
-    if (!is_multithreaded) {
+    if (!this.is_multithreaded) {
       const context = ContextNode.create(this) // Only used for single threaded
       this.contexts.push(context.addr) // Only used for single threaded
     }
@@ -453,7 +455,7 @@ export class Heap {
    */
   allocate(size: number) {
     // Check thread-local cache first — avoids acquiring alloc_lock, reducing contention between web workers
-    if (is_multithreaded && local_thread !== undefined) {
+    if (this.is_multithreaded && local_thread !== undefined) {
       const lvl = Math.max(1, this.calc_level(size))
       const block_size = 2 ** lvl
       const cache = local_thread.local_free_cache.get(lvl)
@@ -502,7 +504,7 @@ export class Heap {
     let addr = try_allocate()
     // Update mark to be done concurrently while sweep be done when GOGC ratio is hit
     if (addr === -1) {
-      if (is_multithreaded && this.metadata.get_gc_phase() !== GCPHASE.INVALID) {
+      if (this.is_multithreaded && this.metadata.get_gc_phase() !== GCPHASE.INVALID) {
         this.metadata.set_out_of_mem(true)
         const gen = this.metadata.get_gc_cycle()
         //console.log("TRIGGERED BY OUT OF MEM")
@@ -515,11 +517,11 @@ export class Heap {
           this.metadata.wait_gc_cycle(gen)
         }
         this.metadata.set_out_of_mem(false)
-      } else if (is_tri_color && this.metadata.get_gc_phase() !== GCPHASE.INVALID) {
+      } else if (this.is_tri_color && this.metadata.get_gc_phase() !== GCPHASE.INVALID) {
         do {
           this.tri_color_step()
         } while (this.metadata.get_gc_phase() !== GCPHASE.NONE)
-      } else if (!is_tri_color) {
+      } else if (!this.is_tri_color) {
         this.mark_and_sweep()
       }
       addr = try_allocate()
@@ -530,7 +532,7 @@ export class Heap {
     }
     // While holding the lock, pre-fill this worker's cache for this level so future
     // allocations at the same size can skip acquiring alloc_lock entirely.
-    if (is_multithreaded && local_thread !== undefined) {
+    if (this.is_multithreaded && local_thread !== undefined) {
       const cache_lvl = Math.max(1, this.calc_level(size))
       const cache_block_size = 2 ** cache_lvl
       const cache_limit = Math.floor(this.size / (this.max_threads * this.max_level * cache_block_size * 2))
@@ -546,14 +548,14 @@ export class Heap {
       if (cache.length > 0) local_thread.local_free_cache.set(cache_lvl, cache)
     }
     size = this.get_size(addr)
-    if (is_multithreaded) {
+    if (this.is_multithreaded) {
       this.metadata.increment_alloc_total(size)
     } else {
       this.gc_profiler.increment_alloc(size)
     }
     this.metadata.increment_mem_left(-size)
 
-    if (is_multithreaded) {
+    if (this.is_multithreaded) {
       const phase = this.metadata.get_gc_phase()
       if (phase === GCPHASE.NONE
         && (this.size - this.metadata.get_mem_left() >= this.metadata.get_gc_target_mem())) {
@@ -566,7 +568,7 @@ export class Heap {
       } else if (phase === GCPHASE.MARK || (phase === GCPHASE.SWEEP && this.metadata.get_sweeper() <= addr)) {
         this.gc_bitmap.set_mark(addr, true)
       }
-    } else if (is_tri_color && this.metadata.get_gc_phase() !== GCPHASE.INVALID) {
+    } else if (this.is_tri_color && this.metadata.get_gc_phase() !== GCPHASE.INVALID) {
       switch (this.metadata.get_gc_phase()) {
         case GCPHASE.NONE:
           if (this.size - this.metadata.get_mem_left() >= this.metadata.get_gc_target_mem()) {
@@ -595,7 +597,7 @@ export class Heap {
    */
   free(addr: number) {
     // Store in thread-local cache so the next allocation by this worker can skip acquiring alloc_lock
-    if (is_multithreaded && local_thread !== undefined) {
+    if (this.is_multithreaded && local_thread !== undefined) {
       const lvl = this.get_level(addr)
       const block_size = 2 ** lvl
       const cache = local_thread.local_free_cache.get(lvl) ?? []
@@ -605,7 +607,7 @@ export class Heap {
         local_thread.local_free_cache.set(lvl, cache)
         // Keep mem accounting correct without touching the global allocator
         this.metadata.increment_mem_left(block_size)
-        if (is_multithreaded) {
+        if (this.is_multithreaded) {
           this.metadata.increment_freed_total(block_size)
         }
         this.debugger?.identifier_map.delete(addr)
@@ -633,7 +635,7 @@ export class Heap {
     }
     this.set_free(addr, true)
     this.add_list(addr, lvl)
-    if (is_multithreaded) {
+    if (this.is_multithreaded) {
       this.metadata.increment_freed_total(this.get_size(addr))
     } else {
       this.gc_profiler.increment_freed(this.get_size(addr))
@@ -680,7 +682,7 @@ export class Heap {
    * @desc Add address to a special stack
    */
   temp_push(addr: number) {
-    if (!is_multithreaded) {
+    if (!this.is_multithreaded) {
       // Use temp to safeguard handling temporary GC roots
       this.temp = addr
       this.temp_roots.push(addr)
@@ -692,13 +694,13 @@ export class Heap {
    * Removes last temporary root from the stack
    */
   temp_pop() {
-    if (!is_multithreaded) {
+    if (!this.is_multithreaded) {
       this.temp_roots.pop()
     }
   }
 
   handle_before_alloc() {
-    if (is_multithreaded && this.is_alloc_ready) {
+    if (this.is_multithreaded && this.is_alloc_ready) {
       const flag = this.get_value(this.gc_init_flag_addr) as FlagNode
       if (flag.get_flag() === 1 && (local_thread === undefined || local_thread.alloc_depth === 0)) {
         flag.sleep_thread(1)
@@ -721,7 +723,7 @@ export class Heap {
   }
 
   handle_after_alloc() {
-    if (is_multithreaded && this.is_alloc_ready) {
+    if (this.is_multithreaded && this.is_alloc_ready) {
       if (local_thread !== undefined) local_thread.alloc_depth -= 1
       const total_alloc_count = this.get_value(this.alloc_count_addr) as CounterNode
       total_alloc_count.decrease_count()
@@ -849,7 +851,7 @@ export class Heap {
     const flag = this.get_value(this.gc_init_flag_addr) as FlagNode
     flag.set_flag(1)
     const lock = this.get_value(this.alloc_lock_addr) as LockNode
-    if (!is_multithreaded) {
+    if (!this.is_multithreaded) {
       this.gc_profiler.start_pause()
       all_contexts = [
         this.contexts.addr, // Current running program state
@@ -877,7 +879,7 @@ export class Heap {
       if (root === -1) continue
       this.mark_gray(root)
     }
-    if (is_multithreaded) {
+    if (this.is_multithreaded) {
       if (!this.metadata.get_out_of_mem()) lock.release_lock()
       const flag = this.get_value(this.gc_init_flag_addr) as FlagNode
       flag.set_flag(0)
@@ -894,7 +896,7 @@ export class Heap {
    * @desc Mark phase of mark and sweep
    */
   mark_tri_color(k1: number, k2: number) {
-    if (is_multithreaded) {
+    if (this.is_multithreaded) {
       this.gc_profiler.start_increment()
     } else {
       this.gc_profiler.start_pause()
@@ -955,7 +957,7 @@ export class Heap {
     }
     save_stack_flag.set_flag(0)
     save_stack_flag.notify_threads()
-    if (is_multithreaded) {
+    if (this.is_multithreaded) {
       this.gc_profiler.end_increment()
     } else {
       this.gc_profiler.end_pause()
@@ -963,7 +965,7 @@ export class Heap {
   }
 
   sweep_tri_color(k3: number, all_contexts: number[] = []) {
-    if (is_multithreaded) {
+    if (this.is_multithreaded) {
       this.gc_profiler.start_increment()
     } else {
       this.gc_profiler.start_pause()
@@ -989,7 +991,7 @@ export class Heap {
     if (this.metadata.get_sweeper() >= this.size) {
       this.terminate_sweep(all_contexts)
     }
-    if (is_multithreaded) {
+    if (this.is_multithreaded) {
       this.gc_profiler.end_increment()
     } else {
       this.gc_profiler.end_pause()
@@ -1056,7 +1058,7 @@ export class Heap {
   }
 
   get_roots_mem(all_contexts: number[] = []): number {
-    if (!is_multithreaded) {
+    if (!this.is_multithreaded) {
       all_contexts = [
         this.contexts.addr, // Current running program state
         this.blocked_contexts.addr, // Suspended goroutines

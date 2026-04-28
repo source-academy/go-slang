@@ -47,6 +47,8 @@ export const Main = () => {
   const [code, setCode] = useState('')
   const [heapsize, setHeapsize] = useState(4096) // Maximum seems to be 2 ** 28 since the SAB has a max size of 2 ** 32
   const [visualMode, setVisualMode] = useState(false)
+  const [isMultithreaded, setIsMultithreaded] = useState(true)
+  const [isTriColor, setIsTriColor] = useState(true)
 
   useEffect(() => {
     // Get the value from the cookie
@@ -188,7 +190,7 @@ export const Main = () => {
       }
       // Retrieve instructions from endpoint
       setOutput('Compiling and Running your code...')
-      runCode(code, heapsize, completeExecution, true, visualMode)
+      runCode(code, heapsize, completeExecution, true, visualMode, isMultithreaded, isTriColor)
     } else {
       // Stop playing
       setPlaying(false)
@@ -226,6 +228,10 @@ export const Main = () => {
             isDisabled={loading}
             heapsize={heapsize}
             setHeapsize={setHeapsize}
+            isMultithreaded={isMultithreaded}
+            setIsMultithreaded={setIsMultithreaded}
+            isTriColor={isTriColor}
+            setIsTriColor={setIsTriColor}
           />
           <CodeIDE
             editable={editing}

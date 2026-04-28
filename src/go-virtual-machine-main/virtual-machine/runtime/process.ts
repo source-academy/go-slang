@@ -6,12 +6,14 @@ import {
   GoInstruction,
   Instruction,
 } from '../executor/instructions'
-import { GCPHASE, Heap, is_tri_color } from '../heap'
+import { GCPHASE, Heap } from '../heap'
 import { ContextNode } from '../heap/types/context'
 import { EnvironmentNode, FrameNode } from '../heap/types/environment'
 import { MethodNode } from '../heap/types/func'
+import { LinkedListNode } from '../heap/types/linkedlist'
 import { QueueNode } from '../heap/types/queue'
 import { SaveStackNode } from '../heap/types/saveStack'
+import { StackNode } from '../heap/types/stack'
 
 import { Debugger, StateInfo } from './debugger'
 
@@ -40,9 +42,21 @@ export class Process {
     symbols: (TokenLocation | null)[], // metadata for debugging
     deterministic: boolean,
     visualmode = false,
+    isTriColor = true,
   ) {
     this.instructions = instructions
-    this.heap = new Heap(heapsize)
+    this.heap = new Heap(heapsize, false, isTriColor)
+    // Heap skips single-threaded setup when is_multithreaded=true — initialise here (NEEDED FOR TESTS)
+    if (this.heap.contexts.sz() === 0) {
+      this.heap.temp_roots = StackNode.create(this.heap)
+      this.heap.contexts = QueueNode.create(this.heap)
+      this.heap.blocked_contexts = LinkedListNode.create(this.heap)
+      const context = ContextNode.create(this.heap)
+      this.heap.contexts.push(context.addr)
+    }
+    if (this.heap.save_stack_addrs.length === 0) {
+      this.heap.save_stack_addrs.push(SaveStackNode.create(this.heap).addr)
+    }
     this.contexts = this.heap.contexts
     // Create initial execution context using the first context in the queue. This will be the main context
     this.context = new ContextNode(this.heap, this.contexts.peek())
@@ -75,7 +89,7 @@ export class Process {
   start(): ProcessOutput {
     // Each context can run up to 30 instructions
     this.heap.gc_profiler.start_program()
-    const time_quantum = 1000
+    const time_quantum = 30
     this.runtime_count = 0
     let completed = false
     try {
@@ -90,7 +104,7 @@ export class Process {
         let cur_time = 0
         // Execute this context until it hits a done instruction
         while (!DoneInstruction.is(this.instructions[this.context.PC()])) {
-          if (is_tri_color && this.heap.metadata.get_gc_phase() !== GCPHASE.NONE) this.heap.tri_color_step()
+          if (this.heap.is_tri_color && this.heap.metadata.get_gc_phase() !== GCPHASE.NONE) this.heap.tri_color_step()
           if (cur_time >= time_quantum) {
             // Context Switch by pushing context to end of queue
             this.contexts.push(this.context.addr)
