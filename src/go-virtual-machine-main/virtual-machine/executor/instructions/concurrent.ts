@@ -837,11 +837,13 @@ export class SelectInstruction extends Instruction {
       .map((a) => a.value)
     const channels = cases.map((chan_req) => chan_req.channel().get_original_addr())
     let done = false
-    // Might have race condition where a checked channel is unblocked by another worker
-    for (const cas of cases) {
+    // All cases use queue_on_fail=false: no side effects on failure during the
+    // check phase, so cases from the same SELECT cannot resolve each other.
+    for (let i = 0; i < cases.length; i++) {
+      const cas = cases[i]
       const chan = cas.channel()
       const req = cas.req()
-      if (chan.try(req)) {
+      if (chan.try(req, false)) {
         // Must unblock for all channels
         const message: WorkerToScheduler = {
           type: MessageType.UNBLOCK,
@@ -859,7 +861,19 @@ export class SelectInstruction extends Instruction {
       if (pc !== -1) {
         process.context.set_PC(pc)
       } else {
+        // All cases failed: queue every req via chan.wait() and record each
+        // returned LinkedListEntryNode address in context.waitlist() so that
+        // req.unblock() can del() them all, removing stale reqs from every
+        // channel's wait queue the moment this goroutine is unblocked.
         process.context.set_blocked(true)
+        process.context.set_waitlist(
+          ChannelArrayNode.create(cases.length, process.heap).addr,
+        )
+        for (let i = 0; i < cases.length; i++) {
+          const chan = cases[i].channel()
+          const req = cases[i].req()
+          process.context.waitlist().set_child(i, chan.wait(req))
+        }
         const message: WorkerToScheduler = {
           type: MessageType.BLOCK,
           thread_id: process.thread_id,
@@ -868,11 +882,6 @@ export class SelectInstruction extends Instruction {
           generations: cases.map((chan_req) => chan_req.channel().get_generation()),
         }
         postMessage(message)
-        for (let i = 0; i < cases.length; i++) {
-          const chan = cases[i].channel()
-          const req = cases[i].req()
-          chan.wait(req)
-        }
       }
     }
     for (let i = 0; i < cases.length; i++) process.heap.temp_pop()

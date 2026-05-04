@@ -28,6 +28,10 @@ import { Thread } from "./thread"
 
 export let local_thread: Thread
 
+export function setLocalThread(t: Thread) { local_thread = t }
+
+export function clearLocalThread() { local_thread = undefined as unknown as Thread }
+
 (globalThis as any).onmessage = (event: MessageEvent<SchedulerToWorker>) => {
     const type = event.data.type
     switch (type) {

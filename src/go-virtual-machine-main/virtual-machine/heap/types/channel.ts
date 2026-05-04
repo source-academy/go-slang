@@ -94,7 +94,7 @@ export class ChannelNode extends BaseNode {
     return this.heap.memory.atomic_set_word_i32(val, this.addr + 7)
   }
 
-  try(req: ReqInfoNode) {
+  try(req: ReqInfoNode, queue_on_fail = true) {
     this.get_lock()
     if (req.is_recv()) {
       if (this.buffer().sz()) {
@@ -145,7 +145,7 @@ export class ChannelNode extends BaseNode {
         return true
       }
     }
-    if (this.heap.is_multithreaded) {
+    if (this.heap.is_multithreaded && queue_on_fail) {
       req.context().set_blocked(true)
       this.internal_wait(req)
     }
@@ -221,19 +221,24 @@ export class ReqInfoNode extends BaseNode {
     const context = this.context()
     context.set_PC(this.PC())
     if (this.is_recv()) context.pushOS(this.io())
+    // Remove all other pending channel reqs queued by the same SELECT block.
+    // Each waitlist slot holds the LinkedListEntryNode address inside the
+    // channel's wait queue; del() unlinks it so no stale req remains.
+    const waitlist = context.waitlist()
+    if (waitlist.addr !== -1) {
+      const wait_nodes = waitlist.get_children()
+      for (const wait_node of wait_nodes) {
+        new LinkedListEntryNode(this.heap, wait_node).del()
+      }
+    }
     if (this.heap.is_multithreaded) {
       const message: WorkerToScheduler = {
         type: MessageType.UNBLOCK,
-        obj_addrs: [original_addr], // Pass in original channel addr
+        obj_addrs: [original_addr],
         generations: [gen]
       }
       postMessage(message)
     } else {
-      const wait_nodes = context.waitlist().get_children()
-      for (const wait_node of wait_nodes) {
-        const node = new LinkedListEntryNode(this.heap, wait_node)
-        node.del()
-      }
       context.set_blocked(false)
       this.heap.contexts.push(context.addr)
     }

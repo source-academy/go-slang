@@ -10,7 +10,13 @@ export default defineConfig({
       reportOnFailure: true,
       exclude: ['./build/**', './src/frontend/**'],
     },
-    include: ['./src/go-virtual-machine-main/tests/**'],
-    exclude: ['./src/go-virtual-machine-main/tests/utility.ts'],
+    include: [
+      // './src/go-virtual-machine-main/tests/**',
+      './src/go-virtual-machine-main/tests-mt/**',
+    ],
+    exclude: [
+      // './src/go-virtual-machine-main/tests/utility.ts',
+      './src/go-virtual-machine-main/tests-mt/utility.ts',
+    ],
   },
 })
