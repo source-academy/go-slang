@@ -22,7 +22,9 @@ export class StoreInstruction extends Instruction {
       !Number.isNaN(dst) &&
       process.heap.get_value(dst) instanceof ReferenceNode
     ) {
-      process.mark_save_stack((process.heap.get_value(dst) as ReferenceNode).get_child()) // save the OLD pointed-to object before it is overwritten
+      process.mark_save_stack(
+        (process.heap.get_value(dst) as ReferenceNode).get_child(),
+      ) // save the OLD pointed-to object before it is overwritten
     }
     process.heap.copy(dst, src)
 
@@ -40,7 +42,9 @@ export class StoreInstruction extends Instruction {
       !Number.isNaN(dst) &&
       process.heap.get_value(dst) instanceof ReferenceNode
     ) {
-      process.mark_save_stack((process.heap.get_value(dst) as ReferenceNode).get_child()) // save the OLD pointed-to object before it is overwritten
+      process.mark_save_stack(
+        (process.heap.get_value(dst) as ReferenceNode).get_child(),
+      ) // save the OLD pointed-to object before it is overwritten
     }
     process.heap.copy(dst, src)
 
@@ -96,9 +100,13 @@ export class StoreArrayElementInstruction extends Instruction {
       if (node instanceof StructNode || node instanceof ArrayNode) {
         let elemAddr = this.peek(process, node, this.index, 0)
         if (elemAddr instanceof BaseNode) elemAddr = elemAddr.addr
-        if (process.heap.metadata.get_gc_phase() === GCPHASE.MARK
-          && process.heap.get_value(elemAddr) instanceof ReferenceNode) {
-          process.mark_save_stack((process.heap.get_value(elemAddr) as ReferenceNode).get_child())
+        if (
+          process.heap.metadata.get_gc_phase() === GCPHASE.MARK &&
+          process.heap.get_value(elemAddr) instanceof ReferenceNode
+        ) {
+          process.mark_save_stack(
+            (process.heap.get_value(elemAddr) as ReferenceNode).get_child(),
+          )
         }
         process.heap.copy(elemAddr, src)
       }
@@ -149,9 +157,13 @@ export class StoreArrayElementInstruction extends Instruction {
       if (node instanceof StructNode || node instanceof ArrayNode) {
         let elemAddr = this.peek(process, node, this.index, 0)
         if (elemAddr instanceof BaseNode) elemAddr = elemAddr.addr
-        if (process.heap.metadata.get_gc_phase() === GCPHASE.MARK
-          && process.heap.get_value(elemAddr) instanceof ReferenceNode) {
-          process.mark_save_stack((process.heap.get_value(elemAddr) as ReferenceNode).get_child())
+        if (
+          process.heap.metadata.get_gc_phase() === GCPHASE.MARK &&
+          process.heap.get_value(elemAddr) instanceof ReferenceNode
+        ) {
+          process.mark_save_stack(
+            (process.heap.get_value(elemAddr) as ReferenceNode).get_child(),
+          )
         }
         process.heap.copy(elemAddr, src)
       }
@@ -239,9 +251,13 @@ export class StoreStructFieldInstruction extends Instruction {
       const struct = new StructNode(process.heap, dst)
       let fieldAddr = this.peek(process, struct, this.index, 0)
       if (fieldAddr instanceof BaseNode) fieldAddr = fieldAddr.addr
-      if (process.heap.metadata.get_gc_phase() === GCPHASE.MARK
-        && process.heap.get_value(fieldAddr) instanceof ReferenceNode) {
-        process.mark_save_stack((process.heap.get_value(fieldAddr) as ReferenceNode).get_child())
+      if (
+        process.heap.metadata.get_gc_phase() === GCPHASE.MARK &&
+        process.heap.get_value(fieldAddr) instanceof ReferenceNode
+      ) {
+        process.mark_save_stack(
+          (process.heap.get_value(fieldAddr) as ReferenceNode).get_child(),
+        )
       }
       process.heap.copy(fieldAddr, src)
 
@@ -273,9 +289,13 @@ export class StoreStructFieldInstruction extends Instruction {
       const struct = new StructNode(process.heap, dst)
       let fieldAddr = this.peek(process, struct, this.index, 0)
       if (fieldAddr instanceof BaseNode) fieldAddr = fieldAddr.addr
-      if (process.heap.metadata.get_gc_phase() === GCPHASE.MARK
-        && process.heap.get_value(fieldAddr) instanceof ReferenceNode) {
-        process.mark_save_stack((process.heap.get_value(fieldAddr) as ReferenceNode).get_child())
+      if (
+        process.heap.metadata.get_gc_phase() === GCPHASE.MARK &&
+        process.heap.get_value(fieldAddr) instanceof ReferenceNode
+      ) {
+        process.mark_save_stack(
+          (process.heap.get_value(fieldAddr) as ReferenceNode).get_child(),
+        )
       }
       process.heap.copy(fieldAddr, src)
 
@@ -296,9 +316,13 @@ export class StoreStructFieldInstruction extends Instruction {
       const struct = new StructNode(process.heap, dst)
       let fieldAddr = this.peek(process, struct, this.index, 0)
       if (fieldAddr instanceof BaseNode) fieldAddr = fieldAddr.addr
-      if (process.heap.metadata.get_gc_phase() === GCPHASE.MARK
-        && process.heap.get_value(fieldAddr) instanceof ReferenceNode) {
-        process.mark_save_stack((process.heap.get_value(fieldAddr) as ReferenceNode).get_child())
+      if (
+        process.heap.metadata.get_gc_phase() === GCPHASE.MARK &&
+        process.heap.get_value(fieldAddr) instanceof ReferenceNode
+      ) {
+        process.mark_save_stack(
+          (process.heap.get_value(fieldAddr) as ReferenceNode).get_child(),
+        )
       }
       process.heap.copy(fieldAddr, src)
 
@@ -330,9 +354,13 @@ export class StoreStructFieldInstruction extends Instruction {
       const struct = new StructNode(process.heap, dst)
       let fieldAddr = this.peek(process, struct, this.index, 0)
       if (fieldAddr instanceof BaseNode) fieldAddr = fieldAddr.addr
-      if (process.heap.metadata.get_gc_phase() === GCPHASE.MARK
-        && process.heap.get_value(fieldAddr) instanceof ReferenceNode) {
-        process.mark_save_stack((process.heap.get_value(fieldAddr) as ReferenceNode).get_child())
+      if (
+        process.heap.metadata.get_gc_phase() === GCPHASE.MARK &&
+        process.heap.get_value(fieldAddr) instanceof ReferenceNode
+      ) {
+        process.mark_save_stack(
+          (process.heap.get_value(fieldAddr) as ReferenceNode).get_child(),
+        )
       }
       process.heap.copy(fieldAddr, src)
 

@@ -191,12 +191,7 @@ export class Memory {
    * @return The old value at the address
    */
   atomic_cas_i32(addr: number, expected: number, value: number) {
-    return Atomics.compareExchange(
-      this.i32,
-      addr,
-      expected | 0,
-      value | 0
-    )
+    return Atomics.compareExchange(this.i32, addr, expected | 0, value | 0)
   }
 
   /**
@@ -207,12 +202,7 @@ export class Memory {
    * @return The old value at the address
    */
   atomic_cas_u32(addr: number, expected: number, value: number) {
-    return Atomics.compareExchange(
-      this.u32,
-      addr,
-      expected >>> 0,
-      value >>> 0
-    )
+    return Atomics.compareExchange(this.u32, addr, expected >>> 0, value >>> 0)
   }
 
   /**

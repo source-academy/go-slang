@@ -38,7 +38,9 @@ export class ChannelNode extends BaseNode {
 
   wait_queue(recv: boolean): LinkedListNode {
     if (this.addr !== this.get_original_addr()) {
-      const original_chan = this.heap.get_value(this.get_original_addr()) as ChannelNode
+      const original_chan = this.heap.get_value(
+        this.get_original_addr(),
+      ) as ChannelNode
       return original_chan.wait_queue(recv)
     }
     return new LinkedListNode(
@@ -159,7 +161,7 @@ export class ChannelNode extends BaseNode {
     this.release_lock()
     return val
   }
-  
+
   /** Used to push into wait queue internally after lock has been retrieved */
   private internal_wait(req: ReqInfoNode) {
     return this.wait_queue(req.is_recv()).push_back(req.addr)
@@ -235,7 +237,7 @@ export class ReqInfoNode extends BaseNode {
       const message: WorkerToScheduler = {
         type: MessageType.UNBLOCK,
         obj_addrs: [original_addr],
-        generations: [gen]
+        generations: [gen],
       }
       postMessage(message)
     } else {

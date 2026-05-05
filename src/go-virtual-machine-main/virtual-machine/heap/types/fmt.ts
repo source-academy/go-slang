@@ -107,7 +107,7 @@ export class FmtPkgNode extends BaseNode {
           process.heap.get_value(argAddresses[i]) instanceof StringNode ||
           (i < argCount - 1 &&
             process.heap.get_value(argAddresses[i + 1]) instanceof
-            StringNode) ||
+              StringNode) ||
           (i > 0 &&
             process.heap.get_value(argAddresses[i - 1]) instanceof StringNode)
         ) {
@@ -136,7 +136,7 @@ export class FmtPkgNode extends BaseNode {
           process.heap.get_value(argAddresses[i]) instanceof StringNode ||
           (i < argCount - 1 &&
             process.heap.get_value(argAddresses[i + 1]) instanceof
-            StringNode) ||
+              StringNode) ||
           (i > 0 &&
             process.heap.get_value(argAddresses[i - 1]) instanceof StringNode)
         ) {

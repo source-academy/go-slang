@@ -134,7 +134,7 @@ export class WaitGroupNode extends BaseNode {
         const message: WorkerToScheduler = {
           type: MessageType.UNBLOCK_ALL,
           obj_addrs: [this.addr],
-          generations: [this.get_generation()]
+          generations: [this.get_generation()],
         }
         postMessage(message)
       } else {
@@ -172,7 +172,9 @@ export class WaitGroupNode extends BaseNode {
       postMessage(message)
     } else {
       this.queue().push(process.context.addr)
-      process.context.set_waitlist(ChannelArrayNode.create(1, process.heap).addr)
+      process.context.set_waitlist(
+        ChannelArrayNode.create(1, process.heap).addr,
+      )
       process.context
         .waitlist()
         .set_child(

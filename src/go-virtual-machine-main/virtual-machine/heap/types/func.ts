@@ -176,7 +176,10 @@ export class DeferFuncNode extends BaseNode {
  * Word 2: Address of a stack containing all the arguments (first argument at the top).
  */
 export class DeferMethodNode extends BaseNode {
-  static create(argCount: number, process: Process | ProcessV2): DeferMethodNode {
+  static create(
+    argCount: number,
+    process: Process | ProcessV2,
+  ): DeferMethodNode {
     process.heap.handle_before_alloc()
     const addr = process.heap.allocate(3)
     process.heap.set_tag(addr, TAG.DEFER_METHOD)

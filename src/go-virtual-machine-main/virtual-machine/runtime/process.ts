@@ -74,7 +74,9 @@ export class Process {
     const randomSeed = Math.random().toString(36).substring(2)
     this.generator = seedrandom.default(randomSeed)
     this.deterministic = deterministic
-    this.save_stack = this.heap.get_value(this.heap.save_stack_addrs[0]) as SaveStackNode
+    this.save_stack = this.heap.get_value(
+      this.heap.save_stack_addrs[0],
+    ) as SaveStackNode
 
     this.debug_mode = visualmode
     this.debugger = new Debugger(this.heap, this.instructions, symbols)
@@ -104,7 +106,11 @@ export class Process {
         let cur_time = 0
         // Execute this context until it hits a done instruction
         while (!DoneInstruction.is(this.instructions[this.context.PC()])) {
-          if (this.heap.is_tri_color && this.heap.metadata.get_gc_phase() !== GCPHASE.NONE) this.heap.tri_color_step()
+          if (
+            this.heap.is_tri_color &&
+            this.heap.metadata.get_gc_phase() !== GCPHASE.NONE
+          )
+            this.heap.tri_color_step()
           if (cur_time >= time_quantum) {
             // Context Switch by pushing context to end of queue
             this.contexts.push(this.context.addr)
@@ -181,10 +187,10 @@ export class Process {
         this.heap.gc_profiler.total_pause_time
       const throughput_ratio =
         mutator_time / (mutator_time + this.heap.gc_profiler.total_gc_time)
-      const alloc_rate = this.heap.gc_profiler.total_alloc /
-        this.heap.gc_profiler.program_time
-      const free_rate = this.heap.gc_profiler.total_freed /
-        this.heap.gc_profiler.program_time
+      const alloc_rate =
+        this.heap.gc_profiler.total_alloc / this.heap.gc_profiler.program_time
+      const free_rate =
+        this.heap.gc_profiler.total_freed / this.heap.gc_profiler.program_time
 
       console.log('Program Time: %f', this.heap.gc_profiler.program_time)
       console.log('Avg Pause Time: %f', pause_time)
@@ -194,7 +200,7 @@ export class Process {
       console.log('Alloc Rate: %f bytes/ms', alloc_rate)
       console.log('Free Rate: %f bytes/ms', free_rate)
 
-      console.log("Mem Left: %d", this.heap.metadata.get_mem_left())
+      console.log('Mem Left: %d', this.heap.metadata.get_mem_left())
 
       return {
         stdout: this.stdout,

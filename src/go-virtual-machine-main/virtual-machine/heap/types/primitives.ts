@@ -362,7 +362,7 @@ export class StringNode extends PrimitiveNode {
     throw Error('Invalid Opeartion')
   }
 }
-export class StringListNode extends BaseNode { }
+export class StringListNode extends BaseNode {}
 
 export class UnassignedNode extends BaseNode {
   static create(heap: Heap) {

@@ -42,7 +42,9 @@ describe('Heap Tests (MT)', () => {
       fmt.Println(a)
     }
     `
-    expect(codeRunnerMT(code).output).toEqual('[1 25 32 43 15 46 87 83 97 610]\n')
+    expect(codeRunnerMT(code).output).toEqual(
+      '[1 25 32 43 15 46 87 83 97 610]\n',
+    )
   })
 
   test('Array memory allocation for booleans produces correct output', () => {
@@ -54,7 +56,9 @@ describe('Heap Tests (MT)', () => {
       fmt.Println(a)
     }
     `
-    expect(codeRunnerMT(code).output).toEqual('[true true true false true false true false false true]\n')
+    expect(codeRunnerMT(code).output).toEqual(
+      '[true true true false true false true false false true]\n',
+    )
   })
 
   test('Array memory allocates integers at contiguous addresses', () => {
@@ -81,7 +85,9 @@ describe('Heap Tests (MT)', () => {
     }
     `
     const result = codeRunnerMT(code)
-    expect(result.output).toEqual('[true true true false true false true false false true]\n')
+    expect(result.output).toEqual(
+      '[true true true false true false true false false true]\n',
+    )
     expect(result.error).toBeUndefined()
   })
 })

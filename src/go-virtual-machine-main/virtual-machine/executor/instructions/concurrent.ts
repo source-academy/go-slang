@@ -602,7 +602,7 @@ export class GoInstruction extends Instruction {
     }
     const message: WorkerToScheduler = {
       type: MessageType.NEW_GOROUTINE,
-      thread_id: local_thread.thread_id
+      thread_id: local_thread.thread_id,
     }
     postMessage(message)
   }
@@ -835,7 +835,9 @@ export class SelectInstruction extends Instruction {
       .map((a) => ({ sort: process.generator(), value: a }))
       .sort((a, b) => a.sort - b.sort)
       .map((a) => a.value)
-    const channels = cases.map((chan_req) => chan_req.channel().get_original_addr())
+    const channels = cases.map((chan_req) =>
+      chan_req.channel().get_original_addr(),
+    )
     let done = false
     // All cases use queue_on_fail=false: no side effects on failure during the
     // check phase, so cases from the same SELECT cannot resolve each other.
@@ -848,7 +850,9 @@ export class SelectInstruction extends Instruction {
         const message: WorkerToScheduler = {
           type: MessageType.UNBLOCK,
           obj_addrs: channels,
-          generations: cases.map((chan_req) => chan_req.channel().get_generation()),
+          generations: cases.map((chan_req) =>
+            chan_req.channel().get_generation(),
+          ),
         }
         postMessage(message)
         done = true
@@ -879,7 +883,9 @@ export class SelectInstruction extends Instruction {
           thread_id: process.thread_id,
           context_addr: process.context.addr,
           obj_addrs: channels,
-          generations: cases.map((chan_req) => chan_req.channel().get_generation()),
+          generations: cases.map((chan_req) =>
+            chan_req.channel().get_generation(),
+          ),
         }
         postMessage(message)
       }

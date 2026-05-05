@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'vitest'
 
-import { codeRunnerMT as codeRunner, mainRunnerMT as mainRunner } from './utility'
+import {
+  codeRunnerMT as codeRunner,
+  mainRunnerMT as mainRunner,
+} from './utility'
 
 describe('Defer Type Checking', () => {
   test('Defer on non call should fail.', () => {

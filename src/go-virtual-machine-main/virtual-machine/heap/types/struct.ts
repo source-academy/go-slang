@@ -66,7 +66,7 @@ export class StructNode extends BaseNode {
           )
           struct.set_child(i, arrayNodeAddr)
         } else {
-          [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr)
+          ;[...fields.values()][i].defaultNodeAllocator()(heap, nextAddr)
           struct.set_child(i, nextAddr)
         }
       }
@@ -108,7 +108,7 @@ export class StructNode extends BaseNode {
         } else if (
           [...fields.values()][i] instanceof DeclaredType &&
           ([...fields.values()][i] as DeclaredType).type[0] instanceof
-          StructType
+            StructType
         ) {
           const node = (
             [...fields.values()][i] as DeclaredType
@@ -121,7 +121,7 @@ export class StructNode extends BaseNode {
             ].defaultNodeAllocator()(heap, nextAddr)
             struct.set_child(i, arrayNodeAddr)
           } else {
-            [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr)
+            ;[...fields.values()][i].defaultNodeAllocator()(heap, nextAddr)
             struct.set_child(i, nextAddr)
           }
         }
@@ -178,7 +178,7 @@ export class StructNode extends BaseNode {
           )
           struct.set_child(i, arrayNodeAddr)
         } else {
-          [...fields.values()][i].defaultNodeAllocator()(heap, nextAddr)
+          ;[...fields.values()][i].defaultNodeAllocator()(heap, nextAddr)
           struct.set_child(i, nextAddr)
         }
       }

@@ -131,18 +131,16 @@ export class MutexNode extends BaseNode {
     }
     // If unable to lock, should block the current context and add it to the wait queue
     this.queue().push(process.context.addr)
-    process.context.set_waitlist(
-      ChannelArrayNode.create(1, process.heap).addr,
-    )
+    process.context.set_waitlist(ChannelArrayNode.create(1, process.heap).addr)
     process.context
-    .waitlist()
-    .set_child(
-      0,
-      process.heap.blocked_contexts.push_back(process.context.addr),
-    )
+      .waitlist()
+      .set_child(
+        0,
+        process.heap.blocked_contexts.push_back(process.context.addr),
+      )
     process.context.set_blocked(true)
   }
-  
+
   handleUnlock(process: Process): void {
     if (!this.tryUnlock()) {
       throw new Error('sync: unlock of unlocked mutex')
@@ -160,7 +158,7 @@ export class MutexNode extends BaseNode {
       this.heap.contexts.push(context.addr)
     }
   }
-  
+
   handleLockV2(process: ProcessV2): void {
     if (this.tryLock()) {
       return
@@ -177,7 +175,7 @@ export class MutexNode extends BaseNode {
     }
     postMessage(message)
   }
-  
+
   handleUnlockV2(process: ProcessV2): void {
     if (!this.tryUnlock()) {
       throw new Error('sync: unlock of unlocked mutex')
@@ -191,7 +189,7 @@ export class MutexNode extends BaseNode {
     const message: WorkerToScheduler = {
       type: MessageType.UNBLOCK,
       obj_addrs: [this.addr],
-      generations: [this.get_generation()]
+      generations: [this.get_generation()],
     }
     postMessage(message)
   }

@@ -10,7 +10,10 @@ import {
 } from '@chakra-ui/react'
 import Cookies from 'js-cookie'
 
-import { ProgramData, runCode } from '../../go-virtual-machine-main/virtual-machine'
+import {
+  ProgramData,
+  runCode,
+} from '../../go-virtual-machine-main/virtual-machine'
 import { CompileError } from '../../go-virtual-machine-main/virtual-machine/executor/index'
 import { CompleteExecution } from '../../go-virtual-machine-main/virtual-machine/runtime/scheduler'
 import {
@@ -135,11 +138,7 @@ export const Main = () => {
   }
 
   const completeExecution: CompleteExecution = (result: ProgramData) => {
-    const {
-      error,
-      output: newOutput,
-      visualData
-    } = result
+    const { error, output: newOutput, visualData } = result
     if (error) {
       const errorTitle = {
         parse: 'Syntax Error',
@@ -190,7 +189,15 @@ export const Main = () => {
       }
       // Retrieve instructions from endpoint
       setOutput('Compiling and Running your code...')
-      runCode(code, heapsize, completeExecution, true, visualMode, isMultithreaded, isTriColor)
+      runCode(
+        code,
+        heapsize,
+        completeExecution,
+        true,
+        visualMode,
+        isMultithreaded,
+        isTriColor,
+      )
     } else {
       // Stop playing
       setPlaying(false)

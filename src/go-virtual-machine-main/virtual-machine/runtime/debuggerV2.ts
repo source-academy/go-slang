@@ -148,7 +148,7 @@ export class DebuggerV2 {
    * Generates state of program
    * [Need to fix obtaining stdout!!!]
    * [Need to fix getting contexts for blocked contexts!!!]
-   * @param pc 
+   * @param pc
    */
   generate_state(pc: number) {
     this.get_lock()

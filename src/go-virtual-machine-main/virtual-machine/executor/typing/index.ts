@@ -3,7 +3,7 @@ import { Heap } from '../../heap'
 export abstract class Type {
   tag: string
   constructor(tag: string) {
-    this.tag = tag;
+    this.tag = tag
   }
   abstract isPrimitive(): boolean
   abstract toString(): string
@@ -47,7 +47,7 @@ export class ArbitraryType extends Type {
   constructor() {
     super('ARBITRARY')
   }
-  
+
   isPrimitive(): boolean {
     return false
   }

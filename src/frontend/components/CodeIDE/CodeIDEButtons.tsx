@@ -76,7 +76,12 @@ export const CodeIDEButtons = (props: CodeIDEButtonProps) => {
             onChange={(e) => props.setIsMultithreaded(e.target.checked)}
             isDisabled={props.isDisabled}
           />
-          <FormLabel htmlFor="multithreaded-toggle" mb="0" whiteSpace="nowrap" fontSize="sm">
+          <FormLabel
+            htmlFor="multithreaded-toggle"
+            mb="0"
+            whiteSpace="nowrap"
+            fontSize="sm"
+          >
             Multithreaded
           </FormLabel>
         </FormControl>

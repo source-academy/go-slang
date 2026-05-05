@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'vitest'
 
-import { codeRunnerMT as codeRunner, mainRunnerMT as mainRunner } from './utility'
+import {
+  codeRunnerMT as codeRunner,
+  mainRunnerMT as mainRunner,
+} from './utility'
 
 describe('Array Type Checking', () => {
   test('Array literal with more elements than in the type should fail.', () => {

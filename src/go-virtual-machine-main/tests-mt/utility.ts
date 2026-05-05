@@ -16,10 +16,16 @@ import { RunQueueNode } from '../virtual-machine/heap/types/runqueue'
 import { SaveStackNode } from '../virtual-machine/heap/types/saveStack'
 import { StateInfo } from '../virtual-machine/runtime/debugger'
 import { DebuggerV2 } from '../virtual-machine/runtime/debuggerV2'
-import { MessageType, WorkerToScheduler } from '../virtual-machine/runtime/message'
+import {
+  MessageType,
+  WorkerToScheduler,
+} from '../virtual-machine/runtime/message'
 import { ProcessV2Status } from '../virtual-machine/runtime/processV2'
 import { Thread } from '../virtual-machine/runtime/thread'
-import { clearLocalThread, setLocalThread } from '../virtual-machine/runtime/worker'
+import {
+  clearLocalThread,
+  setLocalThread,
+} from '../virtual-machine/runtime/worker'
 
 type RunResult = {
   output?: string
@@ -127,7 +133,12 @@ function runCodeSyncMT(
   heap.save_stack_addrs = [save_stack.addr]
 
   // Create debugger and thread (no heap allocation)
-  const debugger_instance = new DebuggerV2([runqueue.addr], heap, instructions, symbols)
+  const debugger_instance = new DebuggerV2(
+    [runqueue.addr],
+    heap,
+    instructions,
+    symbols,
+  )
   const thread = new Thread(
     0,
     runqueue.addr,
@@ -167,7 +178,10 @@ function runCodeSyncMT(
           if (!blocking_waitlists.has(obj_addr)) {
             blocking_waitlists.set(obj_addr, [])
           }
-          (blocking_waitlists.get(obj_addr) as BlockingContext[]).push({ addr: context_addr, generation: generations[i] })
+          ;(blocking_waitlists.get(obj_addr) as BlockingContext[]).push({
+            addr: context_addr,
+            generation: generations[i],
+          })
         }
         break
       }
@@ -234,26 +248,37 @@ function runCodeSyncMT(
     result = thread.process.start()
   } finally {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (globalThis as any).postMessage = original_postMessage
+    ;(globalThis as any).postMessage = original_postMessage
   }
 
   if (result.status === ProcessV2Status.ERROR) {
     return {
       instructions,
       output: result.message,
-      error: { message: result.message, type: 'runtime', details: result.message },
+      error: {
+        message: result.message,
+        type: 'runtime',
+        details: result.message,
+      },
       visualData: [],
     }
   }
 
   if (result.status === ProcessV2Status.EMPTY_RUNQUEUE) {
-    const hasBlocked = Array.from(blocking_waitlists.values()).some(list => list.length > 0)
+    const hasBlocked = Array.from(blocking_waitlists.values()).some(
+      (list) => list.length > 0,
+    )
     if (hasBlocked) {
-      const errorMessage = 'Execution Error: all goroutines are asleep - deadlock!'
+      const errorMessage =
+        'Execution Error: all goroutines are asleep - deadlock!'
       return {
         instructions,
         output: errorMessage,
-        error: { message: errorMessage, type: 'runtime', details: errorMessage },
+        error: {
+          message: errorMessage,
+          type: 'runtime',
+          details: errorMessage,
+        },
         visualData: [],
       }
     }

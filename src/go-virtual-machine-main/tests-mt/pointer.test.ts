@@ -219,7 +219,7 @@ describe('Pointer Tests', () => {
     }
     `
     const output = codeRunner(code).output ?? ''
-    const lines = output.split('\n').filter(l => l.length > 0)
+    const lines = output.split('\n').filter((l) => l.length > 0)
     expect(lines).toHaveLength(2)
     expect(lines[0]).toMatch(/^0x[0-9a-f]{8}$/)
     expect(lines[1]).toMatch(/^0x[0-9a-f]{8}$/)
@@ -260,13 +260,13 @@ describe('Pointer Tests', () => {
     }
     `
     const output = codeRunner(code).output ?? ''
-    const lines = output.split('\n').filter(l => l.length > 0)
+    const lines = output.split('\n').filter((l) => l.length > 0)
     expect(lines).toHaveLength(4)
     for (const line of lines) {
       expect(line).toMatch(/^0x[0-9a-f]{8}$/)
     }
     // Addresses should be contiguous (4 bytes apart for int)
-    const addrs = lines.map(l => parseInt(l, 16))
+    const addrs = lines.map((l) => parseInt(l, 16))
     expect(addrs[1] - addrs[0]).toEqual(4)
     expect(addrs[2] - addrs[1]).toEqual(4)
     expect(addrs[3] - addrs[2]).toEqual(4)
@@ -349,7 +349,7 @@ describe('Pointer Tests', () => {
     }
     `
     const output = codeRunner(code).output ?? ''
-    const lines = output.split('\n').filter(l => l.length > 0)
+    const lines = output.split('\n').filter((l) => l.length > 0)
     expect(lines).toHaveLength(2)
     expect(lines[0]).toMatch(/^0x[0-9a-f]{8}$/)
     expect(lines[1]).toMatch(/^0x[0-9a-f]{8}$/)
@@ -383,7 +383,7 @@ describe('Pointer Tests', () => {
     }
     `
     const output = codeRunner(code).output ?? ''
-    const lines = output.split('\n').filter(l => l.length > 0)
+    const lines = output.split('\n').filter((l) => l.length > 0)
     expect(lines).toHaveLength(5)
     expect(lines[0]).toEqual('&{123 {E 23}}')
     expect(lines[1]).toMatch(/^0x[0-9a-f]{8}$/)
@@ -594,18 +594,18 @@ describe('Pointer Tests', () => {
     }
     `
     const output = codeRunner(code).output ?? ''
-    const lines = output.split('\n').filter(l => l.length > 0)
+    const lines = output.split('\n').filter((l) => l.length > 0)
     expect(lines).toHaveLength(10)
     expect(lines[0]).toEqual('&[sv hello r5gjri]')
     expect(lines[1]).toMatch(/^0x[0-9a-f]{8}$/) // &r
     expect(lines[2]).toMatch(/^0x[0-9a-f]{8}$/) // *r = q address
-    expect(lines[3]).toEqual('&[sv hello r5gjri]')  // **r
-    expect(lines[4]).toEqual('[sv hello r5gjri]')   // ***r
+    expect(lines[3]).toEqual('&[sv hello r5gjri]') // **r
+    expect(lines[4]).toEqual('[sv hello r5gjri]') // ***r
     expect(lines[5]).toMatch(/^0x[0-9a-f]{8}$/) // q address
-    expect(lines[6]).toEqual('&[sv hello r5gjri]')  // *q
-    expect(lines[7]).toEqual('[sv hello r5gjri]')   // **q
-    expect(lines[8]).toEqual('&[sv hello r5gjri]')  // p
-    expect(lines[9]).toEqual('[sv hello r5gjri]')   // *p
+    expect(lines[6]).toEqual('&[sv hello r5gjri]') // *q
+    expect(lines[7]).toEqual('[sv hello r5gjri]') // **q
+    expect(lines[8]).toEqual('&[sv hello r5gjri]') // p
+    expect(lines[9]).toEqual('[sv hello r5gjri]') // *p
   })
 
   test('Modifying fields of pointers of pointer of arrays should throw error', () => {

@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'vitest'
 
-import { codeRunnerMT as codeRunner, mainRunnerMT as mainRunner } from './utility'
+import {
+  codeRunnerMT as codeRunner,
+  mainRunnerMT as mainRunner,
+} from './utility'
 
 describe('Concurrency Check (MT)', () => {
   test('Basic Check for small loops', () => {

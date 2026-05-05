@@ -1,7 +1,7 @@
-import { Heap, TAG } from ".."
+import { Heap, TAG } from '..'
 
-import { BaseNode } from "./base"
-import { QueueListNode } from "./queue"
+import { BaseNode } from './base'
+import { QueueListNode } from './queue'
 
 export class RunQueueNode extends BaseNode {
   static create(heap: Heap) {
