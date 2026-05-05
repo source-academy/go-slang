@@ -31,7 +31,7 @@ type RunResult = {
 
 function insertSemicolons(input: string): string {
   const autoInsertTokens = [
-    /^[\*&]?[a-zA-Z_][a-zA-Z0-9_]*$/,
+    /^[*&]?[a-zA-Z_][a-zA-Z0-9_]*$/,
     /^[0-9]+$/,
     /^[0-9]+\.[0-9]*$/,
     /^0x[0-9a-fA-F]+$/,
@@ -40,7 +40,7 @@ function insertSemicolons(input: string): string {
     /^".*"$/,
     /^'.*'$/,
     /^`[^`]*`$/,
-    /[)\]\}]$/,
+    /[)\]}]$/,
     /(\+\+|--)\s*$/,
     /\b(break|continue|fallthrough|return)$/,
   ]
