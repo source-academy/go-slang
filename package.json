@@ -6,7 +6,7 @@
     "deploy": "gh-pages -d build",
     "local": "npm run generate-parser && react-scripts start",
     "dev": "NODE_ENV=dev && concurrently \"npm run generate-parser-watch\" \"react-scripts start\"",
-    "build": "npm run generate-parser && react-scripts build",
+    "build": "npm run generate-parser && GENERATE_SOURCEMAP=false react-scripts build",
     "test": "npm run generate-parser && vitest",
     "coverage": "npm run generate-parser && vitest --ui --config ./vitest.config.js",
     "eject": "react-scripts eject",
@@ -72,6 +72,7 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@types/js-cookie": "^3.0.6",
     "@types/react-cytoscapejs": "^1.2.2",
     "@types/react-dom": "^18.2.4",
