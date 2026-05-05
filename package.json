@@ -10,6 +10,7 @@
     "test": "npm run generate-parser && vitest",
     "coverage": "npm run generate-parser && vitest --ui --config ./vitest.config.js",
     "eject": "react-scripts eject",
+    "format:ci": "eslint ./ --ignore-path .gitignore && prettier . -c",
     "lint-no-fix": "eslint ./ --ignore-path .gitignore && prettier . -c",
     "lint": "eslint ./ --ignore-path .gitignore --fix && prettier . -c --write",
     "generate-parser": "npx peggy --format es -o src/go-virtual-machine-main/virtual-machine/compiler/golang_parser.js src/go-virtual-machine-main/virtual-machine/compiler/parser.peggy",
