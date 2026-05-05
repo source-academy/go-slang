@@ -9,6 +9,7 @@
     "build": "npm run generate-parser && GENERATE_SOURCEMAP=false DISABLE_ESLINT_PLUGIN=true craco build",
     "test": "npm run generate-parser && vitest",
     "coverage": "npm run generate-parser && vitest --ui --config ./vitest.config.js",
+    "test-coverage": "npm run generate-parser && vitest run --coverage --config ./vitest.config.js",
     "eject": "react-scripts eject",
     "format:ci": "eslint ./ --ignore-path .gitignore && prettier . -c",
     "lint-no-fix": "eslint ./ --ignore-path .gitignore && prettier . -c",
