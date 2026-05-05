@@ -61,7 +61,7 @@ export class Thread {
  
     // Return all cached blocks to the global buddy allocator so other workers can allocate them.
     flush_cache() {
-        for (const [_, addrs] of this.local_free_cache) {
+        for (const [, addrs] of this.local_free_cache) {
             for (const addr of addrs) {
                 // free_to_global sets is_free, so the sweeper will skip this block from this point on.
                 this.heap.free_to_global(addr)

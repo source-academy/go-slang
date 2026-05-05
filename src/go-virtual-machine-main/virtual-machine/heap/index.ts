@@ -460,7 +460,7 @@ export class Heap {
       const block_size = 2 ** lvl
       const cache = local_thread.local_free_cache.get(lvl)
       if (cache && cache.length > 0) {
-        const addr = cache.pop()!
+        const addr = cache.pop() as number
         // Mark black before clearing is_cached so the sweeper never sees a window where the
         // block is not-free, not-cached, and not-marked. Also fire when gc_init_flag=1: GC is
         // waiting to start STW and a block popped here won't be in the root snapshot, so treat

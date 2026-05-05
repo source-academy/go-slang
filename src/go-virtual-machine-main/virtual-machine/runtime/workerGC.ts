@@ -4,6 +4,7 @@ import { MessageType, SchedulerToGC, WorkerToScheduler } from "./message"
 
 export let gc_heap: Heap
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (globalThis as any).onmessage = (event: MessageEvent<SchedulerToGC>) => {
     const type = event.data.type
     switch (type) {

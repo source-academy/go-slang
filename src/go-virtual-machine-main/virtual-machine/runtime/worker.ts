@@ -32,6 +32,7 @@ export function setLocalThread(t: Thread) { local_thread = t }
 
 export function clearLocalThread() { local_thread = undefined as unknown as Thread }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (globalThis as any).onmessage = (event: MessageEvent<SchedulerToWorker>) => {
     const type = event.data.type
     switch (type) {

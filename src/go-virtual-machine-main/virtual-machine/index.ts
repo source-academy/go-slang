@@ -51,7 +51,7 @@ const runCode = (
   function insertSemicolons(input: string) {
     // Tokens after which semicolons are auto-inserted in Go
     const autoInsertTokens = [
-      /^[\*&]?[a-zA-Z_][a-zA-Z0-9_]*$/, // identifiers including address and indirection
+      /^[*&]?[a-zA-Z_][a-zA-Z0-9_]*$/, // identifiers including address and indirection
       /^[0-9]+$/, // integer literals
       /^[0-9]+\.[0-9]*$/, // float literals
       /^0x[0-9a-fA-F]+$/, // hex integer literals
@@ -60,7 +60,7 @@ const runCode = (
       /^".*"$/,
       /^'.*'$/,
       /^`[^`]*`$/, // string/rune literals
-      /[)\]\}]$/, // closing ), ], }
+      /[)\]}]$/, // closing ), ], }
       /(\+\+|--)\s*$/, // ++ or --
       /\b(break|continue|fallthrough|return)$/, // specific keywords
     ]

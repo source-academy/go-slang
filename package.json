@@ -6,7 +6,7 @@
     "deploy": "gh-pages -d build",
     "local": "npm run generate-parser && react-scripts start",
     "dev": "NODE_ENV=dev && concurrently \"npm run generate-parser-watch\" \"react-scripts start\"",
-    "build": "npm run generate-parser && GENERATE_SOURCEMAP=false craco build",
+    "build": "npm run generate-parser && GENERATE_SOURCEMAP=false DISABLE_ESLINT_PLUGIN=true craco build",
     "test": "npm run generate-parser && vitest",
     "coverage": "npm run generate-parser && vitest --ui --config ./vitest.config.js",
     "eject": "react-scripts eject",
