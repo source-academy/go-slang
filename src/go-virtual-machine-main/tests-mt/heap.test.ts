@@ -1,10 +1,9 @@
 import { describe, expect, test } from 'vitest'
 
-import { Heap, TAG } from '../virtual-machine/heap'
+import { Heap } from '../virtual-machine/heap'
 import { FrameNode } from '../virtual-machine/heap/types/environment'
-import { BoolNode, IntegerNode } from '../virtual-machine/heap/types/primitives'
 
-import { codeRunnerMT, compileCodeMT } from './utility'
+import { codeRunnerMT } from './utility'
 
 describe('Heap Tests (MT)', () => {
   test('Get Set Bits', () => {
@@ -67,7 +66,6 @@ describe('Heap Tests (MT)', () => {
       fmt.Println(a)
     }
     `
-    const compiled = compileCodeMT(code)
     const result = codeRunnerMT(code)
     expect(result.output).toEqual('[1 25 32 43 15 46 87 83 97 610]\n')
     expect(result.error).toBeUndefined()
