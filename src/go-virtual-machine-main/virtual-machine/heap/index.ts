@@ -923,7 +923,6 @@ export class Heap {
   }
 
   initiate_tri_color(all_contexts: number[] = []) {
-    console.log('TRI COLOR START')
     const flag = this.get_value(this.gc_init_flag_addr) as FlagNode
     flag.set_flag(1)
     const lock = this.get_value(this.alloc_lock_addr) as LockNode
@@ -1088,7 +1087,6 @@ export class Heap {
     this.metadata.set_gc_phase(GCPHASE.NONE)
     this.calc_target_mem(all_contexts)
     this.gc_profiler.end_gc_cycle()
-    console.log('TRI COLOR END')
   }
 
   mark_gray(addr: number) {
@@ -1108,7 +1106,6 @@ export class Heap {
 
   mark_and_sweep() {
     this.gc_profiler.start_pause()
-    console.log('CLEAN')
     // console.trace()
     // All root references
     const roots: number[] = [
