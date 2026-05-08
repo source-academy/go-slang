@@ -9,9 +9,7 @@ export default defineConfig({
       reportOnFailure: true,
       exclude: ['./build/**', './src/frontend/**'],
     },
-    setupFiles: [
-      './src/go-virtual-machine-main/tests-mt/setup.ts',
-    ],
+    setupFiles: ['./src/go-virtual-machine-main/tests-mt/setup.ts'],
     include: [
       // './src/go-virtual-machine-main/tests/**',
       './src/go-virtual-machine-main/tests-mt/**',
