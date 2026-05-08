@@ -42,18 +42,6 @@ export class MutexNode extends BaseNode {
     return this.heap.memory.atomic_get_word_i32(this.addr + 1) < 0
   }
 
-  // lock(): void {
-  //   this.heap.memory.set_number(-1, this.addr + 1)
-  // }
-
-  // unlock(): void {
-  //   if (this.is_locked()) {
-  //     this.heap.memory.set_number(0, this.addr + 1)
-  //   } else {
-  //     throw new Error('sync: unlock of unlocked mutex')
-  //   }
-  // }
-
   tryLock(): boolean {
     return this.heap.memory.atomic_cas_i32(this.addr + 1, 0, -1) === 0
   }
