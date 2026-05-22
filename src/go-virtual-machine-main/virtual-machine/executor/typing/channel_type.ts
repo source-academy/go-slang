@@ -9,7 +9,7 @@ export class ChannelType extends Type {
     public readable: boolean,
     public writable: boolean,
   ) {
-    super()
+    super('CHANNEL')
   }
 
   override isPrimitive(): boolean {

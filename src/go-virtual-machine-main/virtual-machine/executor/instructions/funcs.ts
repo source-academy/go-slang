@@ -6,6 +6,7 @@ import {
   MethodNode,
 } from '../../heap/types/func'
 import { Process } from '../../runtime/process'
+import { ProcessV2 } from '../../runtime/processV2'
 
 import { Instruction } from './base'
 
@@ -25,6 +26,12 @@ export class LoadFuncInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
+    process.context.pushOS(
+      FuncNode.create(this.PC, process.context.E().addr, process.heap).addr,
+    )
+  }
+
+  override executeV2(process: ProcessV2): void {
     process.context.pushOS(
       FuncNode.create(this.PC, process.context.E().addr, process.heap).addr,
     )
@@ -61,6 +68,24 @@ export class CallInstruction extends Instruction {
       receiver.handleMethodCall(process, func.identifier(), this.args)
     }
   }
+
+  override executeV2(process: ProcessV2): void {
+    const func = process.heap.get_value(process.context.peekOSIdx(this.args))
+    if (!(func instanceof FuncNode) && !(func instanceof MethodNode))
+      throw Error('Stack does not contain closure')
+
+    if (func instanceof FuncNode) {
+      process.context.pushDeferStack()
+      process.context.pushRTS(
+        CallRefNode.create(process.context.PC(), process.heap).addr,
+      )
+      process.context.pushRTS(func.E())
+      process.context.set_PC(func.PC())
+    } else {
+      const receiver = func.receiver()
+      receiver.handleMethodCallV2(process, func.identifier(), this.args)
+    }
+  }
 }
 
 export class DeferredCallInstruction extends Instruction {
@@ -81,6 +106,20 @@ export class DeferredCallInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
+    const func = process.heap.get_value(process.context.peekOSIdx(this.args))
+    if (!(func instanceof FuncNode) && !(func instanceof MethodNode))
+      throw Error('Stack does not contain closure')
+
+    let deferNode
+    if (func instanceof FuncNode) {
+      deferNode = DeferFuncNode.create(this.args, process)
+    } else {
+      deferNode = DeferMethodNode.create(this.args, process)
+    }
+    process.context.peekDeferStack().push(deferNode.addr)
+  }
+
+  override executeV2(process: ProcessV2): void {
     const func = process.heap.get_value(process.context.peekOSIdx(this.args))
     if (!(func instanceof FuncNode) && !(func instanceof MethodNode))
       throw Error('Stack does not contain closure')
@@ -145,6 +184,66 @@ export class ReturnInstruction extends Instruction {
         methodNode
           .receiver()
           .handleMethodCall(process, methodNode.identifier(), argCount)
+
+        // Since methods are hardcoded and don't behave like functions, they don't jump back to an address.
+        // Manually decrement PC here so that the next executor step will return to this instruction.
+        process.context.set_PC(process.context.PC() - 1)
+      }
+
+      // Return here to account for this as one instruction,
+      // to avoid hogging the CPU while going through deferred calls.
+      return
+    } else {
+      process.context.popDeferStack()
+    }
+
+    if (process.context.RTS().sz() === 0) return // handles goroutines exiting
+    const callRef = process.heap.get_value(process.context.popRTS())
+    if (!(callRef instanceof CallRefNode)) throw new Error('Unreachable')
+    process.context.set_PC(callRef.PC())
+  }
+
+  override executeV2(process: ProcessV2): void {
+    // Clear remnant environment nodes on the RTS (e.g. from blocks).
+    while (!(process.context.peekRTS() instanceof CallRefNode)) {
+      process.context.popRTS()
+      if (process.context.RTS().sz() === 0) break
+    }
+
+    const defers = process.context.peekDeferStack()
+    if (defers.sz()) {
+      // There are still deferred calls to be carried out.
+      const deferNode = process.heap.get_value(defers.pop())
+      if (
+        !(deferNode instanceof DeferFuncNode) &&
+        !(deferNode instanceof DeferMethodNode)
+      ) {
+        throw new Error('Unreachable')
+      }
+
+      // Push everything back onto OS before resuming the call.
+      if (deferNode instanceof DeferFuncNode) {
+        process.context.pushOS(deferNode.funcAddr())
+        while (deferNode.stack().sz()) {
+          process.context.pushOS(deferNode.stack().pop())
+        }
+        process.context.pushDeferStack()
+        process.context.pushRTS(
+          CallRefNode.create(process.context.PC() - 1, process.heap).addr,
+        )
+        process.context.pushRTS(deferNode.func().E())
+        process.context.set_PC(deferNode.func().PC())
+      } else {
+        const methodNode = deferNode.methodNode()
+        process.context.pushOS(methodNode.addr)
+        process.context.pushOS(methodNode.receiverAddr())
+        const argCount = deferNode.stack().sz()
+        while (deferNode.stack().sz()) {
+          process.context.pushOS(deferNode.stack().pop())
+        }
+        methodNode
+          .receiver()
+          .handleMethodCallV2(process, methodNode.identifier(), argCount)
 
         // Since methods are hardcoded and don't behave like functions, they don't jump back to an address.
         // Manually decrement PC here so that the next executor step will return to this instruction.

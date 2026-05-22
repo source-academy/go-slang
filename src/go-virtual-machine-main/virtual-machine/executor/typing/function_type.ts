@@ -11,7 +11,7 @@ export class FunctionType extends Type {
     public results: ReturnType,
     public variadic: boolean = false,
   ) {
-    super()
+    super('FUNCTION')
   }
 
   override isPrimitive(): boolean {

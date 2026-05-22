@@ -10,6 +10,7 @@ import { StackNode } from './stack'
 export class ContextNode extends BaseNode {
   // 6 words: [metadata | blocked?] [PC - Program Counter] [OS - Operand Stack] [RTS - Runtime Stack] [WaitLists] [DeferStack]
   static create(heap: Heap) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(6)
     heap.set_tag(addr, TAG.CONTEXT)
     heap.memory.set_number(0, addr + 1) // PC initialise to 0
@@ -19,6 +20,7 @@ export class ContextNode extends BaseNode {
     heap.memory.set_word(StackNode.create(heap).addr, addr + 3) // RTS
     heap.memory.set_word(StackNode.create(heap).addr, addr + 5) // DeferStack
     heap.temp_pop()
+    heap.handle_after_alloc()
     return new ContextNode(heap, addr)
   }
 
@@ -135,7 +137,6 @@ export class ContextNode extends BaseNode {
     for (let i = 0; i < this.OS().sz(); i++) {
       const val = this.heap.get_value(this.OS().get_idx(i)) as PrimitiveNode
       console.log(val)
-      // console.log(val.get_value())
     }
   }
 
@@ -173,7 +174,6 @@ export class ContextNode extends BaseNode {
     for (let i = 0; i < this.RTS().sz(); i++) {
       const addr = this.RTS().get_idx(i)
       const val = addr === -1 ? -1 : this.heap.get_value(addr)
-      //   console.log(val)
       let for_block = false
       if (val instanceof EnvironmentNode && val.if_for_block()) for_block = true
       console.log(

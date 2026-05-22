@@ -8,6 +8,10 @@ import { ReturnType } from '../return_type'
 import { Type } from '..'
 
 export class WaitGroupType extends Type {
+  constructor() {
+    super('WAITGROUP')
+  }
+
   override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
     throw new Error('Method not implemented.')
   }

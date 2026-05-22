@@ -5,7 +5,7 @@ import { Type } from '.'
 
 export class PackageType extends Type {
   constructor(public name: string, public types: Record<string, Type>) {
-    super()
+    super('PACKAGE')
   }
 
   override isPrimitive(): boolean {

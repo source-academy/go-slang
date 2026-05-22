@@ -9,7 +9,10 @@ import {
 import { FuncNode, MethodNode } from '../../heap/types/func'
 import { IntegerNode } from '../../heap/types/primitives'
 import { StructNode } from '../../heap/types/struct'
+import { MessageType, WorkerToScheduler } from '../../runtime/message'
 import { Process } from '../../runtime/process'
+import { ProcessV2 } from '../../runtime/processV2'
+import { local_thread } from '../../runtime/worker'
 import { BoolType } from '../typing/bool_type'
 import { StringType } from '../typing/string_type'
 
@@ -30,6 +33,18 @@ export class ForkInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
+    const new_context = process.context.fork().addr
+    process.contexts.push(new_context)
+    process.context.set_PC(this.addr)
+    if (process.debug_mode) {
+      process.debugger.context_id_map.set(
+        new_context,
+        process.debugger.context_id++,
+      )
+    }
+  }
+
+  override executeV2(process: ProcessV2): void {
     const new_context = process.context.fork().addr
     process.contexts.push(new_context)
     process.context.set_PC(this.addr)
@@ -71,6 +86,7 @@ export class GoInstruction extends Instruction {
 
     if (func instanceof FuncNode) {
       const new_context = process.context.go()
+      process.heap.temp_push(new_context.addr)
       new_context.pushRTS(func.E()) // Seed new context's RTS with closure env
       new_context.set_PC(func.PC()) // Start executing at the function's entry PC
       new_context.pushOS(func.addr) // Push callee function addr on new Operand Stack
@@ -185,6 +201,7 @@ export class GoInstruction extends Instruction {
       }
       new_context.pushDeferStack() // Initialise defer stack
       process.contexts.push(new_context.addr)
+      process.heap.temp_pop()
 
       if (process.debug_mode) {
         process.debugger.context_id_map.set(
@@ -197,6 +214,7 @@ export class GoInstruction extends Instruction {
       // create the frame for function, put arguments in frame
       // func is a methodnode
       const new_context = process.context.go()
+      process.heap.temp_push(new_context.addr)
       new_context.pushRTS(process.context.E().addr)
       new_context.set_PC(process.context.PC() - 1) // Main loop increments PC before executing, next time this context runs will land on go instr again
       const results = []
@@ -320,7 +338,273 @@ export class GoInstruction extends Instruction {
         )
       }
       process.contexts.push(new_context.addr)
+      process.heap.temp_pop()
     }
+  }
+
+  override executeV2(process: ProcessV2): void {
+    // Looks under the top this.args argument values on the OS to find the callee value
+    const func = process.heap.get_value(process.context.peekOSIdx(this.args))
+    if (!(func instanceof FuncNode) && !(func instanceof MethodNode))
+      throw Error('Stack does not contain closure')
+
+    if (func instanceof FuncNode) {
+      const new_context = process.context.go()
+      new_context.pushRTS(func.E()) // Seed new context's RTS with closure env
+      new_context.set_PC(func.PC()) // Start executing at the function's entry PC
+      new_context.pushOS(func.addr) // Push callee function addr on new Operand Stack
+      // Store in original order
+      const results = []
+      for (let i = this.args - 1; i >= 0; i--) {
+        const src = process.context.popOS()
+        results[i] = src
+      }
+      for (let i = 0; i < this.args; i++) {
+        // Making it "pass by value" instead of by reference
+        const allocate = process.heap.allocate(
+          process.heap.get_size(results[i]),
+        )
+        process.heap.copy(allocate, results[i])
+        // Deepcopy if struct or array
+        const node = process.heap.get_value(results[i])
+        if (node instanceof ArrayNode) {
+          // Deepcopy if array
+          const dimensions = [] as number[]
+          let length = node.length()
+          let next = process.heap.get_value(node.get_child(0))
+          let arrayStart = node.get_child(0)
+          dimensions.push(length)
+          while (next instanceof ArrayNode) {
+            dimensions.push(next.length())
+            length = length * next.length()
+            arrayStart = next.get_child(0)
+            next = process.heap.get_value(next.get_child(0))
+          }
+          const type = process.heap.get_type(next.addr)
+          const addr = type.bulkDefaultNodeCreator()(process.heap, length)
+          let sizeof = 4
+          if (type instanceof BoolType) sizeof = 1
+          if (type instanceof StringType) sizeof = 2
+          // Deepcopy each element
+          for (let i = 0; i < length; i++) {
+            process.heap.copy(addr + sizeof * i, arrayStart + sizeof * i)
+          }
+          const arrayNodes = [] as ArrayNode[]
+          if (node instanceof ArrayNode) {
+            let next2 = process.heap.get_value(node.get_child(0))
+            let length2 = node.length()
+            while (next2 instanceof ArrayNode) {
+              length2 = next2.length()
+              next2 = process.heap.get_value(next2.get_child(0))
+            }
+            const baseType = process.heap.get_type(next2.addr)
+            if (baseType instanceof BoolType) sizeof = 1
+            if (baseType instanceof StringType) sizeof = 2
+            let addr2 = addr
+            // handle multi-dimensional arrays: inner-most layer
+            // we ensured that the memory block is contiguous earlier
+            // so we need to link ArrayNodes to the correct memory addresses
+            for (let a = 0; a < length / length2; a++) {
+              arrayNodes.push(
+                ArrayNode.create(length2, process.heap, sizeof, addr2),
+              )
+              addr2 += sizeof * length2
+            }
+            dimensions.pop()
+            while (dimensions.length > 0) {
+              const dim = dimensions.pop()
+              const n = arrayNodes.length
+              if (dim !== undefined) {
+                for (let a = 0; a < n / dim; a++) {
+                  const array = ArrayNode.create(
+                    dim,
+                    process.heap,
+                    sizeof,
+                    addr,
+                  )
+                  for (let b = 0; b < dim; b++) {
+                    const arrayNode = arrayNodes.shift()
+                    if (arrayNode !== undefined) {
+                      array.set_child(b, arrayNode.addr)
+                    }
+                  }
+                  arrayNodes.push(array)
+                }
+              }
+            }
+            const arrayNode = arrayNodes.pop()
+            if (arrayNode !== undefined) {
+              process.heap.copy(allocate, arrayNode.addr)
+            }
+          }
+        } else if (node instanceof StructNode) {
+          // deepcopy if struct
+          const baseNodes = [] as BaseNode[]
+          let structStart = -1
+          let next = process.heap.get_value(node.get_child(0))
+          while (next instanceof StructNode) {
+            next = process.heap.get_value(next.get_child(0))
+          }
+          structStart = next.addr
+          pushV2(process, baseNodes, node)
+          const addr = process.heap.allocate(node.sizeof())
+          const struct = StructNode.create(node.length(), process.heap)
+          for (let i = 0, count = 0; i < node.sizeof(); ) {
+            const node = baseNodes.shift()
+            if (!(node instanceof StructNode) && node instanceof BaseNode) {
+              process.heap.copy(addr + i, structStart + i)
+              struct.set_child(count, addr + i)
+              i += node.sizeof()
+              count++
+            }
+          }
+          process.heap.copy(allocate, struct.addr)
+        }
+        new_context.pushOS(allocate)
+      }
+      new_context.pushDeferStack() // Initialise defer stack
+      process.contexts.push(new_context.addr)
+
+      if (process.debug_mode) {
+        process.debugger.context_id_map.set(
+          new_context.addr,
+          process.debugger.context_id++,
+        )
+      }
+      process.context.popOS()
+    } else {
+      // create the frame for function, put arguments in frame
+      // func is a methodnode
+      const new_context = process.context.go()
+      new_context.pushRTS(process.context.E().addr)
+      new_context.set_PC(process.context.PC() - 1) // Main loop increments PC before executing, next time this context runs will land on go instr again
+      const results = []
+      for (let i = this.args - 1; i >= 0; i--) {
+        const src = process.context.popOS()
+        results[i] = src
+      }
+      // transfer the method call on the OS too
+      const method = process.context.popOS()
+      new_context.pushOS(method)
+      for (let i = 0; i < this.args; i++) {
+        // Making it "pass by value" instead of by reference
+        const allocate = process.heap.allocate(
+          process.heap.get_size(results[i]),
+        )
+        process.heap.copy(allocate, results[i])
+        // Deepcopy if struct or array
+        const node = process.heap.get_value(results[i])
+        if (node instanceof ArrayNode) {
+          // Deepcopy if array
+          const dimensions = [] as number[]
+          let length = node.length()
+          let next = process.heap.get_value(node.get_child(0))
+          let arrayStart = node.get_child(0)
+          dimensions.push(length)
+          while (next instanceof ArrayNode) {
+            dimensions.push(next.length())
+            length = length * next.length()
+            arrayStart = next.get_child(0)
+            next = process.heap.get_value(next.get_child(0))
+          }
+          const type = process.heap.get_type(next.addr)
+          const addr = type.bulkDefaultNodeCreator()(process.heap, length)
+          let sizeof = 4
+          if (type instanceof BoolType) sizeof = 1
+          if (type instanceof StringType) sizeof = 2
+          // Deepcopy each element
+          for (let i = 0; i < length; i++) {
+            process.heap.copy(addr + sizeof * i, arrayStart + sizeof * i)
+          }
+          const arrayNodes = [] as ArrayNode[]
+          if (node instanceof ArrayNode) {
+            let next2 = process.heap.get_value(node.get_child(0))
+            let length2 = node.length()
+            while (next2 instanceof ArrayNode) {
+              length2 = next2.length()
+              next2 = process.heap.get_value(next2.get_child(0))
+            }
+            const baseType = process.heap.get_type(next2.addr)
+            if (baseType instanceof BoolType) sizeof = 1
+            if (baseType instanceof StringType) sizeof = 2
+            let addr2 = addr
+            // handle multi-dimensional arrays: inner-most layer
+            // we ensured that the memory block is contiguous earlier
+            // so we need to link ArrayNodes to the correct memory addresses
+            for (let a = 0; a < length / length2; a++) {
+              arrayNodes.push(
+                ArrayNode.create(length2, process.heap, sizeof, addr2),
+              )
+              addr2 += sizeof * length2
+            }
+            dimensions.pop()
+            while (dimensions.length > 0) {
+              const dim = dimensions.pop()
+              const n = arrayNodes.length
+              if (dim !== undefined) {
+                for (let a = 0; a < n / dim; a++) {
+                  const array = ArrayNode.create(
+                    dim,
+                    process.heap,
+                    sizeof,
+                    addr,
+                  )
+                  for (let b = 0; b < dim; b++) {
+                    const arrayNode = arrayNodes.shift()
+                    if (arrayNode !== undefined) {
+                      array.set_child(b, arrayNode.addr)
+                    }
+                  }
+                  arrayNodes.push(array)
+                }
+              }
+            }
+            const arrayNode = arrayNodes.pop()
+            if (arrayNode !== undefined) {
+              process.heap.copy(allocate, arrayNode.addr)
+            }
+          }
+        } else if (node instanceof StructNode) {
+          // Deepcopy if struct
+          const baseNodes = [] as BaseNode[]
+          let structStart = -1
+          let next = process.heap.get_value(node.get_child(0))
+          while (next instanceof StructNode) {
+            next = process.heap.get_value(next.get_child(0))
+          }
+          structStart = next.addr
+          pushV2(process, baseNodes, node)
+          const addr = process.heap.allocate(node.sizeof())
+          const struct = StructNode.create(node.length(), process.heap)
+          for (let i = 0, count = 0; i < node.sizeof(); ) {
+            const node = baseNodes.shift()
+            if (!(node instanceof StructNode) && node !== undefined) {
+              process.heap.copy(addr + i, structStart + i)
+              struct.set_child(count, addr + i)
+              i += node.sizeof()
+              count++
+            }
+          }
+          process.heap.copy(allocate, struct.addr)
+        }
+        new_context.pushOS(allocate)
+      }
+      // a hacky way to create a "mark" to start the new goroutine after context switching
+      new_context.pushOS(1)
+      new_context.pushDeferStack() // Initialise defer stack
+      if (process.debug_mode) {
+        process.debugger.context_id_map.set(
+          new_context.addr,
+          process.debugger.context_id++,
+        )
+      }
+      process.contexts.push(new_context.addr)
+    }
+    const message: WorkerToScheduler = {
+      type: MessageType.NEW_GOROUTINE,
+      thread_id: local_thread.thread_id,
+    }
+    postMessage(message)
   }
 
   /** Factory method to create go instruction */
@@ -337,6 +621,19 @@ function push(process: Process, a: BaseNode[], node: StructNode) {
     while (child instanceof StructNode) {
       a.push(child)
       push(process, a, child)
+    }
+    a.push(child)
+  }
+}
+
+/** Push all children of a struct node into a */
+function pushV2(process: ProcessV2, a: BaseNode[], node: StructNode) {
+  const children = node.get_children()
+  for (let i = 0; i < children.length; i++) {
+    const child = process.heap.get_value(node.get_child(i))
+    while (child instanceof StructNode) {
+      a.push(child)
+      pushV2(process, a, child)
     }
     a.push(child)
   }
@@ -359,6 +656,14 @@ export class LoadChannelInstruction extends Instruction {
     ).get_value()
     process.context.pushOS(ChannelNode.create(buffer_sz, process.heap).addr)
   }
+
+  override executeV2(process: ProcessV2): void {
+    const buffer_sz = new IntegerNode(
+      process.heap,
+      process.context.popOS(),
+    ).get_value()
+    process.context.pushOS(ChannelNode.create(buffer_sz, process.heap).addr)
+  }
 }
 
 /** Create a channel request (send/recv) */
@@ -372,6 +677,25 @@ export class LoadChannelReqInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
+    const clone = process.heap.clone(process.context.peekOS())
+    process.heap.temp_push(clone)
+    const req = ReqInfoNode.create(
+      clone,
+      process.context.addr,
+      this.PC,
+      this.recv,
+      process.heap,
+    )
+    process.heap.temp_pop()
+    process.context.popOS()
+    process.heap.temp_push(req.addr)
+    const chan = new ChannelNode(process.heap, process.context.popOS())
+    const chan_req = ChannelReqNode.create(chan.addr, req.addr, process.heap)
+    process.heap.temp_pop()
+    process.context.pushOS(chan_req.addr)
+  }
+
+  override executeV2(process: ProcessV2): void {
     const clone = process.heap.clone(process.context.peekOS())
     process.heap.temp_push(clone)
     const req = ReqInfoNode.create(
@@ -413,6 +737,28 @@ export class TryChannelReqInstruction extends Instruction {
           process.heap.blocked_contexts.push_back(process.context.addr),
         )
       process.context.set_blocked(true)
+    } else {
+      process.context.set_PC(req.PC())
+      if (req.is_recv()) process.context.pushOS(req.io())
+    }
+    process.heap.temp_pop()
+  }
+
+  override executeV2(process: ProcessV2): void {
+    const chan_req = new ChannelReqNode(process.heap, process.context.popOS())
+    process.heap.temp_push(chan_req.addr)
+    const chan = chan_req.channel()
+    const req = chan_req.req()
+    const gen = chan.get_generation()
+    if (!chan.try(req)) {
+      const message: WorkerToScheduler = {
+        type: MessageType.BLOCK,
+        thread_id: process.thread_id,
+        context_addr: process.context.addr,
+        obj_addrs: [chan.get_original_addr()],
+        generations: [gen],
+      }
+      postMessage(message)
     } else {
       process.context.set_PC(req.PC())
       if (req.is_recv()) process.context.pushOS(req.io())
@@ -470,6 +816,78 @@ export class SelectInstruction extends Instruction {
             cases.length,
             process.heap.blocked_contexts.push_back(process.context.addr),
           )
+      }
+    }
+    for (let i = 0; i < cases.length; i++) process.heap.temp_pop()
+  }
+
+  override executeV2(process: ProcessV2): void {
+    let pc = -1
+    if (this.default_case) {
+      pc = new IntegerNode(process.heap, process.context.popOS()).get_value()
+    }
+    let cases = []
+    for (let i = 0; i < this.cases; i++) {
+      cases.push(new ChannelReqNode(process.heap, process.context.peekOS()))
+      process.heap.temp_push(process.context.popOS())
+    }
+    cases = cases
+      .map((a) => ({ sort: process.generator(), value: a }))
+      .sort((a, b) => a.sort - b.sort)
+      .map((a) => a.value)
+    const channels = cases.map((chan_req) =>
+      chan_req.channel().get_original_addr(),
+    )
+    let done = false
+    // All cases use queue_on_fail=false: no side effects on failure during the
+    // check phase, so cases from the same SELECT cannot resolve each other.
+    for (let i = 0; i < cases.length; i++) {
+      const cas = cases[i]
+      const chan = cas.channel()
+      const req = cas.req()
+      if (chan.try(req, false)) {
+        // Must unblock for all channels
+        const message: WorkerToScheduler = {
+          type: MessageType.UNBLOCK,
+          obj_addrs: channels,
+          generations: cases.map((chan_req) =>
+            chan_req.channel().get_generation(),
+          ),
+        }
+        postMessage(message)
+        done = true
+        process.context.set_PC(req.PC())
+        if (req.is_recv()) process.context.pushOS(req.io())
+        break
+      }
+    }
+    if (!done) {
+      if (pc !== -1) {
+        process.context.set_PC(pc)
+      } else {
+        // All cases failed: queue every req via chan.wait() and record each
+        // returned LinkedListEntryNode address in context.waitlist() so that
+        // req.unblock() can del() them all, removing stale reqs from every
+        // channel's wait queue the moment this goroutine is unblocked.
+        process.context.set_blocked(true)
+        process.context.set_waitlist(
+          ChannelArrayNode.create(cases.length, process.heap).addr,
+        )
+        for (let i = 0; i < cases.length; i++) {
+          const chan = cases[i].channel()
+          const req = cases[i].req()
+          process.context.waitlist().set_child(i, chan.wait(req))
+        }
+        const message: WorkerToScheduler = {
+          type: MessageType.BLOCK,
+          thread_id: process.thread_id,
+          context_addr: process.context.addr,
+          obj_addrs: channels,
+          generations: cases.map((chan_req) =>
+            chan_req.channel().get_generation(),
+          ),
+        }
+        postMessage(message)
       }
     }
     for (let i = 0; i < cases.length; i++) process.heap.temp_pop()

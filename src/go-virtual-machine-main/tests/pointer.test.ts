@@ -47,7 +47,7 @@ describe('Pointer Tests', () => {
       fmt.Println(&a)
     }
     `
-    expect(codeRunner(code).output).toEqual('0x00000074\n')
+    expect(codeRunner(code).output).toEqual('0x00000080\n')
   })
 
   test('Shorthand declaration for pointer works', () => {
@@ -61,7 +61,7 @@ describe('Pointer Tests', () => {
       fmt.Println(p)
     }
     `
-    expect(codeRunner(code).output).toEqual('0x00000074\n')
+    expect(codeRunner(code).output).toEqual('0x00000084\n')
   })
 
   test('Modifying value of dereferenced pointer works', () => {
@@ -182,7 +182,7 @@ describe('Pointer Tests', () => {
       fmt.Println(&b)
     }
     `
-    expect(codeRunner(code).output).toEqual('0x00000078\n')
+    expect(codeRunner(code).output).toEqual('0x00000076\n')
   })
 
   test('Pointer Type works', () => {
@@ -197,7 +197,7 @@ describe('Pointer Tests', () => {
       fmt.Println(a)
     }
     `
-    expect(codeRunner(code).output).toEqual('0x00000074\n')
+    expect(codeRunner(code).output).toEqual('0x00000084\n')
   })
 
   test('Reassignment of pointers of declared pointer type works', () => {
@@ -216,7 +216,7 @@ describe('Pointer Tests', () => {
       fmt.Println(a)
     }
     `
-    expect(codeRunner(code).output).toEqual('0x00000074\n0x00000078\n')
+    expect(codeRunner(code).output).toEqual('0x00000084\n0x00000088\n')
   })
 
   test(`Reassignment of pointers of declared pointer type should
@@ -298,7 +298,7 @@ describe('Pointer Tests', () => {
       fmt.Println(&a)
     }
     `
-    expect(codeRunner(code).output).toEqual('0x00000074\n')
+    expect(codeRunner(code).output).toEqual('0x00000080\n')
   })
 
   test('Obtaining pointer of declared struct works', () => {
@@ -333,7 +333,7 @@ describe('Pointer Tests', () => {
       fmt.Println(&a.Age)
     }
     `
-    expect(codeRunner(code).output).toEqual('0x00000078\n0x0000007a\n')
+    expect(codeRunner(code).output).toEqual('0x00000080\n0x00000082\n')
   })
 
   test('Obtaining pointer of declared struct fields of nested structs works', () => {
@@ -473,7 +473,7 @@ describe('Pointer Tests', () => {
       fmt.Println(&p)
     }
     `
-    expect(codeRunner(code).output).toEqual('0x00000072\n')
+    expect(codeRunner(code).output).toEqual('0x00000080\n')
   })
 
   test('Modifying fields of pointers of pointer of structs should throw error', () => {
@@ -540,7 +540,7 @@ describe('Pointer Tests', () => {
       fmt.Println(&p)
     }
     `
-    expect(codeRunner(code).output).toEqual('0x00000072\n')
+    expect(codeRunner(code).output).toEqual('0x00000080\n')
   })
 
   test('Pointers of pointer of arrays are consistent', () => {
@@ -567,11 +567,11 @@ describe('Pointer Tests', () => {
     `
     expect(codeRunner(code).output).toEqual(
       `&[sv hello r5gjri]
-0x00000084
-0x00000074
+0x00000092
+0x00000076
 &[sv hello r5gjri]
 [sv hello r5gjri]
-0x00000074
+0x00000076
 &[sv hello r5gjri]
 [sv hello r5gjri]
 &[sv hello r5gjri]
@@ -636,7 +636,7 @@ describe('Pointer Tests', () => {
       fmt.Println(&p)
     }
     `
-    expect(codeRunner(code).output).toEqual('0x00000072\n')
+    expect(codeRunner(code).output).toEqual('0x00000080\n')
   })
 
   test('Modifying elements of dereferenced pointers of pointer of 2D arrays should work', () => {

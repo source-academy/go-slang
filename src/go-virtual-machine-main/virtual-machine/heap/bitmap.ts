@@ -1,21 +1,30 @@
 export class BitMap {
-  bits: Uint8Array
+  array: SharedArrayBuffer
   word_size: number
+  i32: Int32Array
 
-  constructor(size: number, word_size = 4) {
+  constructor(sab: SharedArrayBuffer, word_size = 4) {
     if (!Number.isInteger(Math.log(word_size) / Math.log(2)))
       throw Error('Word Size must be power of 2')
     this.word_size = word_size
-    this.bits = new Uint8Array(size * word_size)
+    this.array = sab
+    this.i32 = new Int32Array(this.array)
+  }
+
+  static create(size: number, word_size = 4) {
+    const sab = new SharedArrayBuffer(size * word_size)
+    return new BitMap(sab, word_size)
+  }
+
+  static load(sab: SharedArrayBuffer, word_size = 4) {
+    return new BitMap(sab, word_size)
   }
 
   set_mark(addr: number, mark: boolean): void {
-    const wordIndex = Math.floor(addr * this.word_size)
-    this.bits[wordIndex] = mark ? 1 : 0
+    Atomics.store(this.i32, addr, mark ? 1 : 0)
   }
 
   is_marked(addr: number): boolean {
-    const wordIndex = Math.floor(addr * this.word_size)
-    return this.bits[wordIndex] === 1
+    return Atomics.load(this.i32, addr) === 1
   }
 }

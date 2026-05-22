@@ -4,6 +4,7 @@ import { BaseNode } from './base'
 
 export class LinkedListNode extends BaseNode {
   static create(heap: Heap) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(3)
     heap.set_tag(addr, TAG.LINKED_LIST)
     heap.temp_push(addr)
@@ -15,6 +16,7 @@ export class LinkedListNode extends BaseNode {
     heap.temp_pop()
     head.set_next(tail.addr)
     tail.set_prev(head.addr)
+    heap.handle_after_alloc()
     return new LinkedListNode(heap, addr)
   }
 
@@ -92,11 +94,13 @@ export class LinkedListNode extends BaseNode {
 
 export class LinkedListEntryNode extends BaseNode {
   static create(val: number, heap: Heap) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(4)
     heap.set_tag(addr, TAG.LINKED_LIST_ENTRY)
     heap.memory.set_number(addr, addr + 1)
     heap.memory.set_number(addr, addr + 2)
     heap.memory.set_number(val, addr + 3)
+    heap.handle_after_alloc()
     return new LinkedListEntryNode(heap, addr)
   }
 

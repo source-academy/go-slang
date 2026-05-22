@@ -4,6 +4,7 @@ import { BaseNode } from './base'
 
 export class QueueNode extends BaseNode {
   static create(heap: Heap) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(2)
     heap.set_tag(addr, TAG.QUEUE)
     heap.temp_push(addr)
@@ -11,6 +12,7 @@ export class QueueNode extends BaseNode {
     const list = QueueListNode.create(heap)
     heap.temp_pop()
     heap.memory.set_word(list.addr, addr + 1)
+    heap.handle_after_alloc()
     return new QueueNode(heap, addr)
   }
 
@@ -64,15 +66,18 @@ export class QueueNode extends BaseNode {
 export class QueueListNode extends BaseNode {
   static init_sz = 8
   static create(heap: Heap) {
+    heap.handle_before_alloc()
     const addr = heap.allocate(this.init_sz)
     heap.set_tag(addr, TAG.QUEUE_LIST)
     heap.memory.set_number(0, addr + 1)
     heap.memory.set_number(0, addr + 2)
     heap.memory.set_number(0, addr + 3)
+    heap.handle_after_alloc()
     return new QueueListNode(heap, addr)
   }
 
   resize(new_size: number) {
+    this.heap.handle_before_alloc()
     const new_pos = this.heap.allocate(new_size)
     this.heap.set_tag(new_pos, TAG.QUEUE_LIST)
     const newQueueList = new QueueListNode(this.heap, new_pos)
@@ -85,6 +90,7 @@ export class QueueListNode extends BaseNode {
       newQueueList.set_idx(this.get_idx((start + x) % cap), x)
     }
     this.addr = new_pos
+    this.heap.handle_after_alloc()
   }
 
   get_cap() {
@@ -130,6 +136,18 @@ export class QueueListNode extends BaseNode {
     const node_sz = this.heap.get_size(this.addr)
     const val = this.get_idx(this.get_start())
     this.set_start((this.get_start() + 1) % this.get_cap())
+    this.set_sz(sz - 1)
+    if (4 * (sz + 3) < node_sz) this.resize(node_sz / 2)
+    return val
+  }
+
+  pop_back() {
+    const sz = this.get_sz()
+    if (sz === 0) throw Error('Queue Empty!')
+    const node_sz = this.heap.get_size(this.addr)
+    const end = (this.get_end() - 1 + this.get_cap()) % this.get_cap()
+    const val = this.get_idx(end)
+    this.set_end(end)
     this.set_sz(sz - 1)
     if (4 * (sz + 3) < node_sz) this.resize(node_sz / 2)
     return val

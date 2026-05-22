@@ -190,11 +190,12 @@ describe('Unsafe Package Checking', () => {
     func main() {
       p := A{"E", 21}
       q := &p
+      result := unsafe.Add(&q, 200)
       fmt.Println(&q)
-      fmt.Println(unsafe.Add(&q, 2))
+      fmt.Println(result)
     }
     `
-    expect(codeRunner(code).output).toEqual('0x0000008c\n0x0000008e\n')
+    expect(codeRunner(code).output).toEqual('0x0000009a\n0x00000162\n')
   })
 
   test('Add throws error if arguments are of the wrong types', () => {
@@ -224,7 +225,7 @@ describe('Unsafe Package Checking', () => {
       fmt.Println(q) // Pointer to StringListNode tied to the bytes itself
     }
     `
-    expect(codeRunner(code).output).toEqual('0x00000072\n0x0000008a\n')
+    expect(codeRunner(code).output).toEqual('0x0000008c\n0x00000098\n')
   })
 
   test('StringData throws error if not string', () => {

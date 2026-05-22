@@ -6,16 +6,19 @@ import {
   GoInstruction,
   Instruction,
 } from '../executor/instructions'
-import { GCPHASE, Heap, is_tri_color } from '../heap'
+import { GCPHASE, Heap } from '../heap'
 import { ContextNode } from '../heap/types/context'
 import { EnvironmentNode, FrameNode } from '../heap/types/environment'
 import { MethodNode } from '../heap/types/func'
+import { LinkedListNode } from '../heap/types/linkedlist'
 import { QueueNode } from '../heap/types/queue'
+import { SaveStackNode } from '../heap/types/saveStack'
+import { StackNode } from '../heap/types/stack'
 
 import { Debugger, StateInfo } from './debugger'
 
 // Represents the result when a process finishes
-type ProcessOutput = {
+export type ProcessOutput = {
   stdout: string
   visual_data: StateInfo[]
   errorMessage?: string
@@ -32,21 +35,32 @@ export class Process {
   debugger: Debugger // Trace states
   runtime_count = 0 // Counts how many instructions executed
   deterministic: boolean // Whether execution should be deterministic or not
-  save_stack: number[]
+  save_stack: SaveStackNode
   constructor(
     instructions: Instruction[],
     heapsize: number,
     symbols: (TokenLocation | null)[], // metadata for debugging
     deterministic: boolean,
     visualmode = false,
+    isTriColor = true,
   ) {
     this.instructions = instructions
-    this.heap = new Heap(heapsize)
+    this.heap = new Heap(heapsize, false, isTriColor)
+    // Heap skips single-threaded setup when is_multithreaded=true — initialise here (NEEDED FOR TESTS)
+    if (this.heap.contexts.sz() === 0) {
+      this.heap.temp_roots = StackNode.create(this.heap)
+      this.heap.contexts = QueueNode.create(this.heap)
+      this.heap.blocked_contexts = LinkedListNode.create(this.heap)
+      const context = ContextNode.create(this.heap)
+      this.heap.contexts.push(context.addr)
+    }
+    if (this.heap.save_stack_addrs.length === 0) {
+      this.heap.save_stack_addrs.push(SaveStackNode.create(this.heap).addr)
+    }
     this.contexts = this.heap.contexts
     // Create initial execution context using the first context in the queue. This will be the main context
     this.context = new ContextNode(this.heap, this.contexts.peek())
     this.stdout = ''
-    console.log(this.heap.mem_left)
     // Base call frame at heap addr 0
     const base_frame = FrameNode.create(0, this.heap)
     const base_env = EnvironmentNode.create(
@@ -60,7 +74,9 @@ export class Process {
     const randomSeed = Math.random().toString(36).substring(2)
     this.generator = seedrandom.default(randomSeed)
     this.deterministic = deterministic
-    this.save_stack = this.heap.save_stack
+    this.save_stack = this.heap.get_value(
+      this.heap.save_stack_addrs[0],
+    ) as SaveStackNode
 
     this.debug_mode = visualmode
     this.debugger = new Debugger(this.heap, this.instructions, symbols)
@@ -90,7 +106,11 @@ export class Process {
         let cur_time = 0
         // Execute this context until it hits a done instruction
         while (!DoneInstruction.is(this.instructions[this.context.PC()])) {
-          if (is_tri_color && this.heap.gc_phase !== GCPHASE.NONE) this.heap.tri_color_step()
+          if (
+            this.heap.is_tri_color &&
+            this.heap.metadata.get_gc_phase() !== GCPHASE.NONE
+          )
+            this.heap.tri_color_step()
           if (cur_time >= time_quantum) {
             // Context Switch by pushing context to end of queue
             this.contexts.push(this.context.addr)
@@ -148,7 +168,7 @@ export class Process {
         // Remove old head from ready queue
         this.contexts.pop()
         // console.log('%c SWITCH!', 'background: #F7FF00; color: #FF0000')
-        if (this.runtime_count > 10 ** 5) throw Error('Time Limit Exceeded!')
+        if (this.runtime_count > 10 ** 8) throw Error('Time Limit Exceeded!')
         // console.log('PC', this.contexts.get_vals())
       }
 
@@ -167,10 +187,10 @@ export class Process {
         this.heap.gc_profiler.total_pause_time
       const throughput_ratio =
         mutator_time / (mutator_time + this.heap.gc_profiler.total_gc_time)
-      const alloc_rate = this.heap.gc_profiler.total_alloc /
-        this.heap.gc_profiler.program_time
-      const free_rate = this.heap.gc_profiler.total_freed /
-        this.heap.gc_profiler.program_time
+      const alloc_rate =
+        this.heap.gc_profiler.total_alloc / this.heap.gc_profiler.program_time
+      const free_rate =
+        this.heap.gc_profiler.total_freed / this.heap.gc_profiler.program_time
 
       console.log('Program Time: %f', this.heap.gc_profiler.program_time)
       console.log('Avg Pause Time: %f', pause_time)
@@ -180,7 +200,7 @@ export class Process {
       console.log('Alloc Rate: %f bytes/ms', alloc_rate)
       console.log('Free Rate: %f bytes/ms', free_rate)
 
-      console.log("Mem Left: %d", this.heap.mem_left)
+      console.log('Mem Left: %d', this.heap.metadata.get_mem_left())
 
       return {
         stdout: this.stdout,
@@ -200,8 +220,8 @@ export class Process {
   }
 
   mark_save_stack(addr: number) {
-    if (this.heap.bitmap.is_marked(addr)) return
-    this.heap.bitmap.set_mark(addr, true)
+    if (this.heap.gc_bitmap.is_marked(addr)) return
+    this.heap.gc_bitmap.set_mark(addr, true)
     this.save_stack.push(addr)
   }
 

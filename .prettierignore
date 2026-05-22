@@ -26,3 +26,6 @@ storybook-static
 build-storybook.log
 
 .storybook/preview-head.html
+
+# generated parser
+**/golang_parser.js

@@ -4,6 +4,10 @@ import { BoolNode } from '../../heap/types/primitives'
 import { Type } from '.'
 
 export class BoolType extends Type {
+  constructor() {
+    super('BOOL')
+  }
+
   isPrimitive(): boolean {
     return true
   }

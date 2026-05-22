@@ -6,6 +6,10 @@ import { ReturnType } from '../return_type'
 import { Type } from '..'
 
 export class MutexType extends Type {
+  constructor() {
+    super('MUTEX')
+  }
+
   override bulkDefaultNodeCreator(): (heap: Heap, length: number) => number {
     return (heap) => MutexNode.default(heap).addr
   }

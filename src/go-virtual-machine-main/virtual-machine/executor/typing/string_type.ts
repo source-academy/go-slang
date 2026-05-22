@@ -4,6 +4,10 @@ import { StringNode } from '../../heap/types/primitives'
 import { Type } from '.'
 
 export class StringType extends Type {
+  constructor() {
+    super('STRING')
+  }
+
   isPrimitive(): boolean {
     return true
   }

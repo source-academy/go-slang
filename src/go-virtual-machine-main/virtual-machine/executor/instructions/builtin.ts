@@ -2,6 +2,7 @@ import { ArrayNode, SliceNode } from '../../heap/types/array'
 import { ChannelArrayNode } from '../../heap/types/channel'
 import { IntegerNode } from '../../heap/types/primitives'
 import { Process } from '../../runtime/process'
+import { ProcessV2 } from '../../runtime/processV2'
 
 import { Instruction } from './base'
 
@@ -24,6 +25,20 @@ export class BuiltinLenInstruction extends Instruction {
       throw new Error('Unreachable')
     }
   }
+
+  override executeV2(process: ProcessV2): void {
+    const node = process.heap.get_value(process.context.popOS())
+    if (
+      node instanceof ArrayNode ||
+      node instanceof SliceNode ||
+      node instanceof ChannelArrayNode
+    ) {
+      const length = node.length()
+      process.context.pushOS(IntegerNode.create(length, process.heap).addr)
+    } else {
+      throw new Error('Unreachable')
+    }
+  }
 }
 
 /** Takes an object address from the OS, and returns the capacity of that object. */
@@ -33,6 +48,20 @@ export class BuiltinCapInstruction extends Instruction {
   }
 
   override execute(process: Process): void {
+    const node = process.heap.get_value(process.context.popOS())
+    if (
+      node instanceof ArrayNode ||
+      node instanceof SliceNode ||
+      node instanceof ChannelArrayNode
+    ) {
+      const capacity = node.capacity()
+      process.context.pushOS(IntegerNode.create(capacity, process.heap).addr)
+    } else {
+      throw new Error('Unreachable')
+    }
+  }
+
+  override executeV2(process: ProcessV2): void {
     const node = process.heap.get_value(process.context.popOS())
     if (
       node instanceof ArrayNode ||

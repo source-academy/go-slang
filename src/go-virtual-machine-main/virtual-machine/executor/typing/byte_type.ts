@@ -4,6 +4,10 @@ import { Type } from '.'
 
 /** This type represents the byte itself. */
 export class ByteType extends Type {
+  constructor() {
+    super('BYTE')
+  }
+
   isPrimitive(): boolean {
     return false
   }

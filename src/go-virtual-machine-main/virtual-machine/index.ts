@@ -2,6 +2,8 @@ import parser from './compiler/parser'
 import { SourceFileTokens, TokenLocation } from './compiler/tokens'
 import { Instruction } from './executor/instructions'
 import { StateInfo } from './runtime/debugger'
+import { ProcessOutput } from './runtime/process'
+import { CompleteExecution } from './runtime/scheduler'
 import { compile_tokens, CompileError } from './executor'
 import { execute_instructions } from './runtime'
 
@@ -35,9 +37,12 @@ interface CompileData {
 const runCode = (
   source_code: string,
   heapsize: number,
+  completeExecution: CompleteExecution,
   deterministic = true,
   visualisation = true,
-): ProgramData => {
+  isMultithreaded = true,
+  isTriColor = true,
+): void => {
   // Parsing.
   let tokens: SourceFileTokens
 
@@ -46,7 +51,7 @@ const runCode = (
   function insertSemicolons(input: string) {
     // Tokens after which semicolons are auto-inserted in Go
     const autoInsertTokens = [
-      /^[\*&]?[a-zA-Z_][a-zA-Z0-9_]*$/, // identifiers including address and indirection
+      /^[*&]?[a-zA-Z_][a-zA-Z0-9_]*$/, // identifiers including address and indirection
       /^[0-9]+$/, // integer literals
       /^[0-9]+\.[0-9]*$/, // float literals
       /^0x[0-9a-fA-F]+$/, // hex integer literals
@@ -55,7 +60,7 @@ const runCode = (
       /^".*"$/,
       /^'.*'$/,
       /^`[^`]*`$/, // string/rune literals
-      /[)\]\}]$/, // closing ), ], }
+      /[)\]}]$/, // closing ), ], }
       /(\+\+|--)\s*$/, // ++ or --
       /\b(break|continue|fallthrough|return)$/, // specific keywords
     ]
@@ -96,7 +101,7 @@ const runCode = (
     console.log(tokens)
   } catch (err) {
     const message = (err as Error).message
-    return {
+    const prog_data: ProgramData = {
       instructions: [],
       output: message,
       error: {
@@ -106,6 +111,8 @@ const runCode = (
       },
       visualData: [],
     }
+    completeExecution(prog_data)
+    return
   }
 
   // Compilation.
@@ -118,7 +125,7 @@ const runCode = (
     console.log(instructions)
   } catch (err) {
     const message = (err as CompileError).message
-    return {
+    const prog_data: ProgramData = {
       instructions: [],
       output: message,
       error: {
@@ -128,19 +135,28 @@ const runCode = (
       },
       visualData: [],
     }
+    completeExecution(prog_data)
+    return
   }
 
   // Execution.
-  const result = execute_instructions(
+  execute_instructions(
     instructions,
     heapsize,
     symbols,
     deterministic,
     visualisation,
+    callback,
+    completeExecution,
+    isMultithreaded,
+    isTriColor,
   )
+}
+
+function callback(result: ProcessOutput, completeExecution: CompleteExecution) {
   if (result.errorMessage) {
     console.warn(result.errorMessage)
-    return {
+    const prog_data: ProgramData = {
       instructions: [],
       output: result.errorMessage,
       error: {
@@ -150,14 +166,16 @@ const runCode = (
       },
       visualData: [],
     }
+    completeExecution(prog_data)
   }
 
-  return {
+  const prog_data: ProgramData = {
     instructions: [],
     output: result.stdout,
     visualData: result.visual_data,
     error: undefined,
   }
+  completeExecution(prog_data)
 }
 
 export { type CompileData, type InstructionData, type ProgramData, runCode }
