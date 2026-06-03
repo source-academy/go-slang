@@ -1,6 +1,15 @@
+import { fileURLToPath } from 'node:url'
+
 import { defineConfig } from 'vite'
 
 export default defineConfig({
+  resolve: {
+    // Mirror tsconfig's `baseUrl: "./"` so root-relative imports like
+    // `src/go-virtual-machine-main/...` resolve under Vitest 4 / Vite 8.
+    alias: {
+      src: fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
   test: {
     coverage: {
       enabled: true,
