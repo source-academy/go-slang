@@ -1,6 +1,14 @@
+import path from 'node:path'
 import { defineConfig } from 'vite'
 
 export default defineConfig({
+  resolve: {
+    // Mirror tsconfig's `baseUrl: "./"` so root-relative imports like
+    // `src/go-virtual-machine-main/...` resolve under Vitest 4 / Vite 8.
+    alias: {
+      src: path.resolve(process.cwd(), 'src'),
+    },
+  },
   test: {
     coverage: {
       enabled: true,
