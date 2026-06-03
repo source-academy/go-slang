@@ -11,6 +11,10 @@
       }
     },
     {
+      "files": ["*.config.js"],
+      "env": { "node": true }
+    },
+    {
       "files": ["*.stories.*"],
       "rules": {
         "@typescript-eslint/explicit-module-boundary-types": "off"
